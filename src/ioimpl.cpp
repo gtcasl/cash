@@ -80,9 +80,11 @@ void outputimpl::print(std::ostream& out) const {
 tapimpl::tapimpl(context* ctx,
                  uint32_t size,
                  lnodeimpl* src,
+                 const std::string& tag,
                  const std::string& name,
                  const source_location& sloc)
-  : ioportimpl(ctx, type_tap, size, smart_ptr<sdata_type>::make(src->size()), name, sloc) {
+  : ioportimpl(ctx, type_tap, size, smart_ptr<sdata_type>::make(src->size()), name, sloc)
+  , tag_(tag) {
   this->add_src(src);
 }
 
@@ -90,12 +92,12 @@ tapimpl::~tapimpl() {}
 
 lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src = cloned_nodes.at(this->src(0).id());
-  return ctx->create_node<tapimpl>(this->size(), src, name_, sloc_);
+  return ctx->create_node<tapimpl>(this->size(), src, tag_, name_, sloc_);
 }
 
 void tapimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
-  out << "(" << name_ << ", #" << this->src(0).id() << ")";
+  out << "(" << tag_ << ", #" << this->src(0).id() << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

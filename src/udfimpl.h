@@ -64,7 +64,7 @@ protected:
            const std::string& name,
            const source_location& sloc);
 
-  ~udfcimpl();
+  ~udfcimpl() override;
 
   friend class context;
 };
@@ -93,7 +93,7 @@ protected:
            const std::string& name,
            const source_location& sloc);
 
-  ~udfsimpl();
+  ~udfsimpl() override;
 
   int cd_idx_;
   int reset_idx_;

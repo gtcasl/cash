@@ -20,15 +20,15 @@ regimpl::regimpl(context* ctx,
                  const source_location& sloc)
   : lnodeimpl(ctx->node_id(), type_reg, size, ctx, name, sloc)
   , length_(length)
-  , reset_idx_(-1)
-  , enable_idx_(-1)
-  , initdata_idx_(-1) {
-    
+  , reset_idx_(-1)  
+  , initdata_idx_(-1)
+  , enable_idx_(-1) {
+  assert(next->size() == size);
   this->add_src(cd);
   this->add_src(next);
 
   if ((platform::self().cflags() & cflags::force_reg_init)
-   && !init_data) {
+   && !init_data) {    
     assert(!reset);
     reset = ctx->current_reset(sloc);
     init_data = ctx->create_literal(sdata_type(size, 0));
@@ -36,6 +36,7 @@ regimpl::regimpl(context* ctx,
 
   if (init_data) {
     assert(reset);
+    assert(init_data->size() == size);
     reset_idx_ = this->add_src(reset);
     initdata_idx_ = this->add_src(init_data);
   } 
@@ -64,13 +65,17 @@ lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
         this->size(), length_, cd, reset, enable, next, init_data, name_, sloc_);
 }
 
+void regimpl::set_next(lnodeimpl* node) {
+  this->set_src(1, node);
+}
+
 void regimpl::set_enable(lnodeimpl* node) {
   assert(enable_idx_ == -1);
   enable_idx_ = this->add_src(node);
 }
 
 lnodeimpl* regimpl::remove_enable() {
-  assert(this->has_enable() && is_literal_one(this->enable().impl()));
+  assert(this->has_enable());
   auto ret = this->enable().impl();
   this->remove_src(enable_idx_);
   enable_idx_ = -1;

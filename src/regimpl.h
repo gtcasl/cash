@@ -48,6 +48,8 @@ public:
     return this->src(initdata_idx_);
   }
 
+  void set_next(lnodeimpl* node);
+
   void set_enable(lnodeimpl* node);
 
   lnodeimpl* remove_enable();
@@ -73,8 +75,8 @@ protected:
 
   uint32_t length_;
   int reset_idx_;
-  int enable_idx_;
   int initdata_idx_;
+  int enable_idx_;
 
   friend class context;
 };

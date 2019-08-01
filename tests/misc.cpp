@@ -113,12 +113,56 @@ TEST_CASE("misc", "[misc]") {
   }
   
   SECTION("taps", "[tap]") {
-    TEST([]()->ch_bool {
+    TESTX([]()->bool {
       auto_cflags_enable dump_enable(cflags::dump_ast | cflags::dump_cfg);
-      ch_bit4 a(1100_b);
-      auto c = ch_slice<2>(a, 1) ^ 01_b;
-      __tap(c);
-      return (c == 11_b);
+      ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device("taps",
+        [](auto lhs, auto rhs) {
+          auto ret = (lhs + rhs) / 2;
+          __tap(ret);
+          return ret;
+        }
+      );
+      ch_toVerilog("taps.v", device);
+      device.io.lhs = 5;
+      device.io.rhs = 3;
+      ch_tracer trace(device);
+      trace.run();
+      RetCheck ret;
+      ret &= (device.io.out == 4);
+      trace.toText("taps.log");
+      trace.toVCD("taps.vcd");
+      trace.toTestBench("taps_tb.v", "taps");
+      ret &= (checkVerilog("filter_tb.v"));
+      return ret;
+    });
+
+    TESTX([]()->bool {
+      auto_cflags_enable dump_enable(cflags::dump_ast | cflags::dump_cfg);
+      ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device("taps2",
+        [](auto lhs, auto rhs) {
+          auto f = [](auto in) {
+                  auto ret = (in << 1) / 2;
+                  __tap(ret);
+                  return ret;
+                };
+          std::array<ch_module<GenericModule<ch_uint4, ch_uint4>>, 2> m{f, f};
+          m[0].io.in = lhs;
+          m[1].io.in = rhs;
+          auto ret = (m[0].io.out + m[1].io.out) / 2;
+          return ret;
+        }
+      );
+      ch_toVerilog("taps2.v", device);
+      device.io.lhs = 5;
+      device.io.rhs = 3;
+      ch_tracer trace(device);
+      trace.run();
+      RetCheck ret;
+      ret &= (device.io.out == 4);
+      trace.toText("taps2.log");
+      trace.toVCD("taps2.vcd");
+      trace.toTestBench("taps2_tb.v", "taps2");
+      return ret;
     });
   }
   

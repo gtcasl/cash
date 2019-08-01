@@ -111,6 +111,11 @@ auto make_logic_buffer(Args&&... args) {
 class logic_accessor {
 public:
   template <typename T>
+  static auto& size(const T& obj) {
+    return obj.__buffer().size();
+  }
+
+  template <typename T>
   static auto& buffer(const T& obj) {
     assert(obj.__buffer().size() == ch_width_v<T>);
     return obj.__buffer();

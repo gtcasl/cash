@@ -36,5 +36,11 @@ inline bool is_literal_one(lnodeimpl* node) {
       && reinterpret_cast<litimpl*>(node)->value().is_ones();
 }
 
+inline bool is_literal_zero(lnodeimpl* node) {
+  return node
+      && (type_lit == node->type())
+      && reinterpret_cast<litimpl*>(node)->value().is_zero();
+}
+
 }
 }

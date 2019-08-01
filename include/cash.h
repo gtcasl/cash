@@ -351,7 +351,7 @@ namespace logic {
   //
 
   using ch::internal::ch_assert;
-  using ch::internal::ch_tap;  
+  using ch::internal::ch_tap;
 }
 
 //

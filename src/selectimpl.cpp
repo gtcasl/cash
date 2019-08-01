@@ -96,8 +96,9 @@ lnode select_impl::emit(const lnode& def_value) {
   auto key = key_.empty() ? nullptr : key_.impl();
   auto sloc = get_source_location();
   auto sel = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc);
-  if (key && (key->size() <= 64)) {
+  if (key) {
     // insert switch cases in ascending order
+    assert(key->size() <= 64);
     for (auto& stmt : stmts) {
       auto pred = stmt.first.impl();
       assert(type_lit == pred->type()); // the case predicate should be a literal value
@@ -113,12 +114,16 @@ lnode select_impl::emit(const lnode& def_value) {
         }
       }
       if (i == sel->num_srcs()) {
+        assert(pred->size() == key->size());
+        assert(stmt.second.size() == sel->size());
         sel->add_src(pred);
         sel->add_src(stmt.second.impl());
       }
     }
   } else {
     for (auto& stmt : stmts) {
+      assert(stmt.first.size() == 1);
+      assert(stmt.second.size() == sel->size());
       sel->add_src(stmt.first.impl());
       sel->add_src(stmt.second.impl());
     }

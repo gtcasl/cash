@@ -350,6 +350,7 @@ mwportimpl::mwportimpl(context* ctx,
                        lnodeimpl* enable,
                        const source_location& sloc)
   : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, sloc) {
+  assert(wdata->size() == mem->data_width());
   // add as memory source
   mem->add_src(this);
   mem->add_wrport(this);

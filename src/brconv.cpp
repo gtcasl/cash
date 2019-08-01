@@ -140,7 +140,7 @@ void branchconverter::write(
                                       uint32_t offset,
                                       uint32_t length) {
     cond_range_t new_range{offset, length};
-    for (auto def : defs[range]) {
+    for (auto def : defs.at(range)) {
       add_definition(split_list, new_range, def.first, def.second, offset - range.offset);
     }
   };

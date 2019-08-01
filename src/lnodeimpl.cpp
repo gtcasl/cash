@@ -64,9 +64,11 @@ void lnodeimpl::insert_src(uint32_t index, lnodeimpl* src) {
   hash_ = 0;
 }
 
-void lnodeimpl::remove_src(uint32_t index) {
+lnodeimpl* lnodeimpl::remove_src(uint32_t index) {
+  auto tmp = srcs_.at(index).impl();
   srcs_.erase(srcs_.begin() + index);
   hash_ = 0;
+  return tmp;
 }
 
 void lnodeimpl::resize(uint32_t size) {

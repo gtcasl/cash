@@ -41,8 +41,6 @@ protected:
          lnodeimpl* rhs,
          const source_location& sloc);
 
-  ~opimpl() {}
-
   void init(ch_op op,
             bool is_signed,
             lnodeimpl* lhs = nullptr,

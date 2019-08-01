@@ -47,6 +47,17 @@ public:
     this->operator=(values);
   }
 
+  template <typename Arg0, typename... Args,
+              CH_REQUIRE(std::is_constructible_v<T, Arg0>
+                      && !std::is_same_v<remove_cv_ref_t<Arg0>, logic_buffer>
+                      && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_vec>
+                      && (std::is_same_v<Arg0, Args> && ...)
+                      && (sizeof... (Args) == N-1))>
+  ch_vec(Arg0&& arg0, Args&&... args)
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    this->operator=({std::forward<Arg0>(arg0), std::forward<Args>(args)...});
+  }
+
   template <typename U,
             CH_REQUIRE(std::is_constructible_v<T, U>)>
   explicit ch_vec(const std::array<U, N>& other)
@@ -78,7 +89,7 @@ public:
     CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<T, U>, "invalid type");
     for (unsigned i = 0; i < N; ++i) {
-      this->at(i) = other.at(i);
+      (*this)[i] = other[i];
     }
     return *this;
   }
@@ -88,7 +99,7 @@ public:
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
-      this->at(i--) = value;
+      (*this)[i--] = value;
     }
     return *this;
   }
@@ -107,9 +118,9 @@ public:
   friend auto operator==(const ch_vec& lhs, const std::array<U, N>& rhs) {
     CH_API_ENTRY(1);
     static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
-    auto ret(lhs.at(0) == rhs.at(0));
+    auto ret(lhs[0] == rhs[0]);
     for (unsigned i = 1; i < N; ++i) {
-      ret &= (lhs.at(i) == rhs.at(i));
+      ret &= (lhs[i] == rhs[i]);
     }
     return ret;
   }
@@ -142,7 +153,7 @@ protected:
   {}
 
   const logic_buffer& __buffer() const {
-    return logic_accessor::source(this->at(0));
+    return logic_accessor::source((*this)[0]);
   }
 
   friend class logic_accessor;
@@ -170,7 +181,7 @@ public:
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
-      this->at(i--) = value;
+      (*this)[i--] = value;
     }
   }
 
@@ -202,7 +213,7 @@ public:
   ch_vec& operator=(const std::array<U, N>& other) {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
     for (unsigned i = 0; i < N; ++i) {
-      this->at(i) = other.at(i);
+      (*this)[i] = other[i];
     }
     return *this;
   }
@@ -211,7 +222,7 @@ public:
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
-      this->at(i--) = value;
+      (*this)[i--] = value;
     }
     return *this;
   }
@@ -227,9 +238,9 @@ public:
   template <typename U>
   friend auto operator==(const ch_vec& lhs, const std::array<U, N>& rhs) {
     static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
-    auto ret(lhs.at(0) == rhs.at(0));
+    auto ret(lhs[0] == rhs[0]);
     for (unsigned i = 1; i < N; ++i) {
-      ret = ret && (lhs.at(i) == rhs.at(i));
+      ret = ret && (lhs[i] == rhs[i]);
     }
     return ret;
   }
@@ -259,7 +270,7 @@ protected:
   {}
 
   const system_buffer& __buffer() const {
-    return system_accessor::source(this->at(0));
+    return system_accessor::source((*this)[0]);
   }
 
   friend std::ostream& operator<<(std::ostream& out, const ch_vec& in) {
@@ -315,7 +326,7 @@ public:
   void operator()(typename traits::flip_io& other) {
     CH_API_ENTRY(1);
     for (unsigned i = 0; i < N; ++i) {
-      this->at(i)(other.at(i));
+      (*this)[i](other[i]);
     }
   }
 
@@ -369,7 +380,7 @@ public:
 
   void operator()(typename traits::flip_io& other) {
     for (unsigned i = 0; i < N; ++i) {
-      this->at(i)(other.at(i));
+      (*this)[i](other[i]);
     }
   }
 

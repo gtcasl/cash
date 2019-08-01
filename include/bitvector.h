@@ -730,7 +730,7 @@ public:
                           length);
       break;
     default:
-      throw std::invalid_argument(sstreamf() << "invalid alignment " << byte_alignment);
+      throw std::invalid_argument(sstreamf() << "invalid alignment: " << byte_alignment);
     }
   }
 
@@ -764,7 +764,7 @@ public:
                           length);
       break;
     default:
-      throw std::invalid_argument(sstreamf() << "invalid alignment " << byte_alignment);
+      throw std::invalid_argument(sstreamf() << "invalid alignment: " << byte_alignment);
     }
   }
 

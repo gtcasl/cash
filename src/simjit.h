@@ -11,7 +11,7 @@ public:
 
   driver();
 
-  ~driver();
+  ~driver() override;
 
   void initialize(const std::vector<lnodeimpl*>& eval_list) override;
 

@@ -519,11 +519,22 @@ void context::register_tap(const lnode& node,
   auto sid = identifier_from_string(name);
   auto num_dups = dup_tap_names_.insert(sid);
   if (num_dups) {
-    sid = stringf("tap.%s%ld", sid.c_str(), num_dups);
+    sid = stringf("%s%ld", sid.c_str(), num_dups);
   } else {
-    sid = stringf("tap.%s", sid.c_str());
+    sid = stringf("%s", sid.c_str());
   }
-  this->create_node<tapimpl>(node.size(), node.impl(), sid, sloc);
+  this->create_node<tapimpl>(node.size(), node.impl(), name, sid, sloc);
+}
+
+lnodeimpl* context::get_tap(const std::string& name, unsigned instance) {
+  for (auto node : taps_) {
+    auto tap = reinterpret_cast<tapimpl*>(node);
+    if (tap->tag() == name) {
+      if (0 == instance--)
+        return tap;
+    }
+  }
+  throw std::invalid_argument(sstreamf() << "invalid tap name: " << name);
 }
 
 void context::create_udf_node(udf_iface* udf,
@@ -706,6 +717,10 @@ void context::dump_stats(std::ostream& out) {
 void ch::internal::registerTap(const lnode& node, const std::string& name) {
   auto sloc = get_source_location();
   node.impl()->ctx()->register_tap(node, name, sloc);
+}
+
+lnodeimpl* ch::internal::getTap(const std::string& name, unsigned instance) {
+  return ctx_curr()->get_tap(name, instance);
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {

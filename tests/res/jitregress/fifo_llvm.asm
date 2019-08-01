@@ -5,89 +5,104 @@
 	.type	eval,@function
 eval:
 	.cfi_startproc
-	movq	(%rdi), %r8
-	movq	8(%rdi), %rsi
-	movl	8(%rsi), %edi
-	movl	16(%rsi), %r11d
-	movq	24(%r8), %rcx
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	pushq	%rbx
+	.cfi_def_cfa_offset 24
+	.cfi_offset %rbx, -24
+	.cfi_offset %rbp, -16
+	movq	(%rdi), %r10
+	movq	8(%rdi), %rdi
+	movl	8(%rdi), %esi
+	movl	16(%rdi), %eax
+	movq	24(%r10), %rcx
 	movl	(%rcx), %ecx
-	movl	24(%rsi), %edx
+	movl	24(%rdi), %edx
 	notl	%edx
-	movl	%ecx, 24(%rsi)
+	movl	%ecx, 24(%rdi)
 	testl	%ecx, %edx
-	je	.LBB0_7
-	movq	8(%r8), %r10
-	movq	16(%r8), %r9
-	xorl	%ecx, %ecx
-	cmpl	%edi, %r11d
-	setne	%cl
-	leal	1(%rdi), %edx
-	andl	$3, %edx
-	testl	%ecx, (%r9)
-	cmovel	%edi, %edx
-	movq	32(%r8), %rcx
+	je	.LBB0_10
+	movq	32(%r10), %rcx
 	movl	(%rcx), %r9d
-	movl	%r11d, %ecx
+	movq	8(%r10), %r11
+	movq	16(%r10), %rcx
+	xorl	%r8d, %r8d
+	cmpl	%esi, %eax
+	setne	%r8b
+	andl	(%rcx), %r8d
+	movl	%eax, %ecx
 	andl	$1, %ecx
-	movl	%r11d, %eax
-	xorl	%edi, %eax
-	andl	$1, %edi
-	xorl	%ecx, %edi
-	xorl	$1, %edi
-	shrl	%eax
-	andl	%edi, %eax
-	xorl	$1, %eax
-	leal	1(%r11), %edi
-	andl	$3, %edi
-	testl	%eax, (%r10)
-	cmovel	%r11d, %edi
+	movl	%esi, %ebx
+	andl	$1, %ebx
+	xorl	%ecx, %ebx
+	xorl	$1, %ebx
+	movl	%eax, %edx
+	xorl	%esi, %edx
+	shrl	%edx
+	andl	%ebx, %edx
+	xorl	$1, %edx
+	andl	(%r11), %edx
 	je	.LBB0_3
-	movq	(%r8), %rax
-	movl	(%rax), %eax
-	movl	(%rsi), %r10d
+	movq	(%r10), %rbx
+	movl	(%rbx), %ebx
+	movl	(%rdi), %r11d
 	addb	%cl, %cl
-	movl	$3, %r11d
-	shll	%cl, %r11d
-	shll	%cl, %eax
-	xorl	%r10d, %eax
-	andl	%r11d, %eax
-	xorl	%r10d, %eax
-	movl	%eax, (%rsi)
+	movl	$3, %ebp
+	shll	%cl, %ebp
+	shll	%cl, %ebx
+	xorl	%r11d, %ebx
+	andl	%ebp, %ebx
+	xorl	%r11d, %ebx
+	movl	%ebx, (%rdi)
 .LBB0_3:
 	testl	%r9d, %r9d
 	je	.LBB0_5
-	movl	$0, 16(%rsi)
-	movl	$0, 8(%rsi)
-	xorl	%edi, %edi
-	xorl	%edx, %edx
-	jmp	.LBB0_6
-.LBB0_5:
-	movl	%edi, 16(%rsi)
-	movl	%edx, 8(%rsi)
-.LBB0_6:
-	movl	%edx, %eax
-	andl	$1, %eax
-	movl	(%rsi), %esi
-	leal	(%rax,%rax), %ecx
-	shrl	%cl, %esi
-	andl	$3, %esi
-	movq	40(%r8), %rcx
-	movl	%esi, (%rcx)
-	xorl	%ecx, %ecx
-	cmpl	%edx, %edi
-	sete	%cl
-	movq	48(%r8), %rsi
-	movl	%ecx, (%rsi)
-	xorl	%edi, %edx
-	andl	$1, %edi
-	xorl	%eax, %edi
-	xorl	$1, %edi
-	shrl	%edx
-	andl	%edi, %edx
-	movq	56(%r8), %rax
-	movl	%edx, (%rax)
-.LBB0_7:
+	movl	$0, 16(%rdi)
+	movl	$0, 8(%rdi)
+	xorl	%esi, %esi
 	xorl	%eax, %eax
+	jmp	.LBB0_9
+.LBB0_5:
+	testl	%edx, %edx
+	je	.LBB0_7
+	incl	%eax
+	andl	$3, %eax
+	movl	%eax, 16(%rdi)
+.LBB0_7:
+	testl	%r8d, %r8d
+	je	.LBB0_9
+	incl	%esi
+	andl	$3, %esi
+	movl	%esi, 8(%rdi)
+.LBB0_9:
+	movl	%esi, %edx
+	andl	$1, %edx
+	movl	(%rdi), %edi
+	leal	(%rdx,%rdx), %ecx
+	shrl	%cl, %edi
+	andl	$3, %edi
+	movq	40(%r10), %rcx
+	movl	%edi, (%rcx)
+	xorl	%ecx, %ecx
+	cmpl	%esi, %eax
+	sete	%cl
+	movq	48(%r10), %rdi
+	movl	%ecx, (%rdi)
+	movl	%eax, %ecx
+	andl	$1, %ecx
+	xorl	%edx, %ecx
+	xorl	$1, %ecx
+	xorl	%esi, %eax
+	shrl	%eax
+	andl	%ecx, %eax
+	movq	56(%r10), %rcx
+	movl	%eax, (%rcx)
+.LBB0_10:
+	xorl	%eax, %eax
+	popq	%rbx
+	.cfi_def_cfa_offset 16
+	popq	%rbp
+	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end0:
 	.size	eval, .Lfunc_end0-eval

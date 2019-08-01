@@ -545,7 +545,7 @@ void bv_assign(T* dst, uint32_t size, const std::array<U, N>& value) {
     if (rem > 0) {
       length = bitwidth_v<U> - rem;
       CH_CHECK(length < bitwidth_v<U>, "buffer out of range");
-      CH_CHECK(0 == (value.at(j) >> length), "value out of range");
+      CH_CHECK(0 == (value[j] >> length), "value out of range");
     }
     bv_copy<U>(reinterpret_cast<U*>(dst),
                i * bitwidth_v<U>,
@@ -569,7 +569,7 @@ void bv_assign(T* dst, uint32_t size, const std::vector<U>& value) {
     if (rem > 0) {
       length = bitwidth_v<U> - rem;
       CH_CHECK(length < bitwidth_v<U>, "buffer out of range");
-      CH_CHECK(0 == (value.at(j) >> length), "value out of range");
+      CH_CHECK(0 == (value[j] >> length), "value out of range");
     }
     bv_copy<U>(reinterpret_cast<U*>(dst),
                i * bitwidth_v<U>,

@@ -36,11 +36,6 @@ protected:
 
   bool register_promotion();
 
-  lnodeimpl* constant_fold(proxyimpl* node);
-  lnodeimpl* constant_fold(selectimpl* node);
-  lnodeimpl* constant_fold(opimpl* node);
-  lnodeimpl* constant_fold_bitwise(opimpl* node);
-
   context* ctx_;
 };
 

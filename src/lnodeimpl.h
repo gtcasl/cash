@@ -96,7 +96,7 @@ public:
 
   void insert_src(uint32_t index, lnodeimpl* src);
 
-  void remove_src(uint32_t index);
+  lnodeimpl* remove_src(uint32_t index);
 
   void resize(uint32_t size);
 

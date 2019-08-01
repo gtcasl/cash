@@ -50,7 +50,7 @@ public:
 
     // controls
     ch_counter<~0u> delay_ctr(sdf_.io.enq.ready);
-    io.done = ch_next(delay_ctr.value() >= (pipelen_ + width_ * height_), false);
+    io.done = ch_next(delay_ctr.value() > (pipelen_ + width_ * height_), false);
     sdf_.io.deq.ready = !(delay_ctr.value() < (width_ * height_));
     sdf_.io.enq.valid = (delay_ctr.value() >= 2 * width_ + 3 + pipelen_) && !io.done;
     sdf_.io.enq.data  = ch_delayEn(out, sdf_.io.enq.ready, pipelen_);

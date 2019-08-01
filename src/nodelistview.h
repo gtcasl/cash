@@ -77,10 +77,10 @@ public:
     }
 
     void check_end_of_container() {
-      auto container = containers_->at(container_idx_);
+      auto container = (*containers_)[container_idx_];
       while (iterator_ == container->end()
           && container_idx_ < containers_->size()-1) {
-        container = containers_->at(++container_idx_);
+        container = (*containers_)[++container_idx_];
         iterator_ = container->begin();
       }
     }
@@ -136,21 +136,21 @@ public:
   }
 
   auto begin() const {
-    return const_iterator(&containers_, 0, containers_.at(0)->begin());
+    return const_iterator(&containers_, 0, containers_[0]->begin());
   }
 
   auto end() const {
     auto last_index = containers_.size() - 1;
-    return const_iterator(&containers_, last_index, containers_.at(last_index)->end());
+    return const_iterator(&containers_, last_index, containers_[last_index]->end());
   }
 
   auto begin() {
-    return iterator(&containers_, 0, containers_.at(0)->begin());
+    return iterator(&containers_, 0, containers_[0]->begin());
   }
 
   auto end() {
     auto last_index = containers_.size() - 1;
-    return iterator(&containers_, last_index, containers_.at(last_index)->end());
+    return iterator(&containers_, last_index, containers_[last_index]->end());
   }
 
   auto size() const {

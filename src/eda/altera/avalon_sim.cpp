@@ -91,7 +91,8 @@ protected:
       if (req.rsp_time > curr_time_)
         continue;
       rsp_channel = req.channel;
-      auto& buffer = buffers_.at(rsp_channel);
+      assert(rsp_channel < buffers_.size());
+      auto& buffer = buffers_[rsp_channel];
       if (req.is_write) {
         auto& data = wr_data_.front();
         if (full_writemask == (req.byteenable & full_writemask)) {
@@ -137,6 +138,7 @@ public:
   }
 
   void bind(uint32_t channel, const void* buffer, uint32_t size) {
+    assert(channel < buffers_.size());
     buffers_[channel] = std::pair((uint8_t*)buffer, size);
   }
 

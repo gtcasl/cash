@@ -47,10 +47,12 @@ public:
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
-  template <typename... Us,
-            CH_REQUIRE(std::is_constructible_v<T, Us...>)>
-  ch_reg_impl(const Us&... inits)
-    : base(make_logic_buffer(createRegNode(get_lnode(T(inits...)), idname<T>()))) {
+  template <typename Arg0, typename... Args,
+            CH_REQUIRE(std::is_constructible_v<T, Arg0, Args...>
+                    && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_reg_impl>)>
+  ch_reg_impl(Arg0&& arg0, Args&&... args)
+    : base(make_logic_buffer(createRegNode(
+              get_lnode(T(std::forward<Arg0>(arg0), std::forward<Args>(args)...)), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 

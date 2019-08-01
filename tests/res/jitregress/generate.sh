@@ -8,7 +8,7 @@ function generate() # Handy Extract Program
 	pushd $SCRIPT_DIR/../../../examples
 	CASH_CFLAGS=8 ../bin/$1
 	popd
-	cp $SCRIPT_DIR/../../../examples/simjit.asm $1_$2.asm
+	cp $SCRIPT_DIR/../../../examples/simjit.asm $SCRIPT_DIR/$1_$2.asm
 }
 
 generate fifo $JIT

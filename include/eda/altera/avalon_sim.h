@@ -94,7 +94,7 @@ public:
     // get requests status
     uint32_t reqs_mask = 0;
     for (unsigned i = 0; i < ports_.size(); ++i) {
-      auto& port = ports_.at(i);
+      auto& port = ports_[i];
       bool read(port->read);
       bool write(port->write);
       assert(!(read && write));
@@ -106,7 +106,7 @@ public:
 
     // process responses
     for (unsigned i = 0; i < ports_.size(); ++i) {
-      auto& port = ports_.at(i);
+      auto& port = ports_[i];
       port->readdatavalid = false;
       port->writeack = false;
       if (i == status.rsp_channel) {
@@ -124,7 +124,8 @@ public:
 protected:
 
   request_t get_request_info(uint32_t channel) override {
-    auto& port = ports_.at(channel);
+    assert(channel < ports_.size());
+    auto& port = ports_[channel];
     return request_t{(bool)port->write,
                      (sdata_type)port->writedata,
                      (uint64_t)port->address,

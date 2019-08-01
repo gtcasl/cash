@@ -149,7 +149,7 @@ protected:
               lnodeimpl* enable,
               const source_location& sloc);
 
-  ~memportimpl();
+  ~memportimpl() override;
 
   memimpl* mem_;
   int cd_idx_;
@@ -171,7 +171,7 @@ protected:
               lnodeimpl* addr,
               const source_location& sloc);
 
-  ~marportimpl();
+  ~marportimpl() override;
 
   friend class context;
 };
@@ -192,7 +192,7 @@ protected:
               lnodeimpl* enable,
               const source_location& sloc);
 
-  ~msrportimpl();
+  ~msrportimpl() override;
 
   friend class context;
 };
@@ -222,7 +222,7 @@ protected:
 
   mwportimpl(context* ctx, uint32_t size, const source_location& sloc);
 
-  ~mwportimpl();
+  ~mwportimpl() override;
 
   int wdata_idx_;
 };

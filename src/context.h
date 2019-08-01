@@ -231,6 +231,8 @@ public:
                     const std::string& name,
                     const source_location& sloc);
 
+  lnodeimpl* get_tap(const std::string& name, unsigned instance);
+
   //--
 
   void create_udf_node(udf_iface* udf,

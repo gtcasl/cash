@@ -72,7 +72,7 @@ protected:
             const std::string& name,
             const source_location& sloc);
 
-  ~inputimpl();  
+  ~inputimpl() override;
 
   std::vector<bindportimpl*> bindports_;
 
@@ -97,7 +97,7 @@ protected:
              const std::string& name,
              const source_location& sloc);
 
-  ~outputimpl();
+  ~outputimpl() override;
 
   friend class context;
 };
@@ -111,6 +111,10 @@ public:
     return this->src(0);
   }
 
+  auto& tag() const {
+    return tag_;
+  }
+
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
@@ -120,10 +124,13 @@ protected:
   tapimpl(context* ctx,
           uint32_t size,
           lnodeimpl* src,
+          const std::string& tag,
           const std::string& name,
           const source_location& sloc);
 
-  ~tapimpl();
+  ~tapimpl() override;
+
+  std::string tag_;
 
   friend class context;
 };

@@ -39,6 +39,8 @@ void deviceimpl::build() {
   if (is_new_ctx_) {
     compiler compiler(ctx_);
     compiler.optimize();
+  } else {
+
   }
 }
 

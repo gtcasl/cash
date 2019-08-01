@@ -125,7 +125,7 @@ public:
   }
 
   auto arg_type(unsigned i) const {
-    return arg_types_.at(i);
+    return arg_types_[i];
   }
 
 private:

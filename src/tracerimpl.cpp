@@ -90,7 +90,7 @@ void tracerimpl::eval() {
   auto dst_offset = trace_tail_->size;
   dst_offset += valid_mask_.size();
   for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-    auto value = signals_.at(i)->value();
+    auto value = signals_[i]->value();
     auto& prev = prev_values_.at(i);
     if (prev.first) {
       if (0 == bv_cmp(reinterpret_cast<const block_type*>(prev.first),
@@ -157,7 +157,7 @@ void tracerimpl::toText(std::ofstream& out) {
       out << std::setw(indices_width) << t << ":";
       auto_separator sep(",");
       for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-        auto signal = signals_.at(i);
+        auto signal = signals_[i];
         auto signal_type = signal->type();
         auto signal_size = signal->size();
         auto signal_name = get_signal_name(signal);
@@ -259,7 +259,7 @@ void tracerimpl::toVCD(std::ofstream& out) {
             out << '#' << t << std::endl;
             new_trace = true;
           }
-          auto signal = signals_.at(i);
+          auto signal = signals_[i];
           auto signal_size = signal->size();
           auto value = get_value(src_block, signal_size, src_offset);
           src_offset += signal_size;
@@ -367,7 +367,8 @@ void tracerimpl::toTestBench(std::ofstream& out,
       return stringf("%s.%s", node->name().substr(0, pos).c_str(), sname.c_str());
     } else {
       auto tap = find_tap(contexts_[0], node->name());
-      return netlist_name(tap->src(0).impl());
+      auto sname = netlist_name(tap->src(0).impl());
+      return stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), sname.c_str());
     }
   };
 
@@ -375,11 +376,11 @@ void tracerimpl::toTestBench(std::ofstream& out,
   auto get_signal_name = [&](ioportimpl* node) {
     auto path = node->name();
     if (is_merged_context_) {
-      auto no_root = remove_path(path);
-      if (no_root == "clk" || no_root == "reset")
-        return no_root;
+      auto sname = remove_path(path);
+      if (sname == "clk" || sname == "reset")
+        return sname;
       if (1 == contexts_.size()) {
-        path = no_root;
+        path = sname;
       }
     }
     std::replace(path.begin(), path.end(), '.', '_');
@@ -527,7 +528,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
             for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
               bool valid = bv_get(src_block, mask_offset + i);
               if (valid) {
-                auto signal = signals_.at(i);
+                auto signal = signals_[i];
                 auto signal_type = signal->type();
                 auto signal_size = signal->size();
                 auto signal_name = get_signal_name(signal);
@@ -555,7 +556,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
 
           {
             for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-              auto signal = signals_.at(i);
+              auto signal = signals_[i];
               auto signal_type = signal->type();
               auto signal_size = signal->size();
               auto signal_name = get_signal_name(signal);
@@ -700,7 +701,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
         for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
           bool valid = bv_get(src_block, mask_offset + i);
           if (valid) {
-            auto signal = signals_.at(i);
+            auto signal = signals_[i];
             auto signal_type = signal->type();
             auto signal_size = signal->size();
             auto signal_name = get_signal_name(signal);
@@ -734,7 +735,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
 
       {
         for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-          auto signal = signals_.at(i);
+          auto signal = signals_[i];
           auto signal_type = signal->type();
           auto signal_size = signal->size();
           auto signal_name = get_signal_name(signal);

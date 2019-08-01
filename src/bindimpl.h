@@ -34,7 +34,7 @@ protected:
 
   bindimpl(context* ctx, context* module, const source_location& sloc);
 
-  ~bindimpl();
+  ~bindimpl() override;
 
   context* module_;
   std::vector<lnode> outputs_;
@@ -72,7 +72,7 @@ protected:
               outputimpl* ioport,
               const source_location& sloc);
 
-  ~bindportimpl();
+  ~bindportimpl() override;
 
   bindimpl* binding_;
   lnode ioport_;

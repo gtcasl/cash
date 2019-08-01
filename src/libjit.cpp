@@ -255,11 +255,11 @@ jit_value_t jit_insn_switch(jit_function_t func,
 
     // emit 'case' blocks
     for (unsigned int i = 0; i < num_cases; ++i) {
-      auto label = &labels.at(i);
+      auto label = &labels[i];
       auto j_src = values[i];
       auto it = unique_values.find(j_src);
       if (it != unique_values.end()) {
-        *label = labels.at(it->second);
+        *label = labels[it->second];
         continue;
       }
       unique_values[j_src] = i;
@@ -300,18 +300,18 @@ jit_value_t jit_insn_switch(jit_function_t func,
       for (unsigned int j = k; j < num_cases; ++j) {
         auto pred_value = jit_value_get_int_constant(preds[j]);
         if (pred_value == p) {
-          jump_labels[i] = labels.at(j);
+          jump_labels[i] = labels[j];
           ++k;
           break;
         }
       }
-      if (jit_label_undefined == jump_labels.at(i)) {
+      if (jit_label_undefined == jump_labels[i]) {
         jump_labels[i] = l_default;
       }
     }
 
     jit_insn_jump_table(func, j_value, jump_labels.data(), jump_labels.size());
-    jit_insn_move_blocks_to_end(func, labels.at(0), l_jump);
+    jit_insn_move_blocks_to_end(func, labels[0], l_jump);
   } else {
     std::vector<jit_label_t> labels(num_cases, jit_label_undefined);
     std::unordered_map<jit_value_t, uint32_t> unique_values;
@@ -319,11 +319,11 @@ jit_value_t jit_insn_switch(jit_function_t func,
 
     // emit jump tests
     for (uint32_t i = 0; i < num_cases; ++i) {
-      auto label = &labels.at(i);
+      auto label = &labels[i];
       auto j_src = values[i];
       auto it = unique_values.find(j_src);
       if (it != unique_values.end()) {
-        label = &labels.at(it->second);
+        label = &labels[it->second];
       } else {
         unique_values[j_src] = i;
       }
@@ -341,7 +341,7 @@ jit_value_t jit_insn_switch(jit_function_t func,
       auto k = unique_values.at(j_src);
       if (k != i)
         continue;
-      jit_insn_label(func, &labels.at(i));
+      jit_insn_label(func, &labels[i]);
       jit_insn_store(func, j_dst, j_src);
       if (i != num_cases-1) {
         jit_insn_branch(func, &l_exit);

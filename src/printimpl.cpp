@@ -26,8 +26,7 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
   } else {
     out->index = strtoul(str, (char**)&str_idx_end, 0);
     if (str_idx_end == str || errno == ERANGE) {
-      throw std::invalid_argument("print format invalid index value");
-      return str;
+      throw std::invalid_argument(sstreamf() << "print format invalid index value: " << index_);
     }
   }
   index_ = out->index + 1;
@@ -60,7 +59,6 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
   // check terminating bracket
   if (*str == '\0' || *str != '}') {
     throw std::invalid_argument("print format missing terminating index bracket");
-    return str;
   }
   
   return str;

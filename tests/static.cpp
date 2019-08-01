@@ -593,8 +593,9 @@ void foo() {
 
   {
     ch_vec<ch_bit2, 2> a{11_b, 00_b};
-    ch_vec<ch_vec<ch_bit2, 2>, 2> b{{11_b, 00_b}, {11_b, 00_b}};
-    auto x = b[0][1];
+    ch_reg<ch_vec<ch_bit2, 2>> b{11_b, 00_b};
+    ch_vec<ch_vec<ch_bit2, 2>, 2> c{{11_b, 00_b}, {11_b, 00_b}};
+    auto x = c[0][1];
     auto y = (x == 11_b);
   }
 

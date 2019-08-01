@@ -425,12 +425,365 @@ bool compiler::constant_folding() {
 
   std::unordered_set<uint32_t> visited_nodes;
   std::vector<lnodeimpl*> deleted_list;
+  bool changed = false;
 
   auto replace_constant = [&](lnodeimpl* from, lnodeimpl* to) {
     if (nullptr == to)
-      return;
+      return;    
+    changed = true;
+    if (from == to)
+      return; // internal node change
     from->replace_uses(to);
     deleted_list.push_back(from);
+  };
+
+  auto constant_fold_proxy = [&](proxyimpl* node)->lnodeimpl* {
+    sdata_type tmp(node->size());
+    for (auto& range : node->ranges()) {
+      auto dst_idx = range.dst_offset / bitwidth_v<block_type>;
+      auto dst_lsb = range.dst_offset % bitwidth_v<block_type>;
+      auto src_impl = node->src(range.src_idx).impl();
+      assert(type_lit == src_impl->type());
+      auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
+      bv_copy(tmp.words() + dst_idx, dst_lsb, src_data, range.src_offset, range.length);
+    }
+    return ctx_->create_literal(tmp);
+  };
+
+  auto constant_fold_op_full = [&](opimpl* node)->lnodeimpl* {
+    sdata_type tmp(node->size());
+
+    const block_type* src0_data = nullptr;
+    uint32_t src0_size = 0;
+    const block_type* src1_data = nullptr;
+    uint32_t src1_size = 0;
+
+    // access source node data
+    if (node->num_srcs() > 0) {
+      auto src0_impl = node->src(0).impl();
+      assert(type_lit == src0_impl->type());
+      src0_data = reinterpret_cast<litimpl*>(src0_impl)->value().words();
+      src0_size = node->src(0).size();
+      if (node->num_srcs() > 1) {
+        auto src1_impl = node->src(1).impl();
+        assert(type_lit == src1_impl->type());
+        src1_data = reinterpret_cast<litimpl*>(src1_impl)->value().words();
+        src1_size = node->src(1).size();
+      }
+    }
+
+    using SDBA = DefaultBitAccessor<block_type, true>;
+    using UDBA = DefaultBitAccessor<block_type, false>;
+
+    bool is_signed = node->is_signed();
+
+    switch (node->op()) {
+    default:
+      assert(false);
+    case ch_op::eq:
+      if (is_signed) {
+        bv_assign_scalar(tmp.words(), bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+      } else {
+       bv_assign_scalar(tmp.words(), bv_eq<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+      }
+      break;
+    case ch_op::ne:
+      if (is_signed) {
+        bv_assign_scalar(tmp.words(), !bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+      } else {
+       bv_assign_scalar(tmp.words(), !bv_eq<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+      }
+      break;
+    case ch_op::lt:
+      if (is_signed) {
+        bv_assign_scalar(tmp.words(), bv_lt<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+      } else {
+       bv_assign_scalar(tmp.words(), bv_lt<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+      }
+      break;
+    case ch_op::gt:
+      if (is_signed) {
+        bv_assign_scalar(tmp.words(), bv_lt<true, block_type, SDBA>(src1_data, src1_size, src0_data, src0_size));
+      } else {
+       bv_assign_scalar(tmp.words(), bv_lt<false, block_type, UDBA>(src1_data, src1_size, src0_data, src0_size));
+      }
+      break;
+    case ch_op::le:
+      if (is_signed) {
+        bv_assign_scalar(tmp.words(), !bv_lt<true, block_type, SDBA>(src1_data, src1_size, src0_data, src0_size));
+      } else {
+       bv_assign_scalar(tmp.words(), !bv_lt<false, block_type, UDBA>(src1_data, src1_size, src0_data, src0_size));
+      }
+      break;
+    case ch_op::ge:
+      if (is_signed) {
+        bv_assign_scalar(tmp.words(), !bv_lt<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+      } else {
+       bv_assign_scalar(tmp.words(), !bv_lt<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+      }
+      break;
+    case ch_op::notl:
+      bv_assign_scalar(tmp.words(), bv_not(src0_data, src0_size));
+      break;
+    case ch_op::andl:
+      bv_assign_scalar(tmp.words(), bv_andl(src0_data, src0_size, src1_data, src1_size));
+      break;
+    case ch_op::orl:
+      bv_assign_scalar(tmp.words(), bv_orl(src0_data, src0_size, src1_data, src1_size));
+      break;
+    case ch_op::inv:
+      if (is_signed) {
+        bv_inv<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+      } else {
+        bv_inv<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+      }
+      break;
+    case ch_op::andb:
+      if (is_signed) {
+        bv_and<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_and<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::orb:
+      if (is_signed) {
+        bv_or<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_or<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::xorb:
+      if (is_signed) {
+        bv_xor<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_xor<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::andr:
+      bv_assign_scalar(tmp.words(), bv_andr_vector(src0_data, src0_size));
+      break;
+    case ch_op::orr:
+      bv_assign_scalar(tmp.words(), bv_orr_vector(src0_data, src0_size));
+      break;
+    case ch_op::xorr:
+      bv_assign_scalar(tmp.words(), bv_xorr_vector(src0_data, src0_size));
+      break;
+    case ch_op::shl: {
+      auto dist = bv_cast<uint32_t>(src1_data, src1_size);
+      bv_shl_vector(tmp.words(), tmp.size(), src0_data, src0_size, dist);
+    } break;
+    case ch_op::shr: {
+      auto dist = bv_cast<uint32_t>(src1_data, src1_size);
+      if (is_signed) {
+        bv_shr<true>(tmp.words(), tmp.size(), src0_data, src0_size, dist);
+      } else {
+        bv_shr<false>(tmp.words(), tmp.size(), src0_data, src0_size, dist);
+      }
+    } break;
+    case ch_op::neg:
+      if (is_signed) {
+        bv_neg<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+      } else {
+        bv_neg<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+      }
+      break;
+    case ch_op::add:
+      if (is_signed) {
+        bv_add<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_add<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::sub:
+      if (is_signed) {
+        bv_sub<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_sub<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::mul:
+      if (is_signed) {
+        bv_mul<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_mul<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::div:
+      if (is_signed) {
+        bv_div<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_div<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::mod:
+      if (is_signed) {
+        bv_mod<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      } else {
+        bv_mod<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      }
+      break;
+    case ch_op::pad:
+      if (is_signed) {
+        bv_pad<true>(tmp.words(), tmp.size(), src0_data, src0_size);
+      } else {
+        bv_pad<false>(tmp.words(), tmp.size(), src0_data, src0_size);
+      }
+      break;
+    }
+    return ctx_->create_literal(tmp);
+  };
+
+  auto constant_fold_op_partial = [&](opimpl* node)->lnodeimpl* {
+    auto src0 = node->src(0).impl();
+    auto src1 = node->src(1).impl();
+
+    bool src0_is_zero = (type_lit == src0->type()) && reinterpret_cast<litimpl*>(src0)->value().is_zero();
+    bool src0_is_ones = (type_lit == src0->type()) && reinterpret_cast<litimpl*>(src0)->value().is_ones();
+    bool src1_is_zero = (type_lit == src1->type()) && reinterpret_cast<litimpl*>(src1)->value().is_zero();
+    bool src1_is_ones = (type_lit == src1->type()) && reinterpret_cast<litimpl*>(src1)->value().is_ones();
+
+    switch (node->op()) {
+    case ch_op::andb:
+      if (src0_is_zero || src1_is_zero) {
+        return ctx_->create_literal(sdata_type(node->size(), 0));
+      } else
+      if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
+        return src1;
+      } else
+      if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
+        return src0;
+      }
+      break;
+    case ch_op::orb:
+      if (node->size() == src1->size() && src0_is_zero) {
+        return src1;
+      } else
+      if (node->size() == src0->size() && src1_is_zero) {
+        return src0;
+      } else
+      if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
+        return src0;
+      } else
+      if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
+        return src1;
+      }
+      break;
+    case ch_op::xorb:
+      if (node->size() == src1->size() && src0_is_zero) {
+        return src1;
+      } else
+      if (node->size() == src0->size() && src1_is_zero) {
+        return src0;
+      } else
+      if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
+        return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
+      } else
+      if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
+        return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
+      }
+      break;
+    case ch_op::mul:
+      if (src0_is_zero || src1_is_zero) {
+        return ctx_->create_literal(sdata_type(node->size(), 0));
+      }
+      break;
+    case ch_op::shl:
+    case ch_op::shr:
+    case ch_op::div:
+    case ch_op::mod:
+      if (src0_is_zero) {
+        return ctx_->create_literal(sdata_type(node->size(), 0));
+      }
+      break;
+    default:
+      break;
+    }
+    return nullptr;
+  };
+
+  auto constant_fold_select = [&](selectimpl* node)->lnodeimpl* {
+    if (node->has_key()) {
+      auto key_impl = node->key().impl();
+      assert(type_lit == key_impl->type());
+      auto key_data = reinterpret_cast<litimpl*>(key_impl)->value().words();
+      auto key_size = key_impl->size();
+
+      uint32_t i = 1;
+      for (uint32_t n = node->num_srcs() - 1; i < n; i += 2) {
+        auto src_impl = node->src(i).impl();
+        assert(type_lit == src_impl->type());
+        assert(key_size == src_impl->size());
+        auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
+        if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(key_data, key_size, src_data, key_size)) {
+          return node->src(i+1).impl();
+        }
+      }
+      return node->src(i).impl();
+    } else {
+      uint32_t i = 0;
+      for (uint32_t n = node->num_srcs() - 1; i < n; i += 2) {
+        auto src_impl = node->src(i).impl();
+        if (type_lit == src_impl->type()) {
+          auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
+          if (static_cast<bool>(src_data[0])) {
+            if (0 == i)
+              return node->src(i+1).impl();
+            deleted_list.push_back(node->remove_src(i)); // remove predicate
+            // remove remaining cases
+            for (uint32_t j = n - 1; j > i; --j) {
+              node->remove_src(j);
+            }
+            n = i + 1;
+          } else {
+            // remove this case
+            deleted_list.push_back(node->remove_src(i));
+            deleted_list.push_back(node->remove_src(i));
+            n -= 2;
+          }
+        }
+      }
+      return node;
+    }
+  };
+
+  auto constant_fold_register = [&](regimpl* node)->lnodeimpl* {
+    if (reinterpret_cast<cdimpl*>(node->cd().impl())->clk().impl()->type() == type_lit) {
+      throw std::domain_error(sstreamf() << "constant register clock signal" << node->debug_info());
+    }
+    if (node->has_reset()
+     && node->reset().impl()->type() == type_lit) {
+      throw std::domain_error(sstreamf() << "constant register reset signal" << node->debug_info());
+    }
+    if (!node->has_init_data()
+     && node->next().id() == node->id()) {
+      throw std::domain_error(sstreamf() << "uninitialized register " << node->debug_info());
+    }
+    if (node->has_enable()) {
+      if (is_literal_one(node->enable().impl())) {
+        auto enable = node->remove_enable();
+        if (!enable->users()) {
+          deleted_list.push_back(enable);
+        }
+        return node;
+      } else
+      if (is_literal_zero(node->enable().impl())) {
+        if (!node->has_init_data()) {
+          throw std::domain_error(sstreamf() << "uninitialized register " << node->debug_info());
+        }
+        node->set_next(node);
+        auto enable = node->remove_enable();
+        if (!enable->users()) {
+          deleted_list.push_back(enable);
+        }
+        return node;
+      }
+    }
+    if (node->next().impl()->type() == type_lit
+     && (!node->has_init_data()
+      || (node->next().id() == node->init_data().id()))) {
+      return node->next().impl();
+    }
+    return nullptr;
   };
 
   std::function<void (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
@@ -442,69 +795,67 @@ bool compiler::constant_folding() {
       dfs_visit(src.impl());
     }
 
-    bool is_constant = true;
+    bool is_constant_all = true;
+    bool is_constant_partial = false;
     for (auto& src : node->srcs()) {
       auto src_impl = src.impl();
-      if (src_impl->type() != type_lit) {
-        is_constant = false;
-        break;
-      }
+      bool is_constant = (src_impl->type() == type_lit);
+      is_constant_partial |= is_constant;
+      is_constant_all &= is_constant;
     }
 
     switch (node->type()) {
-    case type_sel: {
-      auto sel = reinterpret_cast<selectimpl*>(node);
-      if (!is_constant) {
-        if (sel->has_key()) {
-          is_constant = (type_lit == sel->key().impl()->type());
-        } else {
-          is_constant = true;
-          for (uint32_t i = 0, l = sel->num_srcs() - 1; i < l; i += 2) {
-            is_constant &= (type_lit == sel->src(i).impl()->type());
-          }
-        }
-      }
-      if (is_constant) {
-        replace_constant(sel, this->constant_fold(sel));
-      }
-      break;
-    }
     case type_proxy: {
-      if (is_constant) {
+      if (is_constant_all) {
         auto proxy = reinterpret_cast<proxyimpl*>(node);
-        replace_constant(proxy, this->constant_fold(proxy));
+        replace_constant(proxy, constant_fold_proxy(proxy));
       }
       break;
     }
     case type_op: {
       auto alu = reinterpret_cast<opimpl*>(node);
-      if (is_constant) {
-        replace_constant(alu, this->constant_fold(alu));
+      if (is_constant_all) {
+        replace_constant(alu, constant_fold_op_full(alu));
       } else
-      if (op_flags::bitwise == CH_OP_CLASS(alu->op())
+      if (is_constant_partial
        && op_flags::binary == CH_OP_ARY(alu->op())) {
-        replace_constant(alu, this->constant_fold_bitwise(alu));
+        replace_constant(alu, constant_fold_op_partial(alu));
+      }
+      break;
+    }
+    case type_sel: {
+      auto sel = reinterpret_cast<selectimpl*>(node);
+      if (!is_constant_all) {
+        if (sel->has_key()) {
+          is_constant_all = (type_lit == sel->key().impl()->type());
+        } else {
+          for (uint32_t i = 0, l = sel->num_srcs() - 1; i < l; i += 2) {
+            is_constant_all |= (type_lit == sel->src(i).impl()->type());
+          }
+        }
+      }
+      if (is_constant_all) {
+        replace_constant(sel, constant_fold_select(sel));
       }
       break;
     }
     case type_reg: {
-      auto reg = reinterpret_cast<regimpl*>(node);
-      if (reg->has_enable() && is_literal_one(reg->enable().impl())) {
-        auto impl = reg->remove_enable();
-        if (!impl->users()) {
-          deleted_list.push_back(impl);
-        }
+      if (is_constant_partial) {
+        auto reg = reinterpret_cast<regimpl*>(node);
+        replace_constant(reg, constant_fold_register(reg));
       }
       break;
     }
     case type_msrport:
     case type_mwport: {
       auto mport = reinterpret_cast<memportimpl*>(node);
-      if (mport->has_enable() && is_literal_one(mport->enable().impl())) {
+      if (mport->has_enable()
+       && is_literal_one(mport->enable().impl())) {
         auto impl = mport->remove_enable();
         if (!impl->users()) {
           deleted_list.push_back(impl);
         }
+        changed = true;
       }
       break;
     }
@@ -526,300 +877,15 @@ bool compiler::constant_folding() {
 
   // process deleted nodes
   node_deleter deleter(ctx_);
-  for (auto deleted : deleted_list) {
-    deleter.add(deleted);
+  for (auto node : deleted_list) {
+    if (nullptr == node->users())
+      deleter.add(node);
   }
   deleter.apply();
 
   CH_DBG(3, "End Compiler::CFO\n");
 
-  return deleted_list.size();
-}
-
-lnodeimpl* compiler::constant_fold(proxyimpl* node) {
-  sdata_type tmp(node->size());
-  for (auto& range : node->ranges()) {
-    auto dst_idx = range.dst_offset / bitwidth_v<block_type>;
-    auto dst_lsb = range.dst_offset % bitwidth_v<block_type>;
-    auto src_impl = node->src(range.src_idx).impl();
-    assert(type_lit == src_impl->type());
-    auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
-    bv_copy(tmp.words() + dst_idx, dst_lsb, src_data, range.src_offset, range.length);
-  }
-  return ctx_->create_literal(tmp);
-}
-
-lnodeimpl* compiler::constant_fold(opimpl* node) {
-  sdata_type tmp(node->size());
-
-  const block_type* src0_data = nullptr;
-  uint32_t src0_size = 0;
-  const block_type* src1_data = nullptr;
-  uint32_t src1_size = 0;
-
-  // access source node data
-  if (node->num_srcs() > 0) {
-    auto src0_impl = node->src(0).impl();
-    assert(type_lit == src0_impl->type());
-    src0_data = reinterpret_cast<litimpl*>(src0_impl)->value().words();
-    src0_size = node->src(0).size();
-    if (node->num_srcs() > 1) {
-      auto src1_impl = node->src(1).impl();
-      assert(type_lit == src1_impl->type());
-      src1_data = reinterpret_cast<litimpl*>(src1_impl)->value().words();
-      src1_size = node->src(1).size();
-    }
-  }
-
-  using SDBA = DefaultBitAccessor<block_type, true>;
-  using UDBA = DefaultBitAccessor<block_type, false>;
-
-  bool is_signed = node->is_signed();
-
-  switch (node->op()) {
-  default:
-    assert(false);
-  case ch_op::eq:
-    if (is_signed) {
-      bv_assign_scalar(tmp.words(), bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
-    } else {
-     bv_assign_scalar(tmp.words(), bv_eq<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
-    }
-    break;
-  case ch_op::ne:
-    if (is_signed) {
-      bv_assign_scalar(tmp.words(), !bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
-    } else {
-     bv_assign_scalar(tmp.words(), !bv_eq<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
-    }
-    break;
-  case ch_op::lt:
-    if (is_signed) {
-      bv_assign_scalar(tmp.words(), bv_lt<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
-    } else {
-     bv_assign_scalar(tmp.words(), bv_lt<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
-    }
-    break;
-  case ch_op::gt:
-    if (is_signed) {
-      bv_assign_scalar(tmp.words(), bv_lt<true, block_type, SDBA>(src1_data, src1_size, src0_data, src0_size));
-    } else {
-     bv_assign_scalar(tmp.words(), bv_lt<false, block_type, UDBA>(src1_data, src1_size, src0_data, src0_size));
-    }
-    break;
-  case ch_op::le:
-    if (is_signed) {
-      bv_assign_scalar(tmp.words(), !bv_lt<true, block_type, SDBA>(src1_data, src1_size, src0_data, src0_size));
-    } else {
-     bv_assign_scalar(tmp.words(), !bv_lt<false, block_type, UDBA>(src1_data, src1_size, src0_data, src0_size));
-    }
-    break;
-  case ch_op::ge:
-    if (is_signed) {
-      bv_assign_scalar(tmp.words(), !bv_lt<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
-    } else {
-     bv_assign_scalar(tmp.words(), !bv_lt<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
-    }
-    break;
-  case ch_op::notl:
-    bv_assign_scalar(tmp.words(), bv_not(src0_data, src0_size));
-    break;
-  case ch_op::andl:
-    bv_assign_scalar(tmp.words(), bv_andl(src0_data, src0_size, src1_data, src1_size));
-    break;
-  case ch_op::orl:
-    bv_assign_scalar(tmp.words(), bv_orl(src0_data, src0_size, src1_data, src1_size));
-    break;
-  case ch_op::inv:
-    if (is_signed) {
-      bv_inv<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
-    } else {
-      bv_inv<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
-    }
-    break;
-  case ch_op::andb:
-    if (is_signed) {
-      bv_and<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_and<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::orb:
-    if (is_signed) {
-      bv_or<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_or<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::xorb:
-    if (is_signed) {
-      bv_xor<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_xor<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::andr:
-    bv_assign_scalar(tmp.words(), bv_andr_vector(src0_data, src0_size));
-    break;
-  case ch_op::orr:
-    bv_assign_scalar(tmp.words(), bv_orr_vector(src0_data, src0_size));
-    break;
-  case ch_op::xorr:
-    bv_assign_scalar(tmp.words(), bv_xorr_vector(src0_data, src0_size));
-    break;
-  case ch_op::shl: {
-    auto dist = bv_cast<uint32_t>(src1_data, src1_size);
-    bv_shl_vector(tmp.words(), tmp.size(), src0_data, src0_size, dist);
-  } break;
-  case ch_op::shr: {
-    auto dist = bv_cast<uint32_t>(src1_data, src1_size);
-    if (is_signed) {
-      bv_shr<true>(tmp.words(), tmp.size(), src0_data, src0_size, dist);
-    } else {
-      bv_shr<false>(tmp.words(), tmp.size(), src0_data, src0_size, dist);
-    }
-  } break;
-  case ch_op::neg:
-    if (is_signed) {
-      bv_neg<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
-    } else {
-      bv_neg<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
-    }
-    break;
-  case ch_op::add:
-    if (is_signed) {
-      bv_add<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_add<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::sub:
-    if (is_signed) {
-      bv_sub<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_sub<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::mul:
-    if (is_signed) {
-      bv_mul<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_mul<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::div:
-    if (is_signed) {
-      bv_div<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_div<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::mod:
-    if (is_signed) {
-      bv_mod<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    } else {
-      bv_mod<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
-    }
-    break;
-  case ch_op::pad:
-    if (is_signed) {
-      bv_pad<true>(tmp.words(), tmp.size(), src0_data, src0_size);
-    } else {
-      bv_pad<false>(tmp.words(), tmp.size(), src0_data, src0_size);
-    }
-    break;
-  }
-  return ctx_->create_literal(tmp);
-}
-
-lnodeimpl* compiler::constant_fold_bitwise(opimpl* node) {
-  auto src0 = node->src(0).impl();
-  auto src1 = node->src(1).impl();
-
-  bool src0_is_zero = (type_lit == src0->type()) && reinterpret_cast<litimpl*>(src0)->value().is_zero();
-  bool src0_is_ones = (type_lit == src0->type()) && reinterpret_cast<litimpl*>(src0)->value().is_ones();
-  bool src1_is_zero = (type_lit == src1->type()) && reinterpret_cast<litimpl*>(src1)->value().is_zero();
-  bool src1_is_ones = (type_lit == src1->type()) && reinterpret_cast<litimpl*>(src1)->value().is_ones();
-
-  switch (node->op()) {
-  case ch_op::andb:
-    if (node->size() == src0->size() && src0_is_zero) {
-      return src0;
-    } else
-    if (node->size() == src1->size() && src1_is_zero) {
-      return src1;
-    } else
-    if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
-      return src1;
-    } else
-    if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
-      return src0;
-    }
-    break;
-  case ch_op::orb:
-    if (node->size() == src1->size() && src0_is_zero) {
-      return src1;
-    } else
-    if (node->size() == src0->size() && src1_is_zero) {
-      return src0;
-    } else
-    if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
-      return src0;
-    } else
-    if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
-      return src1;
-    }
-    break;
-  case ch_op::xorb:
-    if (node->size() == src1->size() && src0_is_zero) {
-      return src1;
-    } else
-    if (node->size() == src0->size() && src1_is_zero) {
-      return src0;
-    } else
-    if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
-      return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
-    } else
-    if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
-      return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
-    }
-    break;
-  default:
-    break;
-  }
-  return nullptr;
-}
-
-lnodeimpl* compiler::constant_fold(selectimpl* node) {
-  if (node->has_key()) {
-    auto key_impl = node->key().impl();
-    assert(type_lit == key_impl->type());
-    auto key_data = reinterpret_cast<litimpl*>(key_impl)->value().words();
-    auto key_size = key_impl->size();
-
-    uint32_t i = 1;
-    for (uint32_t l = node->num_srcs() - 1; i < l; i += 2) {
-      auto src_impl = node->src(i).impl();
-      assert(type_lit == src_impl->type());
-      assert(key_size == src_impl->size());
-      auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
-      if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(key_data, key_size, src_data, key_size)) {
-        return node->src(i+1).impl();
-      }
-    }
-    return node->src(i).impl();
-  } else {
-    uint32_t i = 0;
-    for (uint32_t l = node->num_srcs() - 1; i < l; i += 2) {
-      auto src_impl = node->src(i).impl();
-      assert(type_lit == src_impl->type());
-      auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
-      if (static_cast<bool>(src_data[0])) {
-        return node->src(i+1).impl();
-      }
-    }
-    return node->src(i).impl();
-  }
+  return changed;
 }
 
 bool compiler::subexpressions_elimination() {
@@ -831,6 +897,7 @@ bool compiler::subexpressions_elimination() {
   std::unordered_set<uint32_t> visited_nodes;
   std::unordered_set<cse_key_t, cse_key_t::hash_type> cse_table;
   std::vector<lnodeimpl*> deleted_list;
+  bool changed = false;
 
   std::function<void (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
     if (visited_nodes.count(node->id()))
@@ -853,6 +920,7 @@ bool compiler::subexpressions_elimination() {
       if (it != cse_table.end()) {
         node->replace_uses(it->node);
         deleted_list.push_back(node);
+        changed = true;
       } else {
         cse_table.insert(node);
       }
@@ -880,7 +948,7 @@ bool compiler::subexpressions_elimination() {
 
   CH_DBG(3, "End Compiler::CSE\n");
 
-  return deleted_list.size();
+  return changed;
 }
 
 bool compiler::prune_identity_proxies() {

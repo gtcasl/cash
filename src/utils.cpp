@@ -116,6 +116,8 @@ std::string ch::internal::identifier_from_typeid(const std::string& name,
 
 int ch::internal::char2int(char x, int base) {
   switch (base) {
+  default:
+    throw std::invalid_argument(sstreamf() << "invalid base value: " << base);
   case 2:
     if (x >= '0' && x <= '1')
       return (x - '0');
@@ -133,5 +135,5 @@ int ch::internal::char2int(char x, int base) {
       return (x - 'a') + 10;
     break;
   }
-  throw std::invalid_argument("invalid base value");
+  throw std::invalid_argument("invalid value");
 }
