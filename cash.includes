@@ -10,3 +10,4 @@ include/eda/altera
 include/htl
 src
 tests
+.

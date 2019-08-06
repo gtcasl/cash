@@ -78,26 +78,51 @@ void outputimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 tapimpl::tapimpl(context* ctx,
-                 uint32_t size,
-                 lnodeimpl* src,
-                 const std::string& tag,
+                 lnodeimpl* target,
                  const std::string& name,
                  const source_location& sloc)
-  : ioportimpl(ctx, type_tap, size, smart_ptr<sdata_type>::make(src->size()), name, sloc)
-  , tag_(tag) {
-  this->add_src(src);
+  : ioportimpl(ctx,
+               type_tap,
+               target->size(),
+               smart_ptr<sdata_type>::make(target->size()),
+               name,
+               sloc) {
+  this->add_src(target);
 }
 
 tapimpl::~tapimpl() {}
 
 lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
-  auto src = cloned_nodes.at(this->src(0).id());
-  return ctx->create_node<tapimpl>(this->size(), src, tag_, name_, sloc_);
+  auto target = cloned_nodes.at(this->target().id());
+  return ctx->create_node<tapimpl>(target, name_, sloc_);
 }
 
 void tapimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
-  out << "(" << tag_ << ", #" << this->src(0).id() << ")";
+  out << "(" << name_ << ", #" << this->target().id() << ")";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bypassimpl::bypassimpl(context* ctx, lnodeimpl* target)
+  : ioimpl(ctx,
+           type_bypass,
+           target->size(),
+           target->name(),
+           target->sloc())
+  , target_(target) {
+}
+
+bypassimpl::~bypassimpl() {}
+
+lnodeimpl* bypassimpl::clone(context*, const clone_map&) const {
+  assert(false);
+  return nullptr;
+}
+
+void bypassimpl::print(std::ostream& out) const {
+  out << "#" << id_ << " <- " << this->type() << this->size();
+  out << "(" << name_ << ", #" << target_->id() << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

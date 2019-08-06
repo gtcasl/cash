@@ -20,7 +20,9 @@ public:
 
   bool begin();
 
-  void build();
+  void begin_build();
+
+  void end_build();
 
   void end();
 
@@ -33,7 +35,7 @@ protected:
   context* ctx_;
   context* old_ctx_;
   sloc_ctx_t* sloc_ctx_;
-  bool is_new_ctx_;
+  uint32_t instance_;
   bool is_opened_;
 };
 

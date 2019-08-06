@@ -19,6 +19,7 @@ struct PipeTest {
     (ch_deq_io<T>) deq,
     __out (T) value
   );
+
   void describe() {
     ch_module<ch_pipe<T, Delay>> pipe;
     pipe.io.enq(io.enq);

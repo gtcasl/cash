@@ -35,6 +35,7 @@ class clock_event;
 class source_location;
 class branchconverter;
 class cond_block_t;
+class module_base;
 
 typedef const char* (*enum_string_cb)(uint32_t value);
 
@@ -101,6 +102,10 @@ public:
     return gtaps_;
   }
 
+  auto& btaps() const {
+    return btaps_;
+  }
+
   auto& udfs() const {
     return udfs_;
   }
@@ -111,6 +116,10 @@ public:
 
   auto& snodes() const {
     return snodes_;
+  }
+
+  auto& ext_nodes() const {
+    return ext_nodes_;
   }
 
   auto sys_clk() const {
@@ -139,6 +148,10 @@ public:
 
   bool is_managed() const {
     return is_managed_;
+  }
+
+  void set_initialized() {
+    is_initialized_ = true;
   }
 
   size_t hash() const;
@@ -227,11 +240,11 @@ public:
 
   //--
 
-  void register_tap(const lnode& lnode,
+  void register_tap(const lnode& target,
                     const std::string& name,
                     const source_location& sloc);
 
-  lnodeimpl* get_tap(const std::string& name, unsigned instance);
+  lnodeimpl* create_bypass(lnodeimpl* target);
 
   //--
 
@@ -260,10 +273,11 @@ protected:
 
   void add_node(lnodeimpl* node);  
 
-  uint32_t    id_;
-  std::string name_;
-  context*    parent_;
-  bool        is_managed_;
+  uint32_t     id_;
+  std::string  name_;
+  context*     parent_;
+  bool         is_managed_;
+  bool         is_initialized_;
 
   inputimpl* sys_clk_;
   inputimpl* sys_reset_;
@@ -286,7 +300,8 @@ protected:
   node_list bindings_;
   node_list bindports_;
   node_list taps_;
-  node_list gtaps_;
+  node_list btaps_;
+  node_list gtaps_;  
   node_list udfseqs_;
   node_list udfcombs_;
   node_list udfports_;
@@ -295,9 +310,10 @@ protected:
   node_list_view snodes_;
   node_list_view udfs_;
 
-  enum_strings_t   enum_strings_;
-  cd_stack_t       cd_stack_;
+  enum_strings_t enum_strings_;
+  cd_stack_t     cd_stack_;
   dup_tracker<std::string> dup_tap_names_;
+  std::list<lnodeimpl*> ext_nodes_;
 };
 
 std::pair<context*, bool> ctx_create(const std::type_index& signature,

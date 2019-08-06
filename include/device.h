@@ -31,9 +31,28 @@ protected:
 
   device_base(const std::type_index& signature, bool is_pod, const std::string& name);
 
+  template <typename T, typename... Args>
+  auto load(Args&&... args) {
+    T* obj;
+    bool is_dup = this->begin();
+    {
+      CH_API_ENTRY(2);
+      obj = new T(std::forward<Args>(args)...);
+    }
+    if (!is_dup) {
+      this->begin_build();
+      obj->describe();
+      this->end_build();
+    }
+    this->end();
+    return obj;
+  }
+
   bool begin();
 
-  void build();
+  void begin_build();
+
+  void end_build();
 
   void end();
 
@@ -44,61 +63,29 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class io_loader {
-public:
-  template <typename... Args>
-  io_loader(device_base* dev, Args&&... args) {
-    if (dev->begin()) {
-      {
-        CH_API_ENTRY(2);
-        obj_ = new T(std::forward<Args>(args)...);        
-      }
-      obj_->describe();
-      empty_ = nullptr;
-    } else {
-      CH_API_ENTRY(2);
-      obj_ = nullptr;
-      empty_ = new empty_t();
-    }
-    {
-      CH_API_ENTRY(2);
-      dev->build();
-    }
-    dev->end();
-  }
-
-  ~io_loader() {
-    delete obj_;
-    delete empty_;
-  }
-
-  auto& get() {
-    return obj_ ? obj_->io : empty_->io;
-  }
-
-private:
-
-  struct empty_t {
-    decltype(T::io) io;
-  };
-
-  T* obj_;
-  empty_t* empty_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 CH_DEF_SFINAE_CHECK(has_logic_io, is_logic_io_v<decltype(T::io)>);
 
 template<typename T>
 using detect_describe_t = decltype(std::declval<T&>().describe());
 
+template <typename T, typename... Args>
+inline constexpr bool is_reuse_module_v = (0 == sizeof...(Args))
+                                       && (sizeof(T) == sizeof(decltype(T::io)));
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T = void>
 class ch_device final : public device_base {
+protected:
+
+  ch_device& operator=(const ch_device& other) = delete;
+
+  ch_device& operator=(ch_device&& other) = delete;
+
+  std::shared_ptr<T> obj_;
+
 public:
+
   static_assert(has_logic_io_v<T>, "missing io port");
   static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
   using base = device_base;
@@ -109,32 +96,30 @@ public:
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(const std::string& name, Args&&... args)
-    : base(std::type_index(typeid(T)), 0 == sizeof...(Args), name)
-    , io(io_loader<T>(this, std::forward<Args>(args)...).get())
+    : base(std::type_index(typeid(T)), is_reuse_module_v<T, Args...>, name)
+    , obj_(this->load<T>(std::forward<Args>(args)...))
+    , io(obj_->io)
   {}
 
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(Args&&... args)
-    : base(std::type_index(typeid(T)), 0 == sizeof...(Args), idname<T>(true))
-    , io(io_loader<T>(this, std::forward<Args>(args)...).get())
+    : base(std::type_index(typeid(T)), is_reuse_module_v<T, Args...>, idname<T>(true))
+    , obj_(this->load<T>(std::forward<Args>(args)...))
+    , io(obj_->io)
   {}
 
   ch_device(const ch_device& other) 
     : base(other)
-    , io(other.io) 
+    , obj_(other.obj_)
+    , io(other.io)
   {}
 
   ch_device(ch_device&& other)
     : base(std::move(other))
+    , obj_(std::move(other.obj_))
     , io(std::move(other.io))
   {}
-
-protected: 
-
-  ch_device& operator=(const ch_device& other) = delete;
-
-  ch_device& operator=(ch_device&& other) = delete;
 };
 
 template <>

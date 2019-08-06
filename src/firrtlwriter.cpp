@@ -877,9 +877,9 @@ void ch::internal::ch_toFIRRTL(std::ostream& out, const device_base& device) {
   auto ctx = device.impl()->ctx();
   context* merged_ctx = nullptr; 
   if (ctx->bindings().size() 
-   && (platform::self().cflags() & cflags::merged_module) != 0) {
+   && (platform::self().cflags() & cflags::codegen_merged) != 0) {
     auto merged_ctx = new context(ctx->name());
-    merged_ctx->acquire();
+    merged_ctx->acquire();    
     compiler compiler(merged_ctx);
     compiler.create_merged_context(ctx);
     compiler.optimize();

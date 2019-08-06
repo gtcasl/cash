@@ -157,11 +157,12 @@ void ch::internal::createPrintNode(
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
   // create print node
+  auto ctx = ctx_curr();
   std::vector<enum_string_cb> enum_strings;
   for (auto arg : args) {
-    auto cb = arg.impl()->ctx()->enum_to_string(arg.id());
+    auto cb = ctx->enum_to_string(arg.id());
     enum_strings.emplace_back(cb);
   }
   auto sloc = get_source_location();
-  ctx_curr()->create_node<printimpl>(format, args, enum_strings, sloc);
+  ctx->create_node<printimpl>(format, args, enum_strings, sloc);
 }

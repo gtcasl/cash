@@ -29,7 +29,7 @@ int main() {
 
   ch_tracer tracer(adder);
   tracer.run();
-  
+
   std::cout << "result:" << std::endl;
   std::cout << "cout = " << adder.io.cout << std::endl;
   std::cout << "out = "  << adder.io.out << std::endl;

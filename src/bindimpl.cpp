@@ -151,7 +151,7 @@ void bindportimpl::print(std::ostream& out) const {
     out << "#" << this->src(i).id();
   }
   if (type_bindout == type_) {
-    out << ", #" << ioport_.id();
+    out << ", $" << ioport_.id();
   }
   out << ")";
 }

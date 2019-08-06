@@ -44,11 +44,13 @@ struct ch_rv_hxbar {
   using value_type = T;
   using in_io  = ch_vec<ch_enq_io<T>, I>;
   using out_io = ch_deq_io<T>;
+
   __io (
     __in (ch_bit<I>) sel,
     (in_io)  in,
     (out_io) out
   );
+
   void describe() {
     ch_module<ch_hxbar<ch_valid_t<T>, I, 1>> xbar;
     for (unsigned i = 0; i < I; ++i) {
@@ -69,11 +71,13 @@ struct ch_rv_xbar {
   using value_type = T;
   using in_io  = ch_vec<ch_enq_io<T>, I>;
   using out_io = ch_deq_io<T>;
+
   __io (
     __in (ch_bit<log2ceil(I)>) sel,
     (in_io)  in,
     (out_io) out
   );
+
   void describe() {
     ch_module<ch_xbar<ch_valid_t<T>, I, 1>> xbar;
     for (unsigned i = 0; i < I; ++i) {

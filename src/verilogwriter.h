@@ -21,6 +21,7 @@ class cdimpl;
 class udfimpl;
 class udfportimpl;
 class tapimpl;
+class bypassimpl;
 class source_location;
 enum class ch_op;
 enum class udf_verilog;
@@ -74,6 +75,8 @@ public:
   bool print_mem(std::ostream& out, memimpl* node);
 
   bool print_udf(std::ostream& out, udfimpl* node, udf_verilog mode);
+
+  bool print_bypass(std::ostream& out, bypassimpl* node);
 
   void print_name(std::ostream& out,
                   lnodeimpl* node,

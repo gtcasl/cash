@@ -23,6 +23,7 @@
   m(bindin) \
   m(bindout) \
   m(tap) \
+  m(bypass) \
   m(time) \
   m(assert) \
   m(print) \

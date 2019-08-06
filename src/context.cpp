@@ -24,62 +24,57 @@ using namespace ch::internal;
 
 class context_manager {
 public:
-  context_manager() : ctx_(nullptr), ctx_ids_(0), node_ids_(0) {}
+  context_manager() : curr_ctx_(nullptr), ctx_ids_(0), node_ids_(0) {}
 
   ~context_manager() {
-    assert(ctx_ == nullptr);
-    assert(pod_contexts_.empty());
+    assert(curr_ctx_ == nullptr);
+    assert(pod_ctx_map_.empty());
   }
 
-  std::pair<context*, bool> create_context(const std::type_index& signature,
-                                           bool is_pod,
-                                           const std::string& name) {
+  std::pair<context*, uint32_t> create_context(const std::type_index& signature,
+                                               bool is_pod,
+                                               const std::string& name) {
     context* ctx;
     if (is_pod) {
-      auto its = pod_signatures_.find(signature);
-      if (its != pod_signatures_.end()) {
-        auto itc = pod_contexts_.find(its->second);
-        assert(itc != pod_contexts_.end());
-        auto ctx = itc->second;
-        if (0 == ctx->udfs().size())
-          return std::make_pair(ctx, false);
-        is_pod = false;
+      auto it = pod_ctx_map_.find(signature);
+      if (it != pod_ctx_map_.end()) {
+        auto ctx = it->second.first;
+        auto instance = ++it->second.second;
+        return std::make_pair(ctx, instance);
       }
     }
+
     auto unique_name = name;
-    auto instances = dup_ctx_names_.insert(unique_name);
-    if (instances) {
-       unique_name = stringf("%s_%ld", unique_name.c_str(), instances);
+    auto instance = dup_ctx_names_.insert(unique_name);
+    if (instance) {
+       unique_name = stringf("%s_%ld", unique_name.c_str(), instance);
     }
-    ctx = new context(unique_name, ctx_);
+
+    ctx = new context(unique_name, curr_ctx_);
     if (is_pod) {
-      pod_contexts_.emplace(ctx->id(), ctx);
-      [[maybe_unused]] auto status = pod_signatures_.emplace(signature, ctx->id());
-      assert(status.second);
       ctx->set_managed(true);
-    }    
-    return std::make_pair(ctx, true);
+      pod_ctx_map_.emplace(signature, std::pair<context*, uint32_t>{ctx, 0});
+    }
+
+    return std::make_pair(ctx, 0);
   }
 
   void destroy_context(uint32_t id) {
-    auto itc = pod_contexts_.find(id);
-    assert(itc != pod_contexts_.end());
-    pod_contexts_.erase(itc);
-    for (auto its = pod_signatures_.begin(), end = pod_signatures_.end(); its != end; ++its) {
-      if (its->second == id) {
-        pod_signatures_.erase(its);
+    for (auto it = pod_ctx_map_.begin(), end = pod_ctx_map_.end(); it != end; ++it) {
+      if (it->second.first->id() == id) {
+        pod_ctx_map_.erase(it);
         break;
       }
     }
   }
 
   context* current() const {
-    CH_CHECK(ctx_ != nullptr, "invalid context!");
-    return ctx_;
+    CH_CHECK(curr_ctx_ != nullptr, "invalid context!");
+    return curr_ctx_;
   }
 
   context* swap(context* ctx) {
-    std::swap(ctx_, ctx);
+    std::swap(curr_ctx_, ctx);
     return ctx;
   }
 
@@ -98,12 +93,11 @@ public:
 
 protected:
 
-  mutable context* ctx_;
+  std::unordered_map<std::type_index, std::pair<context*, uint32_t>> pod_ctx_map_;
+  dup_tracker<std::string> dup_ctx_names_;
+  mutable context* curr_ctx_;
   mutable uint32_t ctx_ids_;
   mutable uint32_t node_ids_;
-  std::unordered_map<std::type_index, uint32_t> pod_signatures_;
-  std::unordered_map<uint32_t, context*> pod_contexts_;
-  dup_tracker<std::string> dup_ctx_names_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,6 +123,7 @@ context::context(const std::string& name, context* parent)
   , name_(name)
   , parent_(parent)
   , is_managed_(false)
+  , is_initialized_(nullptr == parent)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
@@ -137,7 +132,7 @@ context::context(const std::string& name, context* parent)
   , nodes_(&mems_, &marports_, &msrports_, &mwports_, &regs_,
            &proxies_, &sels_, &ops_,
            &inputs_, &outputs_, &cdomains_, &bindings_, &bindports_,
-           &udfseqs_, &udfcombs_, &udfports_, &gtaps_, &taps_, &literals_)
+           &udfseqs_, &udfcombs_, &udfports_, &gtaps_, &btaps_, &taps_, &literals_)
   , snodes_(&regs_, &msrports_, &mwports_, &udfseqs_)
   , udfs_(&udfcombs_, &udfseqs_) {
   branchconv_ = new branchconverter(this);
@@ -184,6 +179,9 @@ void context::add_node(lnodeimpl* node) {
     break;
   case type_proxy:
     proxies_.push_back(node);
+    if (!is_initialized_) {
+      ext_nodes_.push_back(node);
+    }
     break;
   case type_input:
     inputs_.push_back(node);
@@ -224,6 +222,9 @@ void context::add_node(lnodeimpl* node) {
     break;
   case type_tap:
     taps_.push_back(node);
+    break;
+  case type_bypass:
+    btaps_.push_back(node);
     break;
   case type_assert:
   case type_print:
@@ -266,6 +267,7 @@ void context::delete_node(lnodeimpl* node) {
     break;
   case type_proxy:
     proxies_.remove(node);
+    ext_nodes_.remove(node);
     break;
   case type_input:
     inputs_.remove(node);
@@ -306,6 +308,9 @@ void context::delete_node(lnodeimpl* node) {
     break;
   case type_tap:
     taps_.remove(node);
+    break;
+  case type_bypass:
+    btaps_.remove(node);
     break;
   case type_time:
   case type_assert:
@@ -513,7 +518,7 @@ bindimpl* context::current_binding() {
   return reinterpret_cast<bindimpl*>(bindings_.back());
 }
 
-void context::register_tap(const lnode& node,
+void context::register_tap(const lnode& target,
                            const std::string& name,
                            const source_location& sloc) {
   auto sid = identifier_from_string(name);
@@ -523,18 +528,17 @@ void context::register_tap(const lnode& node,
   } else {
     sid = stringf("%s", sid.c_str());
   }
-  this->create_node<tapimpl>(node.size(), node.impl(), name, sid, sloc);
+  this->create_node<tapimpl>(target.impl(), sid, sloc);
 }
 
-lnodeimpl* context::get_tap(const std::string& name, unsigned instance) {
-  for (auto node : taps_) {
-    auto tap = reinterpret_cast<tapimpl*>(node);
-    if (tap->tag() == name) {
-      if (0 == instance--)
-        return tap;
-    }
+lnodeimpl* context::create_bypass(lnodeimpl* target) {
+  assert(target->ctx() != this);
+  for (auto node : btaps_) {
+    auto bypass = reinterpret_cast<bypassimpl*>(node);
+    if (bypass->target() == target)
+      return bypass;
   }
-  throw std::invalid_argument(sstreamf() << "invalid tap name: " << name);
+  return this->create_node<bypassimpl>(target);
 }
 
 void context::create_udf_node(udf_iface* udf,
@@ -716,13 +720,9 @@ void context::dump_stats(std::ostream& out) {
 
 void ch::internal::registerTap(const lnode& node, const std::string& name) {
   auto sloc = get_source_location();
-  node.impl()->ctx()->register_tap(node, name, sloc);
-}
-
-lnodeimpl* ch::internal::getTap(const std::string& name, unsigned instance) {
-  return ctx_curr()->get_tap(name, instance);
+  ctx_curr()->register_tap(node, name, sloc);
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
-  node.impl()->ctx()->register_enum_string(node.id(), (enum_string_cb)callback);
+  ctx_curr()->register_enum_string(node.id(), (enum_string_cb)callback);
 }

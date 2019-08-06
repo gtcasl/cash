@@ -19,10 +19,13 @@ struct GenericFunction<F> {
   __io (
     __out (return_type) out
   );
+
   GenericFunction(const F& func) : func_(func) {}
+
   void describe() {
     io.out = func_();
   }
+
   F func_;
 };
 
@@ -33,10 +36,13 @@ struct GenericFunction<F, T0> {
     __in (T0) in,
     __out (return_type) out
   );
+
   GenericFunction(const F& func) : func_(func) {}
+
   void describe() {
     io.out = func_(io.in);
   }
+
   F func_;
 };
 
@@ -48,10 +54,13 @@ struct GenericFunction<F, T0, T1> {
     __in (T1) in1,
     __out (return_type) out
   );
+
   GenericFunction(const F& func) : func_(func) {}
+
   void describe() {
     io.out = func_(io.in0, io.in1);
   }
+
   F func_;
 };
 
@@ -64,10 +73,13 @@ struct GenericFunction<F, T0, T1, T2> {
     __in (T2) in2,
     __out (return_type) out
   );
+
   GenericFunction(const F& func) : func_(func) {}
+
   void describe() {
     io.out = func_(io.in0, io.in1, io.in2);
   }
+
   F func_;
 };
 
@@ -81,10 +93,13 @@ struct GenericFunction<F, T0, T1, T2, T3> {
     __in (T3) in3,
     __out (std::invoke_result_t<F, T0, T1, T2, T3>) out
   );
+
   GenericFunction(const F& func) : func_(func) {}
+
   void describe() {
     io.out = func_(io.in0, io.in1, io.in2, io.in3);
   }
+
   F func_;
 };
 
@@ -189,13 +204,16 @@ public:
     cflags_ = platform::self().cflags();
     platform::self().set_cflags(cflags(cflags_ | flags));
   }
+
   auto_cflags_enable(cflags flags) {
     cflags_ = platform::self().cflags();
     platform::self().set_cflags(cflags(cflags_ | (int)flags));
   }
+
   ~auto_cflags_enable() {
     platform::self().set_cflags(cflags_);
   }
+
 private:
   ch::internal::cflags cflags_;
 };
@@ -203,18 +221,21 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class auto_cflags_disable {
-public:
+public:  
   auto_cflags_disable(int flags) {
     cflags_ = platform::self().cflags();
     platform::self().set_cflags(cflags(cflags_ & ~flags));
   }
+
   auto_cflags_disable(cflags flags) {
     cflags_ = platform::self().cflags();
     platform::self().set_cflags(cflags(cflags_ & ~(int)flags));
   }
+
   ~auto_cflags_disable() {
     platform::self().set_cflags(cflags_);
   }
+
 private:
   ch::internal::cflags cflags_;
 };
@@ -227,6 +248,7 @@ struct GenericModule {
     __in (I)  in,
     __out (O) out
   );
+
   template <typename F>
   GenericModule(F f) : f_(f) {}
   
@@ -244,6 +266,7 @@ struct GenericModule2 {
     __in (R)  rhs,
     __out (O) out
   );
+
   template <typename F>
   GenericModule2(F f) : f_(f) {}
 

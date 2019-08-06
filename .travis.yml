@@ -49,8 +49,9 @@ script:
   - CASH_CFLAGS=523904 make test # Turn off all opts
   #- valgrind bin/testsuite
   - pushd tests
-  - CASH_CFLAGS=524160 valgrind ../bin/testsuite
+  - valgrind ../bin/testsuite
   - CASH_CFLAGS=256 valgrind ../bin/testsuite
+  - CASH_CFLAGS=523904 valgrind ../bin/testsuite
   - popd
   - popd
   # Build LIBJIT Release project

@@ -113,7 +113,7 @@ void ch::internal::pushClockDomain(const lnode& clock,
                                    const lnode& reset,
                                    bool pos_edge) {
   auto sloc = get_source_location();
-  clock.impl()->ctx()->push_cd(clock, reset, pos_edge, sloc);
+  ctx_curr()->push_cd(clock, reset, pos_edge, sloc);
 }
 
 void ch::internal::ch_popcd() {

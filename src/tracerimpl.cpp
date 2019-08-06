@@ -363,11 +363,11 @@ void tracerimpl::toTestBench(std::ofstream& out,
       }
       auto tap = find_tap(ctx, name);
       auto pos = node->name().find_last_of('.');
-      auto sname = netlist_name(tap->src(0).impl());
+      auto sname = netlist_name(tap->target().impl());
       return stringf("%s.%s", node->name().substr(0, pos).c_str(), sname.c_str());
     } else {
       auto tap = find_tap(contexts_[0], node->name());
-      auto sname = netlist_name(tap->src(0).impl());
+      auto sname = netlist_name(tap->target().impl());
       return stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), sname.c_str());
     }
   };

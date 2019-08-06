@@ -270,6 +270,11 @@ bool compiler::dead_code_elimination() {
     }
   };
 
+  //--
+  auto create_bypass = [&](lnodeimpl* node) {
+    return ctx_->create_bypass(node);
+  };
+
   // get permanent live nodes
   for (auto node : ctx_->inputs()) {
     live_nodes.insert(node);
@@ -283,6 +288,11 @@ bool compiler::dead_code_elimination() {
   for (auto node : ctx_->gtaps()) {
     live_nodes.insert(node);
   }
+  for (auto node : ctx_->ext_nodes()) {
+    if (nullptr == node->users())
+      continue;
+    live_nodes.insert(node);
+  }
 
   // build live nodes set
   std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
@@ -293,7 +303,10 @@ bool compiler::dead_code_elimination() {
     auto& srcs = node->srcs();
     for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
       auto src_impl = srcs[i].impl();
-      assert(src_impl->ctx() == ctx_);
+      if (src_impl->ctx() != ctx_) {
+        src_impl = create_bypass(src_impl);
+        node->set_src(i, src_impl);
+      }
 
       // skip unused proxy sources
       if (proxy) {
@@ -1364,6 +1377,9 @@ void compiler::create_merged_context(context* ctx) {
   };
 
   //--
+  std::unordered_map<uint32_t, lnodeimpl*> bypass_nodes;
+
+  //--
   std::function<void (context*, clone_map&)>
       visit = [&](context* curr, clone_map& map) {
     //--
@@ -1398,13 +1414,27 @@ void compiler::create_merged_context(context* ctx) {
     //--
     auto update_map = [&](uint32_t id, lnodeimpl* node) {
       map[id] = node;
-      auto it = unresolved_nodes.find(id);
-      if (it != unresolved_nodes.end()) {
-        for (auto& entry : it->second) {
-          *entry = node;
+      {
+        auto it = unresolved_nodes.find(id);
+        if (it != unresolved_nodes.end()) {
+          for (auto& entry : it->second) {
+            *entry = node;
+          }
+        }
+      }
+      {
+        auto it = bypass_nodes.find(id);
+        if (it != bypass_nodes.end()) {
+          it->second = node;
         }
       }
     };
+
+    // load bypass nodes
+    for (auto node : curr->btaps()) {
+      auto bypass = reinterpret_cast<bypassimpl*>(node);
+      bypass_nodes[bypass->target()->id()] = nullptr;
+    }
 
     //--
     for (auto node : curr->nodes()) {
@@ -1488,6 +1518,11 @@ void compiler::create_merged_context(context* ctx) {
         auto eval_node = tap->clone(ctx_, map);
         eval_node->rename(full_name(eval_node));
         update_map(tap->id(), eval_node);
+      } break;
+      case type_bypass: {
+        auto bypass = reinterpret_cast<bypassimpl*>(node);
+        auto eval_node = bypass_nodes.at(bypass->target()->id());
+        update_map(node->id(), eval_node);
       } break;
       default: {
         for (uint32_t i = 0; i < node->num_srcs(); ++i) {

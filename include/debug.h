@@ -55,17 +55,6 @@ void ch_tap(const T& value, const std::string& name) {
   registerTap(get_lnode(value), name);
 }
 
-template <typename T>
-T ch_tap(const std::string& name, unsigned instance = 0) {
-  CH_API_ENTRY(1);
-  static_assert(is_logic_type_v<T>, "invalid type");
-  auto ret = make_logic_type<T>(getTap(name, instance));
-  auto size = logic_accessor::size(ret);
-  if (size != ch_width_v<T>)
-    throw std::invalid_argument("invalid tap type cast");
-  return ret;
-}
-
 }
 }
 

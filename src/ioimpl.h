@@ -111,8 +111,29 @@ public:
     return this->src(0);
   }
 
-  auto& tag() const {
-    return tag_;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+
+  void print(std::ostream& out) const override;
+
+protected:
+
+  tapimpl(context* ctx,
+          lnodeimpl* target,
+          const std::string& name,
+          const source_location& sloc);
+
+  ~tapimpl() override;
+
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class bypassimpl : public ioimpl {
+public:
+
+  auto target() const {
+    return target_;
   }
 
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
@@ -121,16 +142,11 @@ public:
 
 protected:
 
-  tapimpl(context* ctx,
-          uint32_t size,
-          lnodeimpl* src,
-          const std::string& tag,
-          const std::string& name,
-          const source_location& sloc);
+  bypassimpl(context* ctx, lnodeimpl* target);
 
-  ~tapimpl() override;
+  ~bypassimpl() override;
 
-  std::string tag_;
+  lnodeimpl* target_;
 
   friend class context;
 };

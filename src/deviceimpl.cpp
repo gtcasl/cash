@@ -1,5 +1,5 @@
-#include "deviceimpl.h"
 #include "device.h"
+#include "deviceimpl.h"
 #include "context.h"
 #include "compile.h"
 #include "ioimpl.h"
@@ -15,7 +15,7 @@ deviceimpl::deviceimpl(const std::type_index& signature,
   , is_opened_(false) {
   auto ret = ctx_create(signature, is_pod, name);
   ctx_ = ret.first;
-  is_new_ctx_ = ret.second;
+  instance_ = ret.second;
   ctx_->acquire();
 }
 
@@ -29,25 +29,21 @@ deviceimpl::~deviceimpl() {
 bool deviceimpl::begin() {
   is_opened_ = true;
   old_ctx_ = ctx_swap(ctx_);
-  if (is_new_ctx_) {
-    sloc_ctx_ = sloc_begin_module();
-  }
-  return is_new_ctx_;
+  sloc_ctx_ = sloc_begin_module();
+  return (instance_ != 0);
 }
 
-void deviceimpl::build() {
-  if (is_new_ctx_) {
-    compiler compiler(ctx_);
-    compiler.optimize();
-  } else {
+void deviceimpl::begin_build() {
+  ctx_->set_initialized();
+}
 
-  }
+void deviceimpl::end_build() {
+ compiler compiler(ctx_);
+ compiler.optimize();
 }
 
 void deviceimpl::end() {
-  if (is_new_ctx_) {
-    sloc_end_module(sloc_ctx_);
-  }
+  sloc_end_module(sloc_ctx_);
   ctx_swap(old_ctx_);
   if (old_ctx_) {
     auto sloc = get_source_location();
@@ -106,8 +102,12 @@ bool device_base::begin() {
   return impl_->begin();
 }
 
-void device_base::build() {
-  impl_->build();
+void device_base::begin_build() {
+  impl_->begin_build();
+}
+
+void device_base::end_build() {
+  impl_->end_build();
 }
 
 void device_base::end() {

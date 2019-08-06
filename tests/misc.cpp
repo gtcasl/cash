@@ -26,6 +26,7 @@ namespace {
       __in (T)  in,
       __out (T) out
     );
+
     void describe() {
       io.out = io.in;
       __if (io.in[0]) {
@@ -40,12 +41,42 @@ namespace {
       __in (T)  in,
       __out (T) out
     );
+
     void describe() {
       ch_module<SubPrint<T>> m;      
       m.io.in = io.in;
       io.out = m.io.out;
       ch_println("io.in={0}", io.in);
     }
+  };
+
+  template <typename T>
+  struct Bypass2 {
+    __io (
+      __in (T)  in,
+      __out (T) out
+    );
+
+    void describe() {
+      tap_ = (io.in << 1);
+      io.out = (tap_ >> 1);
+    }
+
+    T tap_;
+  };
+
+  template <typename T>
+  struct Bypass {
+    __io (
+      __in (T)  in,
+      __out (T) out
+    );
+
+    void describe() {
+      bypass_.io.in = io.in;
+      io.out = bypass_.io.out;
+    }
+    ch_module<Bypass2<T>> bypass_;
   };
 }
 
@@ -131,8 +162,8 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 4);
       trace.toText("taps.log");
       trace.toVCD("taps.vcd");
-      trace.toTestBench("taps_tb.v", "taps");
-      ret &= (checkVerilog("filter_tb.v"));
+      trace.toTestBench("taps_tb.v", "taps.v");
+      ret &= (checkVerilog("taps_tb.v"));
       return ret;
     });
 
@@ -161,7 +192,8 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 4);
       trace.toText("taps2.log");
       trace.toVCD("taps2.vcd");
-      trace.toTestBench("taps2_tb.v", "taps2");
+      trace.toTestBench("taps2_tb.v", "taps2.v");
+      ret &= (checkVerilog("taps2_tb.v"));
       return ret;
     });
   }
@@ -330,6 +362,80 @@ TEST_CASE("misc", "[misc]") {
       ch_simulator sim(device);
       sim.run();
       return (device.io.out == 6);
+    });
+
+    TESTX([]()->bool {
+      auto_cflags_disable cg_merge(cflags::codegen_merged);
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device("merged",
+        [](auto lhs, auto rhs) {
+          std::array<ch_module<Bypass<ch_int4>>, 2> bypass;
+          bypass[0].io.in = lhs;
+          bypass[1].io.in = rhs;
+          return bypass[0].io.out * bypass[1].io.out;
+        }
+      );
+      ch_toVerilog("merged.v", device);
+      device.io.lhs = 2;
+      device.io.rhs = 3;
+      ch_tracer trace(device);
+      trace.run();
+      RetCheck ret;
+      ret &= (device.io.out == 6);
+      trace.toText("merged.log");
+      trace.toVCD("merged.vcd");
+      trace.toTestBench("merged_tb.v", "merged.v");
+      ret &= (checkVerilog("merged_tb.v"));
+      return ret;
+    });
+
+    TESTX([]()->bool {
+      auto_cflags_disable cg_merge(cflags::codegen_merged);
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device("merged2",
+        [](auto lhs, auto rhs) {
+          std::array<ch_module<Bypass<ch_int4>>, 2> bypass;
+          bypass[1].io.in = rhs;
+          return lhs * bypass[1].io.out;
+        }
+      );
+      ch_toVerilog("merged2.v", device);
+      device.io.lhs = 2;
+      device.io.rhs = 3;
+      ch_tracer trace(device);
+      trace.run();
+      RetCheck ret;
+      ret &= (device.io.out == 6);
+      trace.toText("merged2.log");
+      trace.toVCD("merged2.vcd");
+      trace.toTestBench("merged2_tb.v", "merged2.v");
+      ret &= (checkVerilog("merged2_tb.v"));
+      return ret;
+    });
+
+    TESTX([]()->bool {
+      auto_cflags_disable cfo_off(cflags::disable_cfo);
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device("bypass",
+        [](auto lhs, auto rhs) {
+          std::array<ch_module<Bypass<ch_int4>>, 2> bypass;
+          bypass[0].io.in = lhs;
+          bypass[1].io.in = rhs;
+          auto x = bypass[0].io.out + bypass[1].io.out;
+          auto y = bypass[1]->bypass_->tap_ - bypass[0]->bypass_->tap_;
+          ch_print("y={0}", y);
+          return x * y;
+        }
+      );
+      ch_toVerilog("bypass.v", device);
+      device.io.lhs = 2;
+      device.io.rhs = 3;
+      ch_tracer trace(device);
+      trace.run();
+      RetCheck ret;
+      ret &= (device.io.out == 10);
+      trace.toText("bypass.log");
+      trace.toVCD("bypass.vcd");
+      trace.toTestBench("bypass_tb.v", "bypass.v");
+      ret &= (checkVerilog("bypass_tb.v"));
+      return ret;
     });
   }
 }

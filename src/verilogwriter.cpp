@@ -299,6 +299,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_marport:  
   case type_mem:  
   case type_udfout:
+  case type_bypass:
     if (ref
      && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
@@ -408,6 +409,8 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_udfc:
   case type_udfs:
     return this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog::body);
+  case type_bypass:
+    return this->print_bypass(out, reinterpret_cast<bypassimpl*>(node));
   default:
     assert(false);
   case type_lit:
@@ -908,6 +911,37 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
   return changed;
 }
 
+bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
+
+  std::function<std::string (lnodeimpl*, context*)> full_path =
+      [&](lnodeimpl* bypass, context* ctx)->std::string {
+    for (auto ex : ctx->nodes()) {
+      if (ex->id() == bypass->id()) {
+        std::stringstream ss;
+        print_name(ss, bypass);
+        return ss.str();
+      }
+    }
+
+    for (auto b : ctx->bindings()) {
+      auto ret = full_path(bypass, reinterpret_cast<bindimpl*>(b)->module());
+      if (!ret.empty()) {
+        std::stringstream ss;
+        print_name(ss, b);
+        ss << "." << ret;
+        return ss.str();
+      }
+    }
+
+    return "";
+  };
+
+  out << "assign ";
+  this->print_name(out, node);
+  out << " = " << full_path(node->target(), node->ctx()) << ";" << std::endl;
+  return true;
+}
+
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
@@ -947,6 +981,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_marport:
   case type_mwport:
   case type_udfout:
+  case type_bypass:
     print_unique_name(node);
     break;
   case type_time:
@@ -1088,7 +1123,7 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device_base& device) {
   auto ctx = device.impl()->ctx();
   context* merged_ctx = nullptr; 
   if (ctx->bindings().size() 
-   && (platform::self().cflags() & cflags::merged_module) != 0) {
+   && (platform::self().cflags() & cflags::codegen_merged) != 0) {
     auto merged_ctx = new context(ctx->name());
     merged_ctx->acquire();
     compiler compiler(merged_ctx);
