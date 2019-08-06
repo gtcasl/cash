@@ -62,7 +62,7 @@ protected:
   trace_block_t* trace_head_;
   trace_block_t* trace_tail_;
   uint32_t num_traces_;
-  bool is_merged_context_;
+  bool is_single_context_;
 };
 
 }

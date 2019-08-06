@@ -297,9 +297,10 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_reg:
   case type_msrport:
   case type_marport:  
-  case type_mem:  
+  case type_mem:    
+  case type_tap:
+  case type_bypass:  
   case type_udfout:
-  case type_bypass:
     if (ref
      && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
@@ -379,7 +380,6 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_assert:
   case type_print:
   case type_time:
-  case type_tap:
     visited.insert(node->id());
     break;
   default:
@@ -409,6 +409,8 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_udfc:
   case type_udfs:
     return this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog::body);
+  case type_tap:
+    return this->print_tap(out, reinterpret_cast<tapimpl*>(node));
   case type_bypass:
     return this->print_bypass(out, reinterpret_cast<bypassimpl*>(node));
   default:
@@ -425,7 +427,6 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_assert:
   case type_print:
   case type_time:
-  case type_tap:
     return false;
   }  
 }
@@ -838,6 +839,46 @@ bool verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   return true;
 }
 
+bool verilogwriter::print_tap(std::ostream& out, tapimpl* node) {
+  out << "assign ";
+  this->print_name(out, node);
+  out << " = ";
+  this->print_name(out, node->target().impl());
+  out << ";" << std::endl;
+  return true;
+}
+
+bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
+
+  std::function<std::string (lnodeimpl*, context*)> full_path =
+      [&](lnodeimpl* bypass, context* ctx)->std::string {
+    for (auto ex : ctx->nodes()) {
+      if (ex->id() == bypass->id()) {
+        std::stringstream ss;
+        print_name(ss, bypass);
+        return ss.str();
+      }
+    }
+
+    for (auto b : ctx->bindings()) {
+      auto ret = full_path(bypass, reinterpret_cast<bindimpl*>(b)->module());
+      if (!ret.empty()) {
+        std::stringstream ss;
+        print_name(ss, b);
+        ss << "." << ret;
+        return ss.str();
+      }
+    }
+
+    return "";
+  };
+
+  out << "assign ";
+  this->print_name(out, node);
+  out << " = " << full_path(node->target(), node->ctx()) << ";" << std::endl;
+  return true;
+}
+
 bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode) {
   std::unordered_map<std::string, std::string> dic;
 
@@ -911,37 +952,6 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
   return changed;
 }
 
-bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
-
-  std::function<std::string (lnodeimpl*, context*)> full_path =
-      [&](lnodeimpl* bypass, context* ctx)->std::string {
-    for (auto ex : ctx->nodes()) {
-      if (ex->id() == bypass->id()) {
-        std::stringstream ss;
-        print_name(ss, bypass);
-        return ss.str();
-      }
-    }
-
-    for (auto b : ctx->bindings()) {
-      auto ret = full_path(bypass, reinterpret_cast<bindimpl*>(b)->module());
-      if (!ret.empty()) {
-        std::stringstream ss;
-        print_name(ss, b);
-        ss << "." << ret;
-        return ss.str();
-      }
-    }
-
-    return "";
-  };
-
-  out << "assign ";
-  this->print_name(out, node);
-  out << " = " << full_path(node->target(), node->ctx()) << ";" << std::endl;
-  return true;
-}
-
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
@@ -996,6 +1006,9 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     print_name(out, bindport->binding());
     out << "_" << identifier_from_string(bindport->ioport().name());
   } break;
+  case type_tap:
+    out << "tap_" << identifier_from_string(node->name());
+    break;
   default:
     assert(false);
   }
@@ -1121,16 +1134,15 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device_base& device) {
   std::unordered_set<uint32_t> udf_visited;
 
   auto ctx = device.impl()->ctx();
-  context* merged_ctx = nullptr; 
   if (ctx->bindings().size() 
    && (platform::self().cflags() & cflags::codegen_merged) != 0) {
     auto merged_ctx = new context(ctx->name());
-    merged_ctx->acquire();
     compiler compiler(merged_ctx);
     compiler.create_merged_context(ctx);
     compiler.optimize();
     ctx = merged_ctx;
   }      
+  ctx->acquire();
   
   visited.insert(ctx->name());
   udf_vostream udf_os(out.rdbuf());
@@ -1141,7 +1153,5 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device_base& device) {
   verilogwriter writer(ctx);  
   writer.print(out, visited);
 
-  if (merged_ctx) {
-    delete merged_ctx;
-  }
+  ctx->release();
 }

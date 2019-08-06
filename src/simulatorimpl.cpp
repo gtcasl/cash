@@ -32,6 +32,15 @@ simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   // enqueue all contexts
   for (auto dev : devices) {
     auto ctx = dev.impl()->ctx();
+    if (ctx->bindings().size()
+     && (platform::self().cflags() & cflags::codegen_merged) != 0) {
+      auto merged_ctx = new context(ctx->name());
+      merged_ctx->acquire();
+      compiler compiler(merged_ctx);
+      compiler.create_merged_context(ctx);
+      compiler.optimize();
+      ctx = merged_ctx;
+    }
     contexts_.emplace_back(ctx);
     ctx->acquire();
   }

@@ -43,12 +43,12 @@ public:
 
   void print_footer(std::ostream& out);
 
-  void print_port(std::ostream& out, ioimpl* node);
-
   bool print_decl(std::ostream& out,
                   lnodeimpl* node,
                   std::unordered_set<uint32_t>& visited,
                   lnodeimpl* ref = nullptr);
+
+  void print_port(std::ostream& out, ioimpl* node);
 
   bool print_binding(std::ostream& out, bindimpl* node);
 
@@ -75,6 +75,8 @@ public:
   bool print_mem(std::ostream& out, memimpl* node);
 
   bool print_udf(std::ostream& out, udfimpl* node, udf_verilog mode);
+
+  bool print_tap(std::ostream& out, tapimpl* node);
 
   bool print_bypass(std::ostream& out, bypassimpl* node);
 

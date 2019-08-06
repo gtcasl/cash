@@ -875,23 +875,20 @@ void ch::internal::ch_toFIRRTL(std::ostream& out, const device_base& device) {
   std::unordered_set<std::string_view> visited;
   
   auto ctx = device.impl()->ctx();
-  context* merged_ctx = nullptr; 
-  if (ctx->bindings().size() 
+  if (ctx->bindings().size()
    && (platform::self().cflags() & cflags::codegen_merged) != 0) {
     auto merged_ctx = new context(ctx->name());
-    merged_ctx->acquire();    
     compiler compiler(merged_ctx);
     compiler.create_merged_context(ctx);
     compiler.optimize();
     ctx = merged_ctx;
   }
+  ctx->acquire();
 
   visited.insert(ctx->name());
   out << "circuit " << ctx->name() << ":" << std::endl;
   firrtlwriter writer(ctx);  
   writer.print(out, visited);
 
-  if (merged_ctx) {
-    delete merged_ctx;
-  }
+  ctx->release();
 }

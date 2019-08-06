@@ -20,7 +20,7 @@ tracerimpl::tracerimpl(const std::vector<device_base>& devices)
   , trace_head_(nullptr)
   , trace_tail_(nullptr)
   , num_traces_(0)
-  , is_merged_context_(!(1 == contexts_.size() && 0 == contexts_.back()->bindings().size())) {
+  , is_single_context_(1 == contexts_.size() && 0 == contexts_.back()->bindings().size()) {
   // initialize
   this->initialize();
 }
@@ -53,16 +53,19 @@ void tracerimpl::initialize() {
   if (reset) {
     trace_width += add_signal(reset);
   }
+
   for (auto node : eval_ctx_->inputs()) {
     auto signal = reinterpret_cast<ioportimpl*>(node);
     if (signal == clk || signal == reset)
       continue;
     trace_width += add_signal(signal);
   }
+
   for (auto node : eval_ctx_->outputs()) {
     auto signal = reinterpret_cast<ioportimpl*>(node);
     trace_width += add_signal(signal);
   }
+
   for (auto node : eval_ctx_->taps()) {
     auto signal = reinterpret_cast<ioportimpl*>(node);
     trace_width += add_signal(signal);
@@ -132,7 +135,7 @@ void tracerimpl::allocate_trace(uint32_t block_width) {
 void tracerimpl::toText(std::ofstream& out) {
   //--
   auto get_signal_name = [&](ioportimpl* node) {
-    if (is_merged_context_ && 1 == contexts_.size()) {
+    if (!is_single_context_ && 1 == contexts_.size()) {
       return remove_path(node->name());
     }
     return node->name();
@@ -194,7 +197,7 @@ void tracerimpl::toVCD(std::ofstream& out) {
   out << "$timescale 1 ns $end" << std::endl;
   std::list<std::string> mod_stack;
   for (auto node : signals_) {
-    if (!is_merged_context_) {
+    if (is_single_context_) {
       out << "$var reg " << node->size() << ' ' << node->id() << ' '
           << node->name() << " $end" << std::endl;
     } else {
@@ -288,44 +291,6 @@ void tracerimpl::toTestBench(std::ofstream& out,
                              const std::string& moduleFileName,
                              bool passthru) {
   //--
-  auto id_from_name = [&](const std::string& name)->uint32_t {
-    auto pos = name.find_last_of('_');
-    assert(pos != std::string::npos);
-    return std::stoul(name.substr(pos+1).c_str(), nullptr);
-  };
-
-  //--
-  auto find_ctx = [&](const std::string& name)->context* {
-    auto id = id_from_name(name);
-    for (auto ctx : contexts_) {
-      if (ctx->id() == id)
-        return ctx;
-    }
-    return nullptr;
-  };
-
-  //--
-  auto find_module = [&](context* ctx, const std::string& name)->context* {
-    auto id = id_from_name(name);
-    for (auto node : ctx->bindings()) {
-      auto binding = reinterpret_cast<bindimpl*>(node);
-      if (binding->id() == id)
-        return binding->module();
-    }
-    return nullptr;
-  };
-
-  //--
-  auto find_tap = [&](context* ctx, const std::string& name)->tapimpl* {
-    for (auto node : ctx->taps()) {
-      auto tap = reinterpret_cast<tapimpl*>(node);
-      if (tap->name() == name)
-        return tap;
-    }
-    return nullptr;
-  };
-
-  //--
   auto netlist_name = [&](lnodeimpl* node)->std::string {
     switch (node->type()) {
     case type_bindin:
@@ -338,6 +303,11 @@ void tracerimpl::toTestBench(std::ofstream& out,
     }
     case type_time:
       return "$time";
+    case type_tap: {
+      std::stringstream ss;
+      ss << "tap_" << identifier_from_string(node->name());
+      return ss.str();
+    }
     default: {
       std::stringstream ss;
       ss << node->type();
@@ -351,31 +321,22 @@ void tracerimpl::toTestBench(std::ofstream& out,
   };
 
   //--
-  auto get_tap_path = [&](tapimpl* node) {
-    if (is_merged_context_) {
-      auto path = split(node->name(), '.');
-      auto name = path.back(); // get name
-      path.pop_back(); // remove name
-      assert(!path.empty());
-      context* ctx = find_ctx(path[0]);
-      for (uint32_t i = 1; i < path.size(); ++i) {
-        ctx = find_module(ctx, path[i]);
-      }
-      auto tap = find_tap(ctx, name);
-      auto pos = node->name().find_last_of('.');
-      auto sname = netlist_name(tap->target().impl());
-      return stringf("%s.%s", node->name().substr(0, pos).c_str(), sname.c_str());
-    } else {
-      auto tap = find_tap(contexts_[0], node->name());
-      auto sname = netlist_name(tap->target().impl());
+  auto get_tap_path = [&](tapimpl* node) {    
+    if (is_single_context_) {
+      auto sname = netlist_name(node);
       return stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), sname.c_str());
+    } else {
+      auto pos   = node->name().find_last_of('.');
+      auto path  = node->name().substr(0, pos);
+      auto sname = node->name().substr(pos+1);
+      return stringf("%s.tap_%s", path.c_str(), sname.c_str());
     }
   };
 
   //--
   auto get_signal_name = [&](ioportimpl* node) {
     auto path = node->name();
-    if (is_merged_context_) {
+    if (!is_single_context_) {
       auto sname = remove_path(path);
       if (sname == "clk" || sname == "reset")
         return sname;
@@ -392,7 +353,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
     if ((node->name() == "clk") || (node->name() == "reset"))
       return node->name();
     auto name = node->name();
-    if (is_merged_context_) {
+    if (!is_single_context_) {
       name = stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), name.c_str());
     }
     for (auto signal : signals_) {      
@@ -485,7 +446,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       for (auto signal : signals_) {
         if (type_tap != signal->type())
           continue;
-        out << "assign " << get_signal_name(signal) << " = "
+        out << "assign tap_" << get_signal_name(signal) << " = "
             << get_tap_path(reinterpret_cast<tapimpl*>(signal)) << ";" << std::endl;
       }
       out << std::endl;
@@ -634,7 +595,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
   //--
   auto get_signal_name = [&](ioportimpl* node) {
     auto path = node->name();
-    if (is_merged_context_ && 1 == contexts_.size()) {
+    if (!is_single_context_ && 1 == contexts_.size()) {
       path = remove_path(path);
     }
     std::replace(path.begin(), path.end(), '.', '_');
