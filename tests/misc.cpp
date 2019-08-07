@@ -232,15 +232,22 @@ TEST_CASE("misc", "[misc]") {
     
     TEST([]()->ch_bool {
       ch_bit8 a(255), b(0);
+      ch_println("a={}, b={}", a, b);
+      ch_println("a={0}, b={}", a, b);
+      ch_println("a={}, b={1}", a, b);
       ch_println("a={0}, b={1}", a, b);
       return ch_true;
     });  
     
-    TEST([]()->ch_bool {
-      ch_bit8 a(255);
-      ch_bool b(1);
-      __if (b) {
-        ch_println("a={0}", a);
+    TEST1([](const ch_int8& pred)->ch_bool {
+      ch_int8 a(1), b(2);
+      __if (pred != 0) {
+        ch_println("a={}", a);
+        __if (pred > 0) {
+          ch_println("b={}", b);
+        }__else {
+          ch_println("b={}", -b);
+        };
       };
       return ch_true;
     });
@@ -262,6 +269,36 @@ TEST_CASE("misc", "[misc]") {
       ch_println("a={0:e}", a);
       return ch_true;
     });
+  }
+
+  SECTION("streams", "[streams]") {
+    TEST([]()->ch_bool {
+      unsigned char a(1);
+      short b(1);
+      unsigned short c(1);
+      long double d(1);
+      ch_cout << true << ',' << a << "," << b << ", " << c << ", " << d << ", " << 1 << ", " << 1u << ", " << 1l << ", " << 1ul << ", " << 1ll << ", " << 1ull << ", " << 1.0f << ", " << 1.0;
+      return ch_true;
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit128 a(1), b(2);
+      ch_cout << "a=" << a << ", b=" << b << std::endl;
+      return ch_true;
+    });
+
+    TEST1([](const ch_int8& pred)->ch_bool {
+      ch_int8 a(1), b(2);
+      __if (pred != 0) {
+        ch_cout << "a=" << a;
+        __if (pred > 0) {
+          ch_cout << "b=" << b;
+        }__else {
+          ch_cout << "b=" << -b;
+        };
+      };
+      return ch_true;
+    });    
   }
 
   SECTION("bitvector", "[bitvector]") {

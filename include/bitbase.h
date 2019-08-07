@@ -2,6 +2,7 @@
 
 #include "logic.h"
 #include "system.h"
+#include "streams.h"
 
 namespace ch {
 namespace internal {
@@ -356,6 +357,11 @@ public:
   CH_LOGIC_FUNCTION1B_IMPL(ch_bitbase, ch_xorr, do_xorr)
 
 protected:
+
+  friend ch_ostream& operator<<(ch_ostream& out, const T& in) {
+    CH_API_ENTRY(1);
+    return out << get_lnode(in);
+  }
 
   template <typename U>
   auto do_eq(const U& other) const {

@@ -28,6 +28,7 @@ void ch::internal::cond_block(const lnode& pred, fvoid_t func) {
   auto ctx = ctx_curr();
   ctx->begin_block(pred.impl());
   func();
+  ch_cout.flush();
   ctx->end_block();
 }
 
@@ -35,6 +36,7 @@ void ch::internal::cond_block(fvoid_t func) {
   auto ctx = ctx_curr();
   ctx->begin_block(nullptr);
   func();
+  ch_cout.flush();
   ctx->end_block();
 }
 

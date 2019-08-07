@@ -78,6 +78,7 @@ include/numbase.h
 include/reg.h
 include/select.h
 include/simulator.h
+include/streams.h
 include/struct.h
 include/switch.h
 include/system.h

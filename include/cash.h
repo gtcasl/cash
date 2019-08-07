@@ -22,6 +22,7 @@
 #include "tracer.h"
 #include "codegen.h"
 #include "udf.h"
+#include "streams.h"
 #include "debug.h"
 
 namespace ch {
@@ -345,6 +346,7 @@ namespace logic {
 
   using ch::internal::ch_print;
   using ch::internal::ch_println;
+  using ch::internal::ch_cout;
 
   //
   // debug functions

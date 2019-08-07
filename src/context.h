@@ -232,7 +232,7 @@ public:
                           lnodeimpl* src,
                           const source_location& sloc);
 
-  lnodeimpl* create_predicate(const source_location& sloc);
+  lnodeimpl* get_predicate(const source_location& sloc);
 
   //--
 

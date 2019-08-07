@@ -292,7 +292,7 @@ branchconverter::emit(proxyimpl* dst,
     // get definitions
     for (auto block : branch->blocks) {
       auto value = emit_conditional_block(block, current);
-      values.emplace_back(block->pred, value);
+      values.emplace_back(block->cond, value);
       changed |= (value != current);
     }
 
@@ -371,21 +371,30 @@ branchconverter::emit(proxyimpl* dst,
   return current;
 }
 
-lnodeimpl* branchconverter::create_predicate(const source_location& sloc) {
-  auto zero = ctx_->create_literal(sdata_type(1, 0));
-  auto one = ctx_->create_literal(sdata_type(1, 1));
+lnodeimpl* branchconverter::get_predicate(const source_location& sloc) {
+  if (cond_branches_.empty())
+    return nullptr;
+
+  auto curr_branch = cond_branches_.top();
+  auto curr_block = curr_branch->blocks.back();
+  auto pred = curr_block->pred;
+  if (pred)
+    return pred;
 
   // create predicate variable
-  auto predicate = ctx_->create_node<proxyimpl>(zero, 0, 1, "predicate", sloc);
+  auto zero = ctx_->create_literal(sdata_type(1, 0));
+  auto one = ctx_->create_literal(sdata_type(1, 1));  
+  pred = ctx_->create_node<proxyimpl>(zero, 0, 1, "predicate", sloc);
 
   // remove from source init block
-  auto it = cond_inits_.find(predicate->id());
+  auto it = cond_inits_.find(pred->id());
   if (it != cond_inits_.end()) {
     cond_inits_.erase(it);
   }
 
   // assign predicate
-  this->write(predicate, 0, 1, one, sloc);
+  this->write(pred, 0, 1, one, sloc);
 
-  return predicate;
+  curr_block->pred = pred;
+  return pred;
 }

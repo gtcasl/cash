@@ -15,11 +15,9 @@ assertimpl::assertimpl(context* ctx,
   this->add_src(cond);
   auto sys_time = ctx->create_time(sloc);
   this->add_src(sys_time);
-  if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->create_predicate(sloc);
-    if (pred) {
-      pred_idx_ = this->add_src(pred);
-    }
+  auto pred = ctx_->get_predicate(sloc);
+  if (pred) {
+    pred_idx_ = this->add_src(pred);
   }
 }
 

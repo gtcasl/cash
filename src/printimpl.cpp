@@ -8,10 +8,10 @@ fmtparser::fmtparser() : index_(0) {}
 
 const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
   assert(str);
-  
+
   // check starting bracket
   assert(*str == '{');
-  
+
   ++str; // advance to next char
 
   // skip leading spaces
@@ -30,10 +30,10 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
     }
   }
   index_ = out->index + 1;
-  
+
   // advance pointer
   str = str_idx_end;
-  
+
   // check type info
   out->type = fmttype::Int;
   if (*str == ':') {
@@ -53,14 +53,14 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
         throw std::invalid_argument(sstreamf() << "invalid print argument type: " << *str);
       }
       ++str; // advance pointer
-    }    
+    }
   }
-  
+
   // check terminating bracket
   if (*str == '\0' || *str != '}') {
     throw std::invalid_argument("print format missing terminating index bracket");
   }
-  
+
   return str;
 }
 
@@ -73,11 +73,9 @@ printimpl::printimpl(context* ctx,
   , enum_strings_(enum_strings)
   , format_(format)
   , pred_idx_(-1) {
-  if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->create_predicate(sloc);
-    if (pred) {
-      pred_idx_ = this->add_src(pred);
-    }
+  auto pred = ctx_->get_predicate(sloc);
+  if (pred) {
+    pred_idx_ = this->add_src(pred);
   }
 
   for (auto arg : args) {
@@ -165,4 +163,25 @@ void ch::internal::createPrintNode(
   }
   auto sloc = get_source_location();
   ctx->create_node<printimpl>(format, args, enum_strings, sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ch_ostream ch::internal::ch_cout;
+
+void ch_streambuf::write(const lnode& node) {
+  auto size = nodes_.size();
+  nodes_.push_back(node);
+  char tmp[64];
+  auto len = snprintf(tmp, sizeof(tmp), "{%ld}", size);
+  this->sputn(tmp, len);
+}
+
+int ch_streambuf::sync() {
+  if (base::pptr() == base::pbase())
+    return 0;
+  createPrintNode(base::str(), nodes_);
+  base::seekpos(0);
+  nodes_.clear();
+  return 0;
 }

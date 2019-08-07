@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ioport.h"
+#include "streams.h"
 
 namespace ch {
 namespace internal {
@@ -42,6 +43,7 @@ protected:
     if (!is_dup) {
       this->begin_build();
       obj->describe();
+      ch_cout.flush();
       this->end_build();
     }
     this->end();

@@ -510,8 +510,8 @@ void context::conditional_write(
   return branchconv_->write(dst, offset, length, src, sloc);
 }
 
-lnodeimpl* context::create_predicate(const source_location& sloc) {
-  return branchconv_->create_predicate(sloc);
+lnodeimpl* context::get_predicate(const source_location& sloc) {
+  return branchconv_->get_predicate(sloc);
 }
 
 bindimpl* context::current_binding() {

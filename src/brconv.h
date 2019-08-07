@@ -13,16 +13,18 @@ protected:
   struct cond_br_t;
 
   struct cond_block_t {
-    cond_block_t(uint32_t p_id, lnodeimpl* p_pred, cond_br_t* p_branch)
+    cond_block_t(uint32_t p_id, lnodeimpl* p_cond, cond_br_t* p_branch)
       : id(p_id)
-      , pred(p_pred)
+      , cond(p_cond)
       , branch(p_branch)
+      , pred(nullptr)
     {}
 
     uint32_t id;
-    lnodeimpl* pred;
+    lnodeimpl* cond;
     cond_br_t* branch;
     std::list<cond_br_t*> branches;
+    proxyimpl* pred;
   };
 
   struct cond_br_t {
@@ -106,7 +108,7 @@ public:
              lnodeimpl* src,
              const source_location& sloc);
 
-  lnodeimpl* create_predicate(const source_location& sloc);
+  lnodeimpl* get_predicate(const source_location& sloc);
 };
 
 }}
