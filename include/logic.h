@@ -20,14 +20,8 @@ class ch_ostream;
 template <typename T> class ch_bitbase;
 template <typename T> class ch_numbase;
 
-template <unsigned N> class ch_bit;
-template <unsigned N> class ch_int;
-template <unsigned N> class ch_uint;
-
 template <typename T> class ch_reg_impl;
 template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
-
-using ch_bool = ch_uint<1>;
 
 template <typename T>
 inline constexpr bool is_bitbase_v = is_logic_type_v<T>

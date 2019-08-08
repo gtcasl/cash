@@ -42,10 +42,8 @@
   ch::internal::logic_accessor::source(CH_PAIR_R(x))
 
 #define CH_STRUCT_OSTREAM(a, i, x) \
-  if (i) { \
-    __out << ",";  \
-  } \
-  __out << __in.CH_PAIR_R(x)
+  if (i) { __out << ", "; } \
+  __out << CH_STRINGIZE(CH_PAIR_R(x)) << "=" << __in.CH_PAIR_R(x)
 
 #define CH_BASIC_STRUCT_SYSTEM_IMPL(type_name, struct_name, ...) \
 private: \
@@ -165,8 +163,8 @@ protected: \
   friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
     CH_REVERSE_FOR_EACH(CH_STRUCT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    __out << ","; \
-    __out << reinterpret_cast<const base&>(__in); \
+    __out << ", "; \
+    __out << CH_STRINGIZE(base) << "=" << reinterpret_cast<const base&>(__in); \
     __out << ")"; \
     return __out; \
   } \
@@ -211,8 +209,8 @@ protected: \
   friend ch_ostream& operator<<(ch_ostream& __out, const type_name& __in) { \
     __out << "("; \
     CH_REVERSE_FOR_EACH(CH_STRUCT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    __out << ","; \
-    __out << reinterpret_cast<const base&>(__in); \
+    __out << ", "; \
+    __out << CH_STRINGIZE(base) << "=" << reinterpret_cast<const base&>(__in); \
     __out << ")"; \
     return __out; \
   } \

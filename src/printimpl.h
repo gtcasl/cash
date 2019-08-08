@@ -5,32 +5,13 @@
 namespace ch {
 namespace internal {
 
-enum class fmttype {
-  Int,
-  Float,
-  Enum,
-};
-
-struct fmtinfo_t {
-  int index;
-  fmttype type;
-};
-
-class fmtparser {
-public:
-  fmtparser();
-
-  static bool is_escape(const char* str) {
-    return (str[0] == '\\') && (str[1] == '{' || str[1] == '}');
-  }
-
-  const char* parse(fmtinfo_t* out, const char* str);
-
-private:
-  int index_;
-};
-
 typedef const char* (*enum_string_cb)(uint32_t value);
+
+std::string to_string(const char* format,
+                      const sdata_type* srcs,
+                      const enum_string_cb* enum_strings);
+
+///////////////////////////////////////////////////////////////////////////////
 
 class printimpl : public ioimpl {
 public:

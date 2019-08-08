@@ -8,12 +8,6 @@ namespace internal {
 template <typename T> class ch_sbitbase;
 template <typename T> class ch_snumbase;
 
-template <unsigned N> class ch_sbit;
-template <unsigned N> class ch_sint;
-template <unsigned N> class ch_suint;
-
-using ch_sbool = ch_suint<1>;
-
 template <typename T>
 inline constexpr bool is_sbitbase_v = is_system_type_v<T>
               && std::is_base_of_v<ch_sbitbase<ch_system_t<T>>, ch_system_t<T>>;

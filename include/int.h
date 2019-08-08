@@ -39,6 +39,11 @@ public:
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
+  ch_sint(const ch_sbool& other)
+    : ch_sint(make_system_buffer(N, idname<ch_sint>())) {
+    this->operator=(other);
+  }
+
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sint(const ch_sbit<M>& other)
@@ -117,6 +122,11 @@ public:
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
+  ch_int(const ch_sbool& other)
+    : ch_int(make_logic_buffer(N, idname<ch_int>())) {
+    this->operator=(other);
+  }
+
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_int(const ch_sbit<M>& other)
@@ -143,6 +153,11 @@ public:
   explicit ch_int(const ch_bitbase<U>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
     this->operator=(reinterpret_cast<const U&>(other));
+  }
+
+  ch_int(const ch_bool& other)
+    : ch_int(make_logic_buffer(N, idname<ch_int>())) {
+    this->operator=(other);
   }
 
   template <unsigned M,

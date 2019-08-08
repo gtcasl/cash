@@ -39,6 +39,7 @@ include/apifunc.h
 include/bit.h
 include/bitbase.h
 include/bitvector.h
+include/bool.h
 include/bv.h
 include/cash.h
 include/cd.h

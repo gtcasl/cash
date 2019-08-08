@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "uint.h"
+#include "bool.h"
 
 namespace ch {
 namespace internal {

@@ -4,42 +4,60 @@
 
 using namespace ch::internal;
 
-fmtparser::fmtparser() : index_(0) {}
+enum class fmttype {
+  Bool,
+  Int,
+  Float,
+  Enum,
+};
 
-const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
-  assert(str);
+struct fmtinfo_t {
+  fmttype type;
+  int index;
+
+  fmtinfo_t() : type(fmttype::Bool), index(-1) {}
+};
+
+static bool is_escape(const char* str) {
+  return (str[0] == '\\') && (str[1] == '{' || str[1] == '}');
+}
+
+static const char* parse(fmtinfo_t* out, const char* format) {
+  assert(format);
 
   // check starting bracket
-  assert(*str == '{');
+  assert(*format == '{');
 
-  ++str; // advance to next char
+  ++format; // advance to next char
 
   // skip leading spaces
-  while (isspace(*str)) {
-    ++str;
+  while (isspace(*format)) {
+    ++format;
   }
 
   // parse index value
-  const char *str_idx_end = str;
-  if (*str == ':' || *str == '}') {
-    out->index = index_;
+  const char *str_idx_end = format;
+  if (*format == ':' || *format == '}') {
+    ++out->index;
   } else {
-    out->index = strtoul(str, (char**)&str_idx_end, 0);
-    if (str_idx_end == str || errno == ERANGE) {
-      throw std::invalid_argument(sstreamf() << "print format invalid index value: " << index_);
+    out->index = strtoul(format, (char**)&str_idx_end, 0);
+    if (str_idx_end == format || errno == ERANGE) {
+      throw std::invalid_argument(sstreamf() << "print format invalid index value: " << format);
     }
   }
-  index_ = out->index + 1;
 
   // advance pointer
-  str = str_idx_end;
+  format = str_idx_end;
 
   // check type info
   out->type = fmttype::Int;
-  if (*str == ':') {
-    ++str; // advance pointer
-    if (*str != '\0') {
-      switch (*str) {
+  if (*format == ':') {
+    ++format; // advance pointer
+    if (*format != '\0') {
+      switch (*format) {
+      case 'b':
+        out->type = fmttype::Bool;
+        break;
       case 'i':
         out->type = fmttype::Int;
         break;
@@ -50,19 +68,70 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
         out->type = fmttype::Enum;
         break;
       default:
-        throw std::invalid_argument(sstreamf() << "invalid print argument type: " << *str);
+        throw std::invalid_argument(sstreamf() << "invalid print argument type: " << *format);
       }
-      ++str; // advance pointer
+      ++format; // advance pointer
     }
   }
 
   // check terminating bracket
-  if (*str == '\0' || *str != '}') {
+  if (*format == '\0' || *format != '}') {
     throw std::invalid_argument("print format missing terminating index bracket");
   }
 
-  return str;
+  return format;
 }
+
+static int findMaxSourceIndex(const char* format) {
+  int max_index = -1;
+  fmtinfo_t fmt;
+  for (const char *str = format; *str != '\0'; ++str) {
+    if (is_escape(str)) {
+      ++str;
+    } else if (str[0] == '{') {
+      str = parse(&fmt, str);
+      max_index = std::max(fmt.index, max_index);
+    }
+  }
+  return max_index;
+}
+
+std::string ch::internal::to_string(const char* format,
+                                    const sdata_type* srcs,
+                                    const enum_string_cb* enum_strings) {
+  std::stringstream ss;
+  fmtinfo_t fmt;
+
+  ss << std::boolalpha;
+
+  for (const char *str = format; *str != '\0'; ++str) {
+    if (is_escape(str))
+      ss.put(*(++str));
+    else if (*str == '{') {
+      str = parse(&fmt, str);
+      auto& src = srcs[fmt.index];
+      switch (fmt.type) {
+      case fmttype::Bool:
+        ss << static_cast<bool>(src);
+        break;
+      case fmttype::Int:
+        ss << src;
+        break;
+      case fmttype::Float:
+        ss << bit_cast<float>(static_cast<int>(src));
+        break;
+      case fmttype::Enum:
+        ss << enum_strings[fmt.index](static_cast<int>(src));
+       break;
+      }
+    } else {
+      ss.put(*str);
+    }
+  }
+  return ss.str();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 printimpl::printimpl(context* ctx,
                      const std::string& format,
@@ -134,25 +203,10 @@ void printimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static int getFormatMaxIndex(const char* format) {
-  int max_index = -1;
-  fmtparser parser;
-  for (const char *str = format; *str != '\0'; ++str) {
-    if (fmtparser::is_escape(str))
-      ++str;
-    else if (str[0] == '{') {
-      fmtinfo_t fmt;
-      str = parser.parse(&fmt, str);
-      max_index = std::max(fmt.index, max_index);
-    }
-  }
-  return max_index;
-}
-
 void ch::internal::createPrintNode(const std::string& format,
                                    const std::vector<lnode>& args) {
   // check format
-  auto max_index = getFormatMaxIndex(format.c_str());
+  auto max_index = findMaxSourceIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
   // create print node

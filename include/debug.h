@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bool.h"
 #include "uint.h"
 
 namespace ch {
@@ -30,6 +31,8 @@ template <typename... Args>
 void ch_print(const std::string& format, const Args&... args) {
   CH_API_ENTRY(1);
   static_assert((is_logic_type_v<Args> && ...), "invalid argument type");
+  if (format.empty())
+    return;
   ch_cout.flush();
   createPrintNode(format, {get_lnode(args)...});
 }
@@ -37,7 +40,6 @@ void ch_print(const std::string& format, const Args&... args) {
 template <typename... Args>
 void ch_println(const std::string& format, const Args&... args) {
   CH_API_ENTRY(1);
-  ch_cout.flush();
   ch_print(format + '\n', args...);
 }
 

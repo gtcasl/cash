@@ -54,10 +54,8 @@ using select_constructible_t = typename select_constructible<R, Ts...>::type;
   decltype(CH_PAIR_R(x))
 
 #define CH_UNION_OSTREAM(a, i, x) \
-  if (i) { \
-    __out << ",";  \
-  } \
-  __out << __in.CH_PAIR_R(x)
+  if (i) { __out << ", "; } \
+  __out << CH_STRINGIZE(CH_PAIR_R(x)) << "=" << __in.CH_PAIR_R(x)
 
 #define CH_UNION_SYSTEM_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \

@@ -9,10 +9,12 @@ namespace internal {
   #define CASH_BLOCK_SIZE 8
 #endif
 
+class ch_sbool;
 template <unsigned N> class ch_sbit;
 template <unsigned N> class ch_sint;
 template <unsigned N> class ch_suint;
 
+class ch_bool;
 template <unsigned N> class ch_bit;
 template <unsigned N> class ch_int;
 template <unsigned N> class ch_uint;
@@ -313,6 +315,12 @@ struct signed_type_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 
 template <typename T>
 struct signed_type_impl<T, std::enable_if_t<is_logic_type_v<T>
+              && std::is_same_v<ch_logic_t<T>, ch_bool>>> {
+  using type = ch_int<ch_width_v<T>>;
+};
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<is_logic_type_v<T>
               && std::is_same_v<ch_logic_t<T>, ch_bit<ch_width_v<T>>>>> {
   using type = ch_int<ch_width_v<T>>;
 };
@@ -321,6 +329,12 @@ template <typename T>
 struct signed_type_impl<T, std::enable_if_t<is_logic_type_v<T>
               && std::is_same_v<ch_logic_t<T>, ch_uint<ch_width_v<T>>>>> {
   using type = ch_int<ch_width_v<T>>;
+};
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<is_system_type_v<T>
+              && std::is_same_v<ch_system_t<T>, ch_sbool>>> {
+  using type = ch_sint<ch_width_v<T>>;
 };
 
 template <typename T>
@@ -349,6 +363,12 @@ struct size_cast_impl {
 
 template <typename T, unsigned N>
 struct size_cast_impl<T, N, std::enable_if_t<is_logic_type_v<T>
+              && std::is_same_v<ch_logic_t<T>, ch_bool>>> {
+  using type = std::conditional_t<N == 1, ch_bool, ch_bit<N>>;
+};
+
+template <typename T, unsigned N>
+struct size_cast_impl<T, N, std::enable_if_t<is_logic_type_v<T>
               && std::is_same_v<ch_logic_t<T>, ch_bit<ch_width_v<T>>>>> {
   using type = ch_bit<N>;
 };
@@ -363,6 +383,12 @@ template <typename T, unsigned N>
 struct size_cast_impl<T, N, std::enable_if_t<is_logic_type_v<T>
               && std::is_same_v<ch_logic_t<T>, ch_uint<ch_width_v<T>>>>> {
   using type = ch_uint<N>;
+};
+
+template <typename T, unsigned N>
+struct size_cast_impl<T, N, std::enable_if_t<is_system_type_v<T>
+              && std::is_same_v<ch_system_t<T>, ch_sbool>>> {
+  using type = std::conditional_t<N == 1, ch_sbool, ch_sbit<N>>;
 };
 
 template <typename T, unsigned N>

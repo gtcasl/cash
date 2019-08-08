@@ -1458,33 +1458,8 @@ public:
   void eval() override {
     if (pred_ && !static_cast<bool>(pred_[0]))
       return;
-    if (format_ != "") {
-      std::stringstream strbuf;
-      fmtparser parser;
-      for (const char *str = format_.c_str(); *str != '\0'; ++str) {
-        if (fmtparser::is_escape(str))
-          strbuf.put(*(++str));
-        else if (*str == '{') {
-          fmtinfo_t fmt;
-          str = parser.parse(&fmt, str);
-          auto& src = srcs_.at(fmt.index);
-          switch (fmt.type) {
-          case fmttype::Int:
-            strbuf << src;
-            break;
-          case fmttype::Float:
-            strbuf << bit_cast<float>(static_cast<int>(src));
-            break;
-          case fmttype::Enum:
-            strbuf << enum_strings_[fmt.index](static_cast<int>(src));
-           break;
-          }
-        } else {
-          strbuf.put(*str);
-        }
-      }
-      std::cout << strbuf.rdbuf();
-    }
+    auto str = to_string(format_.c_str(), srcs_.data(), enum_strings_.data());
+    std::cout << str;
   }
 
 private:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "literals.h"
+#include "bool.h"
 #include "bit.h"
 #include "int.h"
 #include "uint.h"

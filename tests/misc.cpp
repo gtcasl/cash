@@ -287,8 +287,9 @@ TEST_CASE("misc", "[misc]") {
     });
 
     TEST([]()->ch_bool {
-      ch_bit128 a(1), b(2);
-      ch_cout << "a={" << a << "}, b={" << b << "}" << std::endl;
+      ch_int8 a(1), b(2);
+      ch_bool c(false);
+      ch_cout << "a={" << a << "}, b={" << b << "}, c={" << c << "}" << std::endl;
       return ch_true;
     });
 

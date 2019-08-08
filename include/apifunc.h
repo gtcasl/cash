@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bool.h"
 #include "bit.h"
 #include "int.h"
 #include "uint.h"
