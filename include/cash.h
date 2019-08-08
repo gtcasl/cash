@@ -101,6 +101,8 @@ namespace logic {
   using ch::internal::ch_udf_comb;
   using ch::internal::ch_udf_seq;
 
+  using ch::internal::ch_ostream;
+
   //
   // declared types
   //
@@ -180,6 +182,12 @@ namespace logic {
 
   const ch_sbool ch_false(0);
   const ch_sbool ch_true(1);
+
+  //
+  // globals
+  //
+
+  using ch::internal::ch_cout;
 
   //
   // equality functions
@@ -346,7 +354,6 @@ namespace logic {
 
   using ch::internal::ch_print;
   using ch::internal::ch_println;
-  using ch::internal::ch_cout;
 
   //
   // debug functions

@@ -368,8 +368,8 @@ public:
   }
 
   template <typename T>
-  static std::ostream& do_print(const T& obj, std::ostream& out) {
-    return obj.do_print(out);
+  static void do_print(const T& obj, std::ostream& out) {
+    obj.do_print(out);
   }
 };
 

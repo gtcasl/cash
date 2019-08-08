@@ -31,7 +31,7 @@ private:
 
   int sync() override;
 
-  void write(const lnode& node);
+  void write(const lnode& node, char format);
 
   std::vector<lnode> nodes_;
 
@@ -157,13 +157,19 @@ public:
 
   ch_ostream& operator<<(const char* value) {
     CH_API_ENTRY(1);
-    reinterpret_cast<base&>(*this) << value;
-    return *this;
-  }
-
-  ch_ostream& operator<<(const lnode& value) {
-    CH_API_ENTRY(1);
-    buf_.write(value);
+    auto tok = strpbrk(value, "{}");
+    if (tok) {
+      // escape special characters
+      std::string s(value);
+      size_t pos = 0;
+      while ((pos = s.find_first_of("{}", pos)) != std::string::npos) {
+        s.insert(pos, 1, '\\');
+        pos += 2;
+      }
+      reinterpret_cast<base&>(*this) << s;
+    } else {
+      reinterpret_cast<base&>(*this) << value;
+    }
     return *this;
   }
 
@@ -188,6 +194,12 @@ public:
   ch_ostream& operator<<(std::basic_ostream<char>& (*func)(std::basic_ostream<char>&)) {
     CH_API_ENTRY(1);
     base::operator<<(func);
+    return *this;
+  }
+
+  ch_ostream& write(const lnode& value, char format) {
+    CH_API_ENTRY(1);
+    buf_.write(value, format);
     return *this;
   }
 

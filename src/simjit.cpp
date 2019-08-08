@@ -315,7 +315,9 @@ extern "C" void print_data_eval(print_data_t* self) {
   std::stringstream strbuf;
   fmtparser parser;
   for (const char *str = self->format; *str != '\0'; ++str) {
-    if (*str == '{') {
+    if (fmtparser::is_escape(str))
+      strbuf.put(*(++str));
+    else if (*str == '{') {
       fmtinfo_t fmt;
       str = parser.parse(&fmt, str);
       auto& src = self->srcs[fmt.index];

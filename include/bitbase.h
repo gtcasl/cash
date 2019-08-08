@@ -126,7 +126,8 @@ public:
 protected:
 
   friend std::ostream& operator<<(std::ostream& out, const T& in) {
-    return system_accessor::do_print(in, out);
+    system_accessor::do_print(in, out);
+    return out;
   }
 
   template <typename U>
@@ -210,9 +211,9 @@ protected:
     return make_system_op<ch_op::xorr>(*self);
   }
 
-  std::ostream& do_print(std::ostream& out) const {
+  void do_print(std::ostream& out) const {
     auto self = reinterpret_cast<const T*>(this);
-    return out << system_accessor::data(*self);
+    out << system_accessor::data(*self);
   }
 
   friend class system_accessor;
@@ -360,7 +361,8 @@ protected:
 
   friend ch_ostream& operator<<(ch_ostream& out, const T& in) {
     CH_API_ENTRY(1);
-    return out << get_lnode(in);
+    logic_accessor::do_print(in, out);
+    return out;
   }
 
   template <typename U>
@@ -443,6 +445,11 @@ protected:
   auto do_xorr() const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::xorr>(*self);
+  }
+
+  void do_print(ch_ostream& out) const {
+    auto self = reinterpret_cast<const T*>(this);
+    out.write(get_lnode(*self), 'i');
   }
 
   friend class logic_accessor;

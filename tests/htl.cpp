@@ -17,17 +17,33 @@ struct PipeTest {
   __io (
     (ch_enq_io<T>) enq,
     (ch_deq_io<T>) deq,
+    (ch_enq_io<>)  start,
+    (ch_deq_io<>)  done,
     __out (T) value
   );
 
   void describe() {
     ch_module<ch_pipe<T, Delay>> pipe;
+    ch_reg<ch_bool> active(false), done(false);
+
     pipe.io.enq(io.enq);
     pipe.io.deq(io.deq);
 
     ch_float32 x(io.enq.data);
     ch_float32 y(1.0f);
     io.value = ch_fmul<Delay>(x, y, io.deq.ready);
+
+    io.start.ready = !active;
+    io.done.valid = done;
+
+    __if (pipe.io.size == 1 && io.deq.ready && io.deq.valid) {
+      active->next = false;
+      done->next = true;
+    }__elif (io.start.ready && io.start.valid) {
+      active->next = true;
+    }__elif (io.done.ready && io.done.valid) {
+      done->next = false;
+    };
   }
 };
 

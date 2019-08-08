@@ -112,6 +112,10 @@ protected:
     return ch_sfloat32(fmod(lhs_value, rhs_value));
   }
 
+  void do_print(std::ostream& out) const {
+    out << static_cast<float>(*this);
+  }
+
   const system_buffer& __buffer() const {
     return buffer_;
   }
@@ -200,6 +204,10 @@ protected:
 
   template <typename R, typename U>
   auto do_mod(const U& other) const;
+
+  void do_print(ch_ostream& out) const {
+    out.write(get_lnode(*this), 'f');
+  }
 
   const logic_buffer& __buffer() const {
     return buffer_;

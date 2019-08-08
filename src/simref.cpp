@@ -1462,7 +1462,9 @@ public:
       std::stringstream strbuf;
       fmtparser parser;
       for (const char *str = format_.c_str(); *str != '\0'; ++str) {
-        if (*str == '{') {
+        if (fmtparser::is_escape(str))
+          strbuf.put(*(++str));
+        else if (*str == '{') {
           fmtinfo_t fmt;
           str = parser.parse(&fmt, str);
           auto& src = srcs_.at(fmt.index);

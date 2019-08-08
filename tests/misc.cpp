@@ -15,6 +15,11 @@ namespace {
     done
   ));
 
+  __struct (Person, (
+    (ch_int4) age,
+    (ch_int4) height
+  ));
+
   template <typename T>
   auto sbind(const T& a, const T& b) {
     return std::tuple(a + b, a - b);
@@ -283,7 +288,7 @@ TEST_CASE("misc", "[misc]") {
 
     TEST([]()->ch_bool {
       ch_bit128 a(1), b(2);
-      ch_cout << "a=" << a << ", b=" << b << std::endl;
+      ch_cout << "a={" << a << "}, b={" << b << "}" << std::endl;
       return ch_true;
     });
 
@@ -299,6 +304,24 @@ TEST_CASE("misc", "[misc]") {
       };
       return ch_true;
     });    
+
+    TEST1([](const ch_int8& pred)->ch_bool {
+      Person person{2, 1};
+      ch_cout << "person=" << person << std::endl;
+      return ch_true;
+    });
+
+    TEST1([](const ch_int8& pred)->ch_bool {
+      ch_vec<ch_int4, 2> vi{2, 1};
+      ch_cout << "vi=" << vi << std::endl;
+      return ch_true;
+    });
+
+    TEST1([](const ch_int8& pred)->ch_bool {
+      ch_vec<my_enum, 2> ve{my_enum::done, my_enum::stats};
+      ch_cout << "ve=" << ve << std::endl;
+      return ch_true;
+    });
   }
 
   SECTION("bitvector", "[bitvector]") {
@@ -373,9 +396,11 @@ TEST_CASE("misc", "[misc]") {
       ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) { 
           ch_module<ch_queue<ch_int4, 4>> queue;
-          queue.io.enq.data = lhs + rhs;
-          queue.io.enq.valid = true;
-          queue.io.deq.ready = true;
+          ch_module<ch_queue<ch_int4, 4>> q1(queue);
+          auto q2 = q1;
+          q2.io.enq.data = lhs + rhs;
+          q2.io.enq.valid = true;
+          q2.io.deq.ready = true;
           return lhs * rhs; 
         }
       );      

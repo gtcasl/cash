@@ -156,6 +156,18 @@ protected:
     return logic_accessor::source((*this)[0]);
   }
 
+  friend ch_ostream& operator<<(ch_ostream& out, const ch_vec& in) {
+    out << "(";
+    for (unsigned i = 0; i < N; ++i) {
+      if (i) {
+        out << ",";
+      }
+      out << in[N - 1 - i];
+    }
+    out << ")";
+    return out;
+  }
+
   friend class logic_accessor;
 };
 
@@ -279,7 +291,7 @@ protected:
       if (i) {
         out << ",";
       }
-      out << in[i];
+      out << in[N - 1 - i];
     }
     out << ")";
     return out;
@@ -345,6 +357,18 @@ protected:
   ch_vec(const sloc_api_entry&, const vec_base<U, N>& other, std::index_sequence<Is...>)
     : base(other.at(Is)...)
   {}
+
+  friend ch_ostream& operator<<(ch_ostream& out, const ch_vec& in) {
+    out << "(";
+    for (unsigned i = 0; i < N; ++i) {
+      if (i) {
+        out << ",";
+      }
+      out << in[N - 1 - i];
+    }
+    out << ")";
+    return out;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -406,7 +430,7 @@ protected:
       if (i) {
         out << ",";
       }
-      out << in[i];
+      out << in[N - 1 - i];
     }
     out << ")";
     return out;

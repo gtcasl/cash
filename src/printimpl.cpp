@@ -138,7 +138,9 @@ static int getFormatMaxIndex(const char* format) {
   int max_index = -1;
   fmtparser parser;
   for (const char *str = format; *str != '\0'; ++str) {
-    if (*str == '{') {
+    if (fmtparser::is_escape(str))
+      ++str;
+    else if (str[0] == '{') {
       fmtinfo_t fmt;
       str = parser.parse(&fmt, str);
       max_index = std::max(fmt.index, max_index);
@@ -147,9 +149,8 @@ static int getFormatMaxIndex(const char* format) {
   return max_index;
 }
 
-void ch::internal::createPrintNode(
-    const std::string& format,
-    const std::vector<lnode>& args) {
+void ch::internal::createPrintNode(const std::string& format,
+                                   const std::vector<lnode>& args) {
   // check format
   auto max_index = getFormatMaxIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
@@ -169,19 +170,20 @@ void ch::internal::createPrintNode(
 
 ch_ostream ch::internal::ch_cout;
 
-void ch_streambuf::write(const lnode& node) {
+void ch_streambuf::write(const lnode& node, char format) {
   auto size = nodes_.size();
   nodes_.push_back(node);
   char tmp[64];
-  auto len = snprintf(tmp, sizeof(tmp), "{%ld}", size);
+  auto len = snprintf(tmp, sizeof(tmp), "{%ld:%c}", size, format);
   this->sputn(tmp, len);
 }
 
 int ch_streambuf::sync() {
   if (base::pptr() == base::pbase())
     return 0;
-  createPrintNode(base::str(), nodes_);
-  base::seekpos(0);
+  auto format = base::str();
+  createPrintNode(format, nodes_);
+  base::str("");
   nodes_.clear();
   return 0;
 }

@@ -15,6 +15,8 @@ lnodeimpl* createOpNode(ch_op op,
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class ch_ostream;
+
 template <typename T> class ch_bitbase;
 template <typename T> class ch_numbase;
 
@@ -338,6 +340,11 @@ public:
   template <typename R, typename T>
   static auto do_abs(const T& obj) {
     return obj.template do_abs<R>();
+  }
+
+  template <typename T>
+  static void do_print(const T& obj, ch_ostream& out) {
+    obj.do_print(out);
   }
 };
 

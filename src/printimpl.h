@@ -19,6 +19,11 @@ struct fmtinfo_t {
 class fmtparser {
 public:
   fmtparser();
+
+  static bool is_escape(const char* str) {
+    return (str[0] == '\\') && (str[1] == '{' || str[1] == '}');
+  }
+
   const char* parse(fmtinfo_t* out, const char* str);
 
 private:

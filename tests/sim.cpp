@@ -24,7 +24,8 @@ TEST_CASE("simulation", "[sim]") {
     TESTX([]()->bool {
       auto device = ch_device<inverter<ch_bit2>>();
       device.io.in = 2;
-      ch_device<> d1 = device;
+      ch_device<inverter<ch_bit2>> x(device);
+      auto d1 = x;
       ch_device<> d2(d1), d3;
       d3 = d2;
       ch_simulator s1, s2;

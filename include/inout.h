@@ -66,7 +66,7 @@ protected: \
   type_name& operator=(type_name&&) = delete; \
   friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
-    CH_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    CH_REVERSE_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     __out << ")"; \
     return __out; \
   }
@@ -89,7 +89,13 @@ protected: \
   } \
 protected: \
   type_name& operator=(const type_name&) = delete; \
-  type_name& operator=(type_name&&) = delete;
+  type_name& operator=(type_name&&) = delete; \
+  friend ch_ostream& operator<<(ch_ostream& __out, const type_name& __in) { \
+    __out << "("; \
+    CH_REVERSE_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
+  }
 
 #define CH_DERIVED_INOUT_SYSTEM_IMPL(type_name, inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -113,9 +119,9 @@ protected: \
   type_name& operator=(type_name&&) = delete; \
   friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
-    __out << reinterpret_cast<const base&>(__in); \
+    CH_REVERSE_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     __out << ","; \
-    CH_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << reinterpret_cast<const base&>(__in); \
     __out << ")"; \
     return __out; \
   }
@@ -144,7 +150,15 @@ protected: \
   } \
 protected: \
   type_name& operator=(const type_name&) = delete; \
-  type_name& operator=(type_name&&) = delete;
+  type_name& operator=(type_name&&) = delete; \
+  friend ch_ostream& operator<<(ch_ostream& __out, const type_name& __in) { \
+    __out << "("; \
+    CH_REVERSE_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ","; \
+    __out << reinterpret_cast<const base&>(__in); \
+    __out << ")"; \
+    return __out; \
+  }
 
 #define CH_BASIC_INOUT_IMPL(inout_name, ...) \
   class inout_name { \

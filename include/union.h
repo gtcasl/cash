@@ -94,7 +94,7 @@ protected: \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
-    CH_FOR_EACH(CH_UNION_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    CH_REVERSE_FOR_EACH(CH_UNION_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     __out << ")"; \
     return __out; \
   } \
@@ -135,6 +135,12 @@ public:
 protected: \
   const ch::internal::logic_buffer& __buffer() const { \
     return CH_UNION_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
+  } \
+  friend ch_ostream& operator<<(ch_ostream& __out, const type_name& __in) { \
+    __out << "("; \
+    CH_REVERSE_FOR_EACH(CH_UNION_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
   } \
   friend class ch::internal::logic_accessor; \
 public:

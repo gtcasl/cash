@@ -52,6 +52,9 @@ void registerEnumString(const lnode& node, void* callback);
   enum_name& operator=(type __other) { \
     base::operator=(static_cast<unsigned>(__other)); \
     return *this; \
+  } \
+  explicit operator type() const { \
+    return static_cast<type>(static_cast<int32_t>(*this)); \
   }
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
@@ -105,6 +108,9 @@ void registerEnumString(const lnode& node, void* callback);
       return buffer_; \
     } \
     ch::internal::logic_buffer buffer_; \
+    void do_print(ch_ostream& __out) const { \
+      __out.write(ch::internal::get_lnode(*this), 'e'); \
+    } \
     friend class ch::internal::logic_accessor; \
     \
     class __system_type__ : public ch::internal::ch_sbitbase<__system_type__> { \
@@ -113,6 +119,9 @@ void registerEnumString(const lnode& node, void* callback);
         return buffer_; \
       } \
       ch::internal::system_buffer buffer_; \
+      void do_print(std::ostream& __out) const { \
+       __out << to_string(static_cast<type>(*this)); \
+      } \
       friend class ch::internal::system_accessor; \
     public: \
       using traits = ch::internal::system_traits<size, false, __system_type__, enum_name>; \
