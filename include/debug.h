@@ -30,12 +30,14 @@ template <typename... Args>
 void ch_print(const std::string& format, const Args&... args) {
   CH_API_ENTRY(1);
   static_assert((is_logic_type_v<Args> && ...), "invalid argument type");
+  ch_cout.flush();
   createPrintNode(format, {get_lnode(args)...});
 }
 
 template <typename... Args>
 void ch_println(const std::string& format, const Args&... args) {
   CH_API_ENTRY(1);
+  ch_cout.flush();
   ch_print(format + '\n', args...);
 }
 
