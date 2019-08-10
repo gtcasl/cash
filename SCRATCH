@@ -41,6 +41,103 @@ auto resolve_hidden_constants = [&]() {
 };
 
 
+
+template <typename T, unsigned N>
+struct ch_simpleFifo {
+  using value_type = T;
+  static constexpr uint32_t max_size   = N;
+  static constexpr uint32_t size_width = log2ceil(N+1);
+  static constexpr unsigned addr_width = log2up(N);
+
+  __io (
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq,
+    __out (ch_uint<size_width>) size
+  );
+
+  void describe() {
+    ch_reg<ch_uint<addr_width+1>> rd_ptr(0), wr_ptr(0);
+    ch_reg<ch_uint<size_width>> size(0);
+
+    auto reading = io.deq.valid && io.deq.ready;
+    auto writing = io.enq.ready && io.enq.valid;
+
+    __if (writing && !reading) {
+      size->next = size + 1;
+    }__elif (reading && !writing) {
+      size->next = size - 1;
+    };
+
+    rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
+
+    auto rd_a = ch_slice<addr_width>(rd_ptr);
+    auto wr_a = ch_slice<addr_width>(wr_ptr);
+
+    ch_mem<T, N> mem;
+    mem.write(wr_a, io.enq.data, writing);
+
+    io.deq.data  = mem.read(rd_a);
+    io.deq.valid = (wr_ptr != rd_ptr);
+    io.enq.ready = (wr_a != rd_a) || (wr_ptr[addr_width] == rd_ptr[addr_width]);
+    io.size      = size;
+  }
+};
+
+template <typename T, unsigned N>
+struct ch_fwftFifo {
+  using value_type = T;
+  static constexpr uint32_t max_size   = N;
+  static constexpr uint32_t size_width = log2ceil(N+1);
+  static constexpr unsigned addr_width = log2ceil(N);
+
+  __io (
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq,
+    __out (ch_uint<size_width>) size
+  );
+
+  void describe() {
+    ch_module<ch_simpleFifo<T, N>> fifo;
+    ch_reg<ch_bool> fifo_valid(false), dout_valid(false), cache_valid(false);
+    ch_reg<T> dout, cache;
+
+    auto will_update_dout = (cache_valid || fifo_valid) && (io.deq.ready || !dout_valid);
+    auto will_update_cache = fifo_valid && (cache_valid == will_update_dout);
+    auto fifo_rd_en = fifo.io.deq.valid && !(cache_valid && dout_valid && fifo_valid);
+
+    __if (will_update_cache) {
+      cache->next = fifo.io.deq.data;
+      cache_valid->next = true;
+    }__elif (will_update_dout) {
+      cache_valid->next = false;
+    };
+
+    __if (will_update_dout) {
+      dout->next = ch_sel(cache_valid, cache, fifo.io.deq.data);
+      dout_valid->next = true;
+    } __elif (io.deq.ready) {
+      dout_valid->next = false;
+   };
+
+    __if (fifo_rd_en) {
+      fifo_valid->next = true;
+    }__elif (will_update_cache || will_update_dout) {
+      fifo_valid->next = false;
+    };
+
+    fifo.io.enq.data  = io.enq.data;
+    fifo.io.enq.valid = io.enq.valid;
+    fifo.io.deq.ready = fifo_rd_en;
+
+    io.deq.data  = dout;
+    io.deq.valid = dout_valid;
+    io.enq.ready = fifo.io.enq.ready;
+    io.size      = fifo.io.size;
+  }
+};
+
+
 template<class C>
 auto join(C&& c)
 -> decltype(boost::make_iterator_range(std::begin(c),std::end(c))) {

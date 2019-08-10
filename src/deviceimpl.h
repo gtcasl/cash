@@ -30,6 +30,8 @@ public:
     return ctx_;
   }
 
+  std::string name() const;
+
 protected:
 
   context* ctx_;

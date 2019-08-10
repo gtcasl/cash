@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.2)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
-include(ExternalProject)
-
 set(JIT "LLVM" CACHE STRING "JIT library to use")
 set(JITs "LLVM;LIBJIT;OFF")
 set_property(CACHE JIT PROPERTY STRINGS ${JITs})

@@ -28,6 +28,8 @@ public:
     return impl_;
   }
 
+  std::string name() const;
+
 protected:
 
   device_base(const std::type_index& signature, bool is_pod, const std::string& name);

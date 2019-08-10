@@ -22,6 +22,7 @@ build_ljr/tests/router_tb.h
 build_llr/CMakeFiles/3.5.1/CompilerIdCXX/CMakeCXXCompilerId.cpp
 build_llr/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
 build_llr/CMakeFiles/feature_tests.cxx
+examples/CMakeLists.txt
 examples/adder.cpp
 examples/aes.cpp
 examples/common.h
@@ -154,6 +155,7 @@ src/udfimpl.h
 src/utils.cpp
 src/verilogwriter.cpp
 src/verilogwriter.h
+tests/CMakeLists.txt
 tests/aggregates.cpp
 tests/arithm.cpp
 tests/basic.cpp

@@ -26,6 +26,12 @@ deviceimpl::~deviceimpl() {
   ctx_->release();  
 }
 
+std::string deviceimpl::name() const {
+  if (ctx_)
+    return ctx_->name();
+  return "";
+}
+
 bool deviceimpl::begin() {
   is_opened_ = true;
   old_ctx_ = ctx_swap(ctx_);
@@ -79,6 +85,13 @@ device_base::~device_base() {
   if (impl_) {
     impl_->release();
   }
+}
+
+std::string device_base::name() const {
+  if (impl_) {
+    return impl_->name();
+  }
+  return "";
 }
 
 device_base& device_base::operator=(const device_base& device) {

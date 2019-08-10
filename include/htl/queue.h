@@ -22,67 +22,81 @@ struct ch_queue {
   );
 
   void describe() {
-    auto reading = io.deq.ready && io.deq.valid;
-    auto writing = io.enq.valid && io.enq.ready;
-
     ch_reg<ch_uint<size_width>> size(0);
-    __if (writing && !reading) {
-      size->next = size + 1;
-    }__elif (reading && !writing) {
-      size->next = size - 1;
-    };
 
-    ch_reg<ch_bool> empty(true);
-    __if (size == 1 && reading && !writing) {
-      empty->next = true;
-    }__elif (writing && !reading) {
-      empty->next = false;
-    };
+    auto reading = io.deq.valid && io.deq.ready;
+    auto writing = io.enq.ready && io.enq.valid;
 
-    ch_reg<ch_bool> full(false);
-    __if (size == (N-1) && writing && !reading) {
-      full->next = true;
-    }__elif (reading && !writing) {
-      full->next = false;
-    };
+    if constexpr (N == 1) {
+      __if (writing && !reading) {
+        size->next = 1;
+      }__elif (reading && !writing) {
+        size->next = 0;
+      };
 
-    ch_counter<N> wr_ctr(writing);
-    ch_mem<T, N, SyncRead> mem;
-    mem.write(wr_ctr.value(), io.enq.data, writing);
-
-    T data_out;
-    if constexpr (SyncRead) {
-      ch_counter<N> rd_ctr(reading);
-      data_out = mem.read(rd_ctr.value());
+      io.deq.data  = ch_nextEn(io.enq.data, writing);
+      io.deq.valid = size;
+      io.enq.ready = !size || io.deq.ready;
+      io.size      = size;
     } else {
-      ch_uint<log2up(N)> rd_ptr, rd_next_ptr;
-      if constexpr (N > 2) {
-        rd_ptr = ch_nextEn(rd_next_ptr, reading, 0);
-        if constexpr (ispow2(N)) {
-          rd_next_ptr = ch_nextEn(rd_ptr + 2, reading, 1);
-        } else {
-          auto next = ch_sel(rd_ptr >= (N-2), rd_ptr - (N-2), rd_ptr + 2);
-          rd_next_ptr = ch_nextEn(next, reading, 1);
-        }
-      } else
-      if constexpr (N == 2) {
-        rd_ptr = ch_nextEn(rd_next_ptr, reading, 0);
-        rd_next_ptr = ch_nextEn(~rd_next_ptr, reading, 1);
+      __if (writing && !reading) {
+        size->next = size + 1;
+      }__elif (reading && !writing) {
+        size->next = size - 1;
+      };
+
+      ch_reg<ch_bool> empty(true);
+      __if (size == 1 && reading && !writing) {
+        empty->next = true;
+      }__elif (writing && !reading) {
+        empty->next = false;
+      };
+
+      ch_reg<ch_bool> full(false);
+      __if (size == (N-1) && writing && !reading) {
+        full->next = true;
+      }__elif (reading && !writing) {
+        full->next = false;
+      };
+
+      ch_counter<N> wr_ctr(writing);
+      ch_mem<T, N, SyncRead> mem;
+      mem.write(wr_ctr.value(), io.enq.data, writing);
+
+      T data_out;
+      if constexpr (SyncRead) {
+        ch_counter<N> rd_ctr(reading);
+        data_out = mem.read(rd_ctr.value());
       } else {
-        rd_ptr = 0;
-        rd_next_ptr = 0;
+        ch_uint<log2up(N)> rd_ptr, rd_next_ptr;
+        if constexpr (N > 2) {
+          rd_ptr = ch_nextEn(rd_next_ptr, reading, 0);
+          if constexpr (ispow2(N)) {
+            rd_next_ptr = ch_nextEn(rd_ptr + 2, reading, 1);
+          } else {
+            auto next = ch_sel(rd_ptr >= (N-2), rd_ptr - (N-2), rd_ptr + 2);
+            rd_next_ptr = ch_nextEn(next, reading, 1);
+          }
+        } else
+        if constexpr (N == 2) {
+          rd_ptr = ch_nextEn(rd_next_ptr, reading, 0);
+          rd_next_ptr = ch_nextEn(~rd_next_ptr, reading, 1);
+        } else {
+          rd_ptr = 0;
+          rd_next_ptr = 0;
+        }
+
+        auto bypass = ch_delay(writing && (empty || (1 == size && reading)), 1, false);
+        auto curr   = ch_delay(io.enq.data);
+        auto head   = ch_delay(mem.read(ch_sel(reading, rd_next_ptr, rd_ptr)));
+        data_out    = ch_sel(bypass, curr, head);
       }
 
-      auto bypass = ch_delay(writing && (empty || (1 == size && reading)), 1, false);
-      auto curr   = ch_delay(io.enq.data);
-      auto head   = ch_delay(mem.read(ch_sel(reading, rd_next_ptr, rd_ptr)));
-      data_out    = ch_sel(bypass, curr, head);
+      io.deq.data  = data_out;
+      io.deq.valid = !empty;
+      io.enq.ready = !full;
+      io.size      = size;
     }
-
-    io.deq.data  = data_out;
-    io.deq.valid = !empty;
-    io.enq.ready = !full;
-    io.size      = size;
   }
 };
 
@@ -99,34 +113,31 @@ struct ch_llqueue {
   );
 
   void describe() {
-    auto reading = io.deq.ready && io.deq.valid;
-    auto writing = io.enq.valid && io.enq.ready;
+    ch_reg<ch_uint<size_width>> size(0);
+
+    auto reading = io.deq.valid && io.deq.ready;
+    auto writing = io.enq.ready && io.enq.valid;
 
     if constexpr (N == 1) {
-      ch_reg<ch_uint1> size(0);
-
       __if (writing && !reading) {
         size->next = 1;
       }__elif (reading && !writing) {
         size->next = 0;
       };
 
-      auto data = ch_nextEn(io.enq.data, writing);
-
-      io.deq.data  = data;
+      io.deq.data  = ch_nextEn(io.enq.data, writing);
       io.deq.valid = size;
-      io.enq.ready = !size;
+      io.enq.ready = !size || io.deq.ready;
       io.size      = size;
     } else {
-      ch_reg<ch_uint<size_width>> size(0);
       ch_reg<ch_bit<N+1>> ptr(1);
 
       __if (writing && !reading) {
-        size->next = size + 1;
         ptr->next = ch_cat(ch_slice<N>(ptr, 0), 0_b);
+        size->next = size + 1;
       }__elif (reading && !writing) {
-        size->next = size - 1;
         ptr->next = ch_cat(0_b, ch_slice<N>(ptr, 1));
+        size->next = size - 1;
       };
 
       ch_bit<N> data_upd, data_new;

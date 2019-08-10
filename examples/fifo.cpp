@@ -5,6 +5,7 @@ using namespace ch::core;
 
 template <typename T, unsigned N>
 struct FiFo {
+  static_assert (ispow2(N), "invalid size");
   static constexpr unsigned addr_width = log2ceil(N);
   __io (
     __in (T)        din,
@@ -20,8 +21,8 @@ struct FiFo {
     auto rd_a = ch_slice<addr_width>(rd_ptr);
     auto wr_a = ch_slice<addr_width>(wr_ptr);
 
-    auto reading = io.pop && !io.empty;
-    auto writing = io.push && !io.full;
+    auto reading = !io.empty && io.pop;
+    auto writing = !io.full && io.push;
 
     rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
     wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
