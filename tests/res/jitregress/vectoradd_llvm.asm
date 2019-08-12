@@ -431,13 +431,13 @@ eval:
 	incl	%ecx
 	andl	$15, %ecx
 	movl	%ecx, 52(%rsp)
-	movq	80(%r12), %rax
-	movq	%rax, 240(%rsp)
-	movq	88(%r12), %rcx
 	xorl	%r15d, %r15d
 	movl	40(%rsp), %r14d
 	testl	%r14d, %r14d
 	sete	%r15b
+	movq	80(%r12), %rcx
+	movq	%rcx, 240(%rsp)
+	movq	88(%r12), %rcx
 	andl	(%rcx), %r15d
 	movl	108(%rsp), %r11d
 	movl	%r11d, %ecx
@@ -694,10 +694,10 @@ eval:
 	testl	%r15d, %r15d
 	movl	$0, %r10d
 	cmovel	24(%rsp), %r10d
-	movq	120(%r12), %rax
 	xorl	%ecx, %ecx
 	testl	%r8d, %r8d
 	sete	%cl
+	movq	120(%r12), %rax
 	andl	(%rax), %ecx
 	movl	56(%rsp), %r9d
 	movl	%r9d, %eax
