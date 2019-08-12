@@ -28,7 +28,8 @@ simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   : eval_ctx_(nullptr)
   , clk_driver_(true)
   , reset_driver_(false)
-  , sim_driver_(nullptr) {
+  , sim_driver_(nullptr)
+  , verbose_tracing_(false) {
   // enqueue all contexts
   for (auto dev : devices) {
     auto ctx = dev.impl()->ctx();
@@ -44,8 +45,6 @@ simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
     contexts_.emplace_back(ctx);
     ctx->acquire();
   }
-  // initialize
-  this->initialize();
 }
 
 simulatorimpl::~simulatorimpl() {
@@ -74,7 +73,7 @@ void simulatorimpl::initialize() {
       {
         compiler compiler(eval_ctx_);
         for (auto ctx : contexts_) {
-          compiler.create_merged_context(ctx);
+          compiler.create_merged_context(ctx, verbose_tracing_);
         }
         compiler.optimize();
       }
@@ -166,6 +165,9 @@ ch_simulator::ch_simulator() : impl_(nullptr) {}
 ch_simulator::ch_simulator(const std::vector<device_base>& devices) {
   impl_ = new simulatorimpl(devices);
   impl_->acquire();
+
+  // initialize
+  impl_->initialize();
 }
 
 ch_simulator::ch_simulator(simulatorimpl* impl) : impl_(impl) {

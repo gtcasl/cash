@@ -65,6 +65,8 @@ public:
 
   virtual ~simulatorimpl();
 
+  virtual void initialize();
+
   ch_tick run(const std::function<bool(ch_tick t)>& callback);
 
   ch_tick reset(ch_tick t);
@@ -77,15 +79,14 @@ public:
 
   virtual void eval();
 
-protected:
-
-  void initialize();
+protected:  
 
   std::vector<context*> contexts_;
   context* eval_ctx_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
   sim_driver* sim_driver_;
+  bool verbose_tracing_;
 };
 
 }

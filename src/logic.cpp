@@ -16,7 +16,7 @@ logic_buffer::logic_buffer(uint32_t size,
       src.impl(),
       src_offset,
       size,
-      ((!src.name().empty() && !name.empty()) ? (src.name() + "." + name) : name),
+      ((!src.name().empty() && !name.empty()) ? (src.name() + '.' + name) : name),
       get_source_location()))
 {}
 

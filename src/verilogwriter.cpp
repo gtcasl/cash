@@ -214,14 +214,14 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
     for (auto& input : node->inputs()) {
       auto b = reinterpret_cast<bindportimpl*>(input.impl());
       auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-      out << sep2 << std::endl << "." << identifier_from_string(p->name()) << "(";
+      out << sep2 << std::endl << '.' << identifier_from_string(p->name()) << "(";
       this->print_name(out, b);
       out << ")";
     }
     for (auto& output : node->outputs()) {
       auto b = reinterpret_cast<bindportimpl*>(output.impl());
       auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-      out << sep2 << std::endl << "." << identifier_from_string(p->name()) << "(";
+      out << sep2 << std::endl << '.' << identifier_from_string(p->name()) << "(";
       this->print_name(out, b);
       out << ")";
     }
@@ -849,14 +849,16 @@ bool verilogwriter::print_tap(std::ostream& out, tapimpl* node) {
 }
 
 bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
-
+  //--
   std::function<std::string (lnodeimpl*, context*)> full_path =
       [&](lnodeimpl* bypass, context* ctx)->std::string {
-    for (auto ex : ctx->nodes()) {
-      if (ex->id() == bypass->id()) {
-        std::stringstream ss;
-        print_name(ss, bypass);
-        return ss.str();
+    if (bypass->ctx() == ctx) {
+      for (auto ex : ctx->nodes()) {
+        if (ex->id() == bypass->id()) {
+          std::stringstream ss;
+          print_name(ss, bypass);
+          return ss.str();
+        }
       }
     }
 
@@ -865,7 +867,7 @@ bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
       if (!ret.empty()) {
         std::stringstream ss;
         print_name(ss, b);
-        ss << "." << ret;
+        ss << '.' << ret;
         return ss.str();
       }
     }
@@ -875,7 +877,8 @@ bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
 
   out << "assign ";
   this->print_name(out, node);
-  out << " = " << full_path(node->target(), node->ctx()) << ";" << std::endl;
+  auto path = full_path(node->target(), node->ctx());
+  out << " = " << path << ";" << std::endl;
   return true;
 }
 
@@ -966,6 +969,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   switch (type) {
   case type_input:
   case type_output:
+  case type_tap:
     out << identifier_from_string(node->name());
     break;
   case type_proxy:    
@@ -1006,9 +1010,6 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     print_name(out, bindport->binding());
     out << "_" << identifier_from_string(bindport->ioport().name());
   } break;
-  case type_tap:
-    out << "tap_" << identifier_from_string(node->name());
-    break;
   default:
     assert(false);
   }

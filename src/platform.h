@@ -25,7 +25,8 @@ enum class cflags {
   disable_swo     = (1 << 16),
   disable_sro     = (1 << 17),
   disable_snc     = (1 << 18),
-  codegen_merged  = (1 << 19)
+  codegen_merged  = (1 << 19),
+  verbose_tracing = (1 << 20)
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {

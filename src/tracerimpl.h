@@ -13,6 +13,8 @@ public:
 
   ~tracerimpl();
 
+  void initialize() override;
+
   void toText(std::ofstream& out);
 
   void toVCD(std::ofstream& out);
@@ -41,8 +43,6 @@ protected:
     uint32_t size;
     trace_block_t* next;
   };
-
-  void initialize();
 
   void eval() override;
 

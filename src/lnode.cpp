@@ -61,6 +61,11 @@ const std::string& lnode::name() const {
   return impl_->name();
 }
 
+const source_location& lnode::sloc() const {
+  assert(impl_);
+  return impl_->sloc();
+}
+
 uint32_t lnode::size() const {
   return impl_ ? impl_->size() : 0;
 }

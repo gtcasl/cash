@@ -139,7 +139,7 @@ bool firrtlwriter::print_binding(std::ostream& out, bindimpl* node) {
     auto b = reinterpret_cast<bindportimpl*>(input.impl());
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
     this->print_name(out, node);
-    out << "." << p->name() << " <= ";
+    out << '.' << p->name() << " <= ";
     this->print_name(out, b);
     out << std::endl;
   }
@@ -149,7 +149,7 @@ bool firrtlwriter::print_binding(std::ostream& out, bindimpl* node) {
     this->print_name(out, b);
     out << " <= ";
     this->print_name(out, node);
-    out << "." << p->name() << std::endl;
+    out << '.' << p->name() << std::endl;
   }
   return true;
 }

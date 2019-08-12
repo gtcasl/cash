@@ -524,9 +524,9 @@ void context::register_tap(const lnode& target,
   auto sid = identifier_from_string(name);
   auto num_dups = dup_tap_names_.insert(sid);
   if (num_dups) {
-    sid = stringf("%s%ld", sid.c_str(), num_dups);
+    sid = stringf("tap_%s%ld", sid.c_str(), num_dups);
   } else {
-    sid = stringf("%s", sid.c_str());
+    sid = stringf("tap_%s", sid.c_str());
   }
   this->create_node<tapimpl>(target.impl(), sid, sloc);
 }

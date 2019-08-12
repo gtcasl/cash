@@ -19,19 +19,28 @@ namespace ch {
 namespace internal {
 
 struct placeholder_user_t {
-  uint32_t src_idx;
   lnodeimpl* node;
+  uint32_t src_idx;
 
   placeholder_user_t(uint32_t src_idx)
-    : src_idx(src_idx)
-    , node(nullptr)
+    : node(nullptr)
+    , src_idx(src_idx)
+  {}
+
+  placeholder_user_t(lnodeimpl* node, uint32_t src_idx)
+    : node(node)
+    , src_idx(src_idx)
   {}
 };
 
 class placeholder_node : public lnodeimpl {
 public:
-  placeholder_node(uint32_t id, uint32_t size, context* ctx)
-    : lnodeimpl(id, type_none, size, ctx, "", source_location())
+  placeholder_node(uint32_t id,
+                   uint32_t size,
+                   context* ctx,
+                   const std::string& name,
+                   const source_location& sloc)
+    : lnodeimpl(id, type_none, size, ctx, name, sloc)
   {}
 
   lnodeimpl* clone(context*, const clone_map&) const override {
@@ -1362,7 +1371,7 @@ bool compiler::register_promotion() {
   return changed;
 }
 
-void compiler::create_merged_context(context* ctx) {
+void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
   //--
   std::list<std::string> node_path;
 
@@ -1370,7 +1379,7 @@ void compiler::create_merged_context(context* ctx) {
   auto full_name = [&](lnodeimpl* node) {
     std::stringstream ss;
     for (auto p : node_path) {
-      ss << p << ".";
+      ss << p << "/";
     }
     ss << node->name();
     return ss.str();
@@ -1385,7 +1394,6 @@ void compiler::create_merged_context(context* ctx) {
     //--
     std::vector<std::unique_ptr<placeholder_node>> placeholders;
     std::unordered_map<uint32_t, std::vector<lnodeimpl**>> unresolved_nodes;
-    std::vector<uint32_t> unresolved_bindouts;
 
     //--
     auto ensure_placeholder = [&](lnodeimpl* node, uint32_t src_idx) {
@@ -1403,7 +1411,7 @@ void compiler::create_merged_context(context* ctx) {
       }
 
       // create new placeholder
-      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size(), curr);
+      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size(), curr, src.name(), src.sloc());
       auto& user = placeholder->users.emplace_back(src_idx);
       unresolved_nodes[node->id()].emplace_back(&user.node);
 
@@ -1473,9 +1481,6 @@ void compiler::create_merged_context(context* ctx) {
           auto bo_port = bo_impl->ioport().impl();
           auto bo_value = sub_map.at(bo_port->src(0).id());
           update_map(bo.id(), bo_value);
-          if (bo_value->type() == type_none) {
-            unresolved_bindouts.push_back(bo.id());
-          }
         }
       } break;
       case type_bindin:
@@ -1484,7 +1489,16 @@ void compiler::create_merged_context(context* ctx) {
         break;
       case type_input: {
         auto input = reinterpret_cast<inputimpl*>(node);
-        if (nullptr == curr->parent()) {
+        if (curr->parent() != nullptr) {
+          if (verbose_tracing) {
+            auto name = full_name(input);
+            auto target = map.at(input->id());
+            auto tap = ctx_->create_node<tapimpl>(target, name, input->sloc());
+            if (type_none == target->type()) {
+              reinterpret_cast<placeholder_node*>(target)->users.emplace_back(tap, 0);
+            }
+          }
+        } else {
           lnodeimpl* eval_node;
           if (input->name() == "clk") {
             eval_node = ctx_->current_clock(input->sloc());
@@ -1500,7 +1514,16 @@ void compiler::create_merged_context(context* ctx) {
       case type_output: {        
         auto output = reinterpret_cast<outputimpl*>(node);
         ensure_placeholder(output, 0);
-        if (nullptr == curr->parent()) {          
+        if (curr->parent() != nullptr) {
+          if (verbose_tracing) {
+            auto name = full_name(output);
+            auto target = map.at(output->src(0).id());
+            auto tap = ctx_->create_node<tapimpl>(target, name, output->sloc());
+            if (type_none == target->type()) {
+              reinterpret_cast<placeholder_node*>(target)->users.emplace_back(tap, 0);
+            }
+          }
+        } else {
           auto eval_node = output->clone(ctx_, map);
           eval_node->rename(full_name(eval_node));
           update_map(output->id(), eval_node);
@@ -1522,6 +1545,9 @@ void compiler::create_merged_context(context* ctx) {
       case type_bypass: {
         auto bypass = reinterpret_cast<bypassimpl*>(node);
         auto eval_node = bypass_nodes.at(bypass->target()->id());
+        // bypass nodes are created after describe() call,
+        // so value should have computed by this point
+        assert(eval_node);
         update_map(node->id(), eval_node);
       } break;
       default: {
@@ -1534,28 +1560,34 @@ void compiler::create_merged_context(context* ctx) {
       }
     }
 
-    // resolve bindouts
-    for (auto id : unresolved_bindouts) {
-      auto cloned_src = map.at(id);
-      if (cloned_src->ctx() == curr
-       && cloned_src->type() == type_none) {
-        map[id] = map.at(cloned_src->id());
-      }
-    }
-
     // resolve placeholders
+    std::list<placeholder_node*> placeholder_list;
     for (auto& placeholder : placeholders) {
+      placeholder_list.emplace_back(placeholder.get());
+    }
+    while (!placeholder_list.empty()) {
+      auto placeholder = placeholder_list.front();
+      placeholder_list.pop_front();
       auto cloned_src = map.at(placeholder->id());
+      assert(placeholder != cloned_src);
       for (auto& user : placeholder->users) {
         auto target = user.node;
         if (nullptr == target)
           continue;
         assert(target->type() != type_none);
         if (type_none == target->src(user.src_idx).impl()->type()) {
-          assert(target->src(user.src_idx).impl() == placeholder.get());
+          assert(target->src(user.src_idx).impl() == placeholder);
           target->set_src(user.src_idx, cloned_src);
+          if (type_none == cloned_src->type()) {
+            auto p = reinterpret_cast<placeholder_node*>(cloned_src);
+            p->users.emplace_back(target, user.src_idx);
+            if (p->ctx() == curr && 1 == p->users.size()) {
+              placeholder_list.emplace_back(p);
+            }
+          }
         }
       }
+      placeholder->users.clear();
     }
   };
 

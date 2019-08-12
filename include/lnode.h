@@ -132,9 +132,11 @@ public:
 
   uint32_t id() const;
 
-  const std::string& name() const;
-  
   uint32_t size() const;
+
+  const std::string& name() const;
+
+  const source_location& sloc() const;
 
   auto next() const {
     return next_;
