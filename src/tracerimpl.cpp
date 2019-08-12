@@ -8,6 +8,22 @@ using namespace ch::internal;
 
 #define NUM_TRACES 100
 
+struct vcd_signal_compare_t {
+  bool operator()(lnodeimpl* lhs, lnodeimpl* rhs) {
+    auto lhs_pos  = lhs->name().find_last_of('/');
+    auto rhs_pos  = rhs->name().find_last_of('/');
+    auto lhs_path = (lhs_pos != std::string::npos) ? lhs->name().substr(0, lhs_pos) : "";
+    auto rhs_path = (rhs_pos != std::string::npos) ? rhs->name().substr(0, rhs_pos) : "";
+    if (lhs_path < rhs_path)
+      return true;
+    if (lhs_path > rhs_path)
+      return false;
+    auto lhs_name = (lhs_pos != std::string::npos) ? lhs->name().substr(lhs_pos+1) : lhs->name();
+    auto rhs_name = (rhs_pos != std::string::npos) ? rhs->name().substr(rhs_pos+1) : rhs->name();
+    return (lhs_name < rhs_name);
+  }
+};
+
 auto remove_path = [](const std::string& path) {
   auto pos = path.find('/');
   return (pos != std::string::npos) ? path.substr(pos+1) : path;
@@ -194,23 +210,30 @@ void tracerimpl::toText(std::ofstream& out) {
   }
 }
 
-void tracerimpl::toVCD(std::ofstream& out) {
+void tracerimpl::toVCD(std::ofstream& out) {  
   dup_tracker<std::string> dup_mod_names;
+  std::list<std::string> mod_stack;
+
+  std::set<lnodeimpl*, vcd_signal_compare_t> sorted_signals;
+  for (auto node : signals_) {
+    sorted_signals.emplace(node);
+  }
 
   // log trace header
   out << "$timescale 1 ns $end" << std::endl;
-  std::list<std::string> mod_stack;
-  for (auto node : signals_) {
+
+  for (auto node : sorted_signals) {
     if (is_single_context_) {
       out << "$var reg " << node->size() << ' ' << node->id() << ' '
           << identifier_from_string(node->name()) << " $end" << std::endl;
-    } else {
+    } else {      
       auto path = split(node->name(), '/');
       auto name = path.back(); // get name
       path.pop_back(); // remove name
       if (path.empty()) {
         path.push_back("sys");
       }
+
       auto path_it = path.begin();
       auto stack_it = mod_stack.begin();
       while (path_it != path.end()
@@ -226,6 +249,7 @@ void tracerimpl::toVCD(std::ofstream& out) {
         ++path_it;
         ++stack_it;
       }
+
       while (path_it != path.end()) {
         auto mod = *path_it++;
         auto mod_name = mod;
@@ -240,10 +264,11 @@ void tracerimpl::toVCD(std::ofstream& out) {
           << identifier_from_string(name) << " $end" << std::endl;
     }
   }
+
   while (!mod_stack.empty()) {
     out << "$upscope $end" << std::endl;
     mod_stack.pop_back();
-  }
+  }  
   out << "$enddefinitions $end" << std::endl;
 
   // log trace data
@@ -537,7 +562,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
                 if (passthru
                  && (tc + 1) < ticks_) {
                   out_offset += signal_size;
-                  continue;
+                  continue; // skip signals value validation
                 }
 
                 if (!out_trace) {
