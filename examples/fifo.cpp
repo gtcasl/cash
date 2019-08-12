@@ -21,8 +21,8 @@ struct FiFo {
     auto rd_a = ch_slice<addr_width>(rd_ptr);
     auto wr_a = ch_slice<addr_width>(wr_ptr);
 
-    auto reading = !io.empty && io.pop;
-    auto writing = !io.full && io.push;
+    auto reading = io.pop && !io.empty;
+    auto writing = io.push && !io.full;
 
     rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
     wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
