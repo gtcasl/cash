@@ -26,6 +26,9 @@ public:
   void toVerilator(std::ofstream& out,
                    const std::string& moduleTypeName);
 
+  void toSystemC(std::ofstream& out,
+                 const std::string& moduleTypeName);
+
 protected:
 
   using block_t = uint64_t;

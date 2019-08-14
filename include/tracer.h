@@ -61,6 +61,15 @@ public:
     toVerilator(out, moduleTypeName);
   }
 
+  void toSystemC(std::ofstream& out,
+                   const std::string& moduleTypeName);
+
+  void toSystemC(const std::string& file,
+                   const std::string& moduleTypeName) {
+    std::ofstream out(file);
+    toSystemC(out, moduleTypeName);
+  }
+
 protected:
 
   ch_tracer(simulatorimpl* impl);

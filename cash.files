@@ -49,7 +49,11 @@ include/common.h
 include/debug.h
 include/device.h
 include/eda/altera/avalon.h
+include/eda/altera/avalon.h
 include/eda/altera/avalon_sim.h
+include/eda/altera/avalon_sim.h
+include/eda/verilator/sc_simulator.h
+include/eda/verilator/vl_simulator.h
 include/enum.h
 include/htl/arbiter.h
 include/htl/cache.h

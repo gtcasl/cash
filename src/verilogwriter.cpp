@@ -27,6 +27,11 @@ const auto IsRegType = [](lnodeimpl* node) {
       || (type_sel == type && !reinterpret_cast<selectimpl*>(node)->is_ternary());
 };
 
+auto DataWidth = [](lnodeimpl* node) {
+  auto type = node->type();
+  return (type_mem == type) ?  reinterpret_cast<memimpl*>(node)->data_width() : node->size();
+};
+
 const auto is_inline_literal = [](lnodeimpl* node) {
   assert(type_lit == node->type());
   return (node->size() <= 64);
@@ -203,6 +208,26 @@ void verilogwriter::print_footer(std::ostream& out) {
 }
 
 bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
+  //--
+  auto find_bindin = [&](inputimpl* port)->bindportimpl* {
+    for (auto& input : node->inputs()) {
+      auto b = reinterpret_cast<bindportimpl*>(input.impl());
+      if (b->ioport().impl() == port)
+        return b;
+    }
+    return nullptr;
+  };
+
+  //--
+  auto find_bindout = [&](outputimpl* port)->bindportimpl* {
+    for (auto& output : node->outputs()) {
+      auto b = reinterpret_cast<bindportimpl*>(output.impl());
+      if (b->ioport().impl() == port)
+        return b;
+    }
+    return nullptr;
+  };
+
   auto_separator sep(", ");
   auto m = node->module();
   out << m->name() << " ";
@@ -211,18 +236,22 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   {
     auto_indent indent(out);
     auto_separator sep2(",");
-    for (auto& input : node->inputs()) {
-      auto b = reinterpret_cast<bindportimpl*>(input.impl());
-      auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-      out << sep2 << std::endl << '.' << identifier_from_string(p->name()) << "(";
-      this->print_name(out, b);
+    for (auto n : m->inputs()) {
+      auto input = reinterpret_cast<inputimpl*>(n);
+      out << sep2 << std::endl << '.' << identifier_from_string(input->name()) << "(";
+      auto bindport = find_bindin(input);
+      if (bindport) {
+        this->print_name(out, bindport);
+      }
       out << ")";
     }
-    for (auto& output : node->outputs()) {
-      auto b = reinterpret_cast<bindportimpl*>(output.impl());
-      auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-      out << sep2 << std::endl << '.' << identifier_from_string(p->name()) << "(";
-      this->print_name(out, b);
+    for (auto n : m->outputs()) {
+      auto output = reinterpret_cast<outputimpl*>(n);
+      out << sep2 << std::endl << '.' << identifier_from_string(output->name()) << "(";
+      auto bindport = find_bindout(output);
+      if (bindport) {
+        this->print_name(out, bindport);
+      }
       out << ")";
     }
   }
@@ -303,8 +332,9 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_udfout:
     if (ref
      && (IsRegType(ref) != IsRegType(node)
-      || ref->size() != node->size()))
+      || DataWidth(ref) != DataWidth(node))) {
       return false;    
+    }
     if (ref) {
       out << ", ";
     } else {
@@ -445,21 +475,31 @@ bool verilogwriter::print_proxy(std::ostream& out, proxyimpl* node) {
 void verilogwriter::print_proxy_value(std::ostream& out, proxyimpl* node) {
   const auto& ranges = node->ranges();
   uint32_t dst_offset = node->size();
+
+  //--
   auto print_range = [&](const proxyimpl::range_t& range) {
     dst_offset -= range.length;
     assert(range.dst_offset == dst_offset);
     auto& src = node->src(range.src_idx);
-    this->print_name(out, src.impl());
-    if (range.length < src.size()) {
-      out << "[";
-      if (range.length > 1) {
-        out << (range.src_offset + range.length - 1) << ":" << range.src_offset;
-      } else {
-        out << range.src_offset;
-      }
-      out << "]";
-    };
+    if (src.impl()->type() == type_lit) {
+      sdata_type value(range.length);
+      auto src_data = reinterpret_cast<litimpl*>(src.impl())->value().words();
+      bv_copy(value.words(), 0, src_data, range.src_offset, range.length);
+      print_value(out, value, true);
+    } else {
+      this->print_name(out, src.impl());
+      if (range.length < src.size()) {
+        out << "[";
+        if (range.length > 1) {
+          out << (range.src_offset + range.length - 1) << ":" << range.src_offset;
+        } else {
+          out << range.src_offset;
+        }
+        out << "]";
+      };
+    }
   };
+
   if (ranges.size() > 1) {
     out << "{";
     auto_separator sep(", ");
@@ -474,6 +514,7 @@ void verilogwriter::print_proxy_value(std::ostream& out, proxyimpl* node) {
 }
 
 bool verilogwriter::print_op(std::ostream& out, opimpl* node) {
+  //--
   auto print_signed_operand = [&](unsigned index) {
     if (node->is_signed())
       out << "$signed(";
@@ -481,6 +522,7 @@ bool verilogwriter::print_op(std::ostream& out, opimpl* node) {
     if (node->is_signed())
       out << ")";
   };
+
   auto op = node->op();
   if (op == ch_op::pad) {
     if (node->is_signed())
@@ -620,6 +662,7 @@ bool verilogwriter::print_select(std::ostream& out, selectimpl* node) {
 }
 
 bool verilogwriter::print_reg(std::ostream& out, regimpl* node) {
+  //--
   auto print_sr_name = [&]() {
     this->print_name(out, node);
     out << "_sr";
@@ -742,6 +785,7 @@ bool verilogwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
 }
 
 bool verilogwriter::print_mem(std::ostream& out, memimpl* node) {
+  //--
   auto print_port = [&](std::ostream& out, memportimpl* p) {
     this->print_name(out, p->mem());
     out << "[";
@@ -885,6 +929,7 @@ bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
 bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode) {
   std::unordered_map<std::string, std::string> dic;
 
+  //--
   auto dict_add = [&](const std::string& key, lnodeimpl* value) {
     std::ostringstream os;
     this->print_name(os, value);
@@ -1106,7 +1151,10 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::function<bool (udf_vostream& out, context*, std::unordered_set<uint32_t>&)>
-  print_udf_dependencies = [](udf_vostream& out, context* ctx, std::unordered_set<uint32_t>& visited) {
+  //--
+  print_udf_dependencies = [](udf_vostream& out,
+                              context* ctx,
+                              std::unordered_set<uint32_t>& visited) {
   bool changed = false;
   for (auto node : ctx->bindings()) {
     auto binding = reinterpret_cast<bindimpl*>(node);

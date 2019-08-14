@@ -11,3 +11,4 @@ include/htl
 src
 tests
 .
+include/eda/verilator

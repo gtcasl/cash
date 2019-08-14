@@ -717,6 +717,26 @@ bool compiler::constant_folding() {
         return ctx_->create_literal(sdata_type(node->size(), 0));
       }
       break;
+    case ch_op::lt:
+      if (src1_is_zero && !node->is_signed()) {
+        return ctx_->create_literal(sdata_type(1, false));
+      }
+      break;
+    case ch_op::gt:
+      if (src0_is_zero && !node->is_signed()) {
+        return ctx_->create_literal(sdata_type(1, false));
+      }
+      break;
+    case ch_op::ge:
+      if (src1_is_zero && !node->is_signed()) {
+        return ctx_->create_literal(sdata_type(1, true));
+      }
+      break;
+    case ch_op::le:
+      if (src0_is_zero && !node->is_signed()) {
+        return ctx_->create_literal(sdata_type(1, true));
+      }
+      break;
     default:
       break;
     }
@@ -896,6 +916,9 @@ bool compiler::constant_folding() {
   for (auto node : ctx_->gtaps()) {
     dfs_visit(node);
   }
+  for (auto node : ctx_->ext_nodes()) {
+    dfs_visit(node);
+  }
 
   // process deleted nodes
   node_deleter deleter(ctx_);
@@ -951,15 +974,18 @@ bool compiler::subexpressions_elimination() {
   };
 
   // visit output nodes
-    for (auto node : ctx_->outputs()) {
-      dfs_visit(node);
-    }
-    for (auto node : ctx_->taps()) {
-      dfs_visit(node);
-    }
-    for (auto node : ctx_->gtaps()) {
-      dfs_visit(node);
-    }
+  for (auto node : ctx_->outputs()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx_->taps()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx_->gtaps()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx_->ext_nodes()) {
+    dfs_visit(node);
+  }
 
   // process deleted nodes
   node_deleter deleter(ctx_);

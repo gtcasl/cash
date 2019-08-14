@@ -661,6 +661,41 @@ void tracerimpl::toVerilator(std::ofstream& out,
     out.flags(oldflags);
   };
 
+  //--
+  auto print_input = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
+    if (signal_size > 64) {
+      out << "vl_setw(sim_->" << signal_name;
+      for (uint32_t j = 0; j < signal_size;) {
+        out << ", ";
+        auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
+        print_value(out, value, s, j);        
+        j += s;
+      }
+      out << ");" << std::endl;
+    } else {
+      out << "sim_->" << signal_name << "=";
+      print_value(out, value);
+      out << ";" << std::endl;
+    }
+  };
+
+  //--
+  auto print_output = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
+    if (signal_size > 64) {
+      for (uint32_t j = 0; j < signal_size;) {
+        out << "CHECK(((uint32_t*)&sim_->" << signal_name << ")[" << (j/32) << "] == ";
+        auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
+        print_value(out, value, s, j);
+        out << ");" << std::endl;
+        j += s;
+      }
+    } else {
+      out << "CHECK(sim_->" << signal_name << " == ";
+      print_value(out, value);
+      out << ");" << std::endl;
+    }
+  };
+
   if (contexts_.size() > 1) {
     throw std::invalid_argument("multiple devices not supported!");
   }
@@ -672,8 +707,12 @@ void tracerimpl::toVerilator(std::ofstream& out,
     prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
   }
 
+  out << "#pragma once" << std::endl;
+  out << "#include <eda/verilator/vl_simulator.h>" << std::endl;
   out << "#define CHECK(x) do { if (!(x)) { std::cout << \"FAILED: \" << #x << std::endl; } } while (false)" << std::endl;
-  out << "bool eval(" << moduleTypeName << "* device, uint64_t tick) {" << std::endl;
+  out << "class vl_testbench {" << std::endl;
+  out << "public:" << std::endl;
+  out << "bool eval(uint64_t tick) {" << std::endl;
   out << "switch (tick) {" << std::endl;
   auto trace_block = trace_head_;
   while (trace_block) {
@@ -693,8 +732,9 @@ void tracerimpl::toVerilator(std::ofstream& out,
             auto signal_type = signal->type();
             auto signal_size = signal->size();
             auto signal_name = get_signal_name(signal);
-            if ((tc != 0 && signal_name == "clk")
-             || (type_input != signal_type)) {
+            if ((type_input != signal_type)
+              || signal_name == "clk"
+              || signal_name == "reset") {
               in_offset += signal_size;
               continue;
             }
@@ -704,19 +744,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
             }
             auto value = get_value(src_block, signal_size, in_offset);
             in_offset += signal_size;
-            if (signal_size > 64) {
-              for (uint32_t j = 0; j < signal_size;) {
-                out << "((char*)&device->" << signal_name << ")[" << j << "]=";
-                auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
-                print_value(out, value, s, j);
-                out << ";";
-                j += s;
-              }
-            } else {
-              out << "device->" << signal_name << "=";
-              print_value(out, value);
-              out << ";";
-            }            
+            print_input(value, signal_name, signal_size);
           }
         }
       }
@@ -733,64 +761,33 @@ void tracerimpl::toVerilator(std::ofstream& out,
               out_offset += signal_size;
               continue;
             }
-
             auto& prev = prev_values_.at(i);
             prev.first = src_block;
             prev.second = out_offset;
-
             if ((tc + 1) < ticks_) {
               out_offset += signal_size;
               continue;
             }
-
             if (!trace_enable) {
               out << "case " << (tc + 1) << ":" << std::endl;
               trace_enable = true;
             }
-
             auto value = get_value(src_block, signal_size, out_offset);
             out_offset += signal_size;
-            if (signal_size > 64) {
-              for (uint32_t j = 0; j < signal_size;) {
-                out << "CHECK(((char*)&device->" << signal_name << ")[" << j << "] == ";
-                auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
-                print_value(out, value, s, j);
-                out << ");";
-                j += s;
-              }
-            } else {
-              out << "CHECK(device->" << signal_name << " == ";
-              print_value(out, value);
-              out << ");";
-            }            
+            print_output(value, signal_name, signal_size);
           } else {
             if (type_input == signal_type)
               continue;
-
             if ((tc + 1) < ticks_)
               continue;
-
             if (!trace_enable) {
               out << "case " << (tc + 1) << ":" << std::endl;
               trace_enable = true;
             }
-
             auto& prev = prev_values_.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
-            if (signal_size > 64) {
-              for (uint32_t j = 0; j < signal_size;) {
-                out << "CHECK(((char*)&device->" << signal_name << ")[" << j << "] == ";
-                auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
-                print_value(out, value, s, j);
-                out << ");";
-                j += s;
-              }
-            } else {
-              out << "CHECK(device->" << signal_name << " == ";
-              print_value(out, value);
-              out << ");";
-            }
+            print_output(value, signal_name, signal_size);
           }
         }
       }
@@ -805,6 +802,239 @@ void tracerimpl::toVerilator(std::ofstream& out,
   out << "}" << std::endl;
   out << "return (tick < " << ticks_ << ");" << std::endl;
   out << "}" << std::endl;
+  out << "auto reset(uint64_t tick) { return sim_.reset(tick); }" << std::endl;
+  out << "auto step(uint64_t tick) { return sim_.step(tick); }" << std::endl;
+  out << "private:" << std::endl;
+  out << "vl_simulator<" << moduleTypeName << "> sim_;" << std::endl;
+  out << "};" << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void tracerimpl::toSystemC(std::ofstream& out,
+                           const std::string& moduleTypeName) {
+  //--
+  auto get_signal_name = [&](ioportimpl* node) {
+    auto path = node->name();
+    if (!is_single_context_ && 1 == contexts_.size()) {
+      path = remove_path(path);
+    }
+    path = identifier_from_string(path);
+    return path;
+  };
+
+  //--
+  auto print_value = [](std::ostream& out,
+                        const bv_t& value,
+                        uint32_t size = 0,
+                        uint32_t offset = 0) {
+    out << "0x";
+
+    bool skip_zeros = true;
+    if (0 == size) {
+      size = value.size();
+    }
+
+    auto oldflags = out.flags();
+    out.setf(std::ios_base::hex, std::ios_base::basefield);
+
+    uint32_t word(0);
+    for (auto it = value.begin() + offset + (size - 1); size;) {
+      word = (word << 0x1) | *it--;
+      if (0 == (--size & 0x3)) {
+        if (0 == size || (word != 0 ) || !skip_zeros) {
+          out << word;
+          skip_zeros = false;
+        }
+        word = 0;
+      }
+    }
+    if (0 != (size & 0x3)) {
+      out << word;
+    }
+    out.flags(oldflags);
+  };
+
+  //--
+  auto print_input = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
+    if (signal_size > 64) {
+      out << signal_name << "_ = sc_make_bv<" << signal_size << ">(";
+      for (uint32_t j = 0; j < signal_size;) {
+        if (j) out << ", ";
+        auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
+        print_value(out, value, s, j);        
+        j += s;
+      }
+      out << ");" << std::endl;
+    } else {
+      out << signal_name << "_ = ";
+      print_value(out, value);
+      out << ";" << std::endl;
+    }
+  };
+
+  //--
+  auto print_output = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
+    if (signal_size > 64) {
+      for (uint32_t j = 0; j < signal_size;) {
+        out << "CHECK(" << signal_name << "_.read().get_word(" << (j/32) << ") == ";
+        auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
+        print_value(out, value, s, j);
+        out << ");" << std::endl;
+        j += s;
+      }
+    } else {
+      out << "CHECK(" << signal_name << "_.read() == ";
+      print_value(out, value);
+      out << ");" << std::endl;
+    }
+  };
+
+  if (contexts_.size() > 1) {
+    throw std::invalid_argument("multiple devices not supported!");
+  }
+
+  uint64_t tc = 0;
+  auto mask_width = valid_mask_.size();
+
+  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+    prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
+  }
+
+  out << "#pragma once" << std::endl;
+  out << "#include <eda/verilator/sc_simulator.h>" << std::endl;
+  out << "#define CHECK(x) do { if (!(x)) { std::cout << \"FAILED: \" << #x << std::endl; } } while (false)" << std::endl;
+  out << "class sc_testbench {" << std::endl;
+  out << "public:" << std::endl;
+  out << "sc_testbench() {" << std::endl;
+  for (auto signal : signals_) {
+    if (signal->name() == "clk" || signal->name() == "reset")
+      continue;
+    auto signal_name = get_signal_name(signal);
+    out << "sim_->" << signal_name << "(" << signal_name << "_);" << std::endl;
+  }
+  out << "#if VM_TRACE" << std::endl;
+  out << "auto tfp = sim->create_trace(\""<< moduleTypeName <<"\")" << std::endl;
+  for (auto signal : signals_) {
+    if (signal->name() == "clk" || signal->name() == "reset")
+      continue;
+    auto signal_name = get_signal_name(signal);
+    out << "sc_trace(tfp, " << signal_name << "_, \"" << signal_name << "\");" << std::endl;
+  }
+  out << "#endif" << std::endl;
+  out << "}" << std::endl;
+  out << "bool eval(uint64_t tick) {" << std::endl;
+  out << "switch (tick) {" << std::endl;
+  auto trace_block = trace_head_;
+  while (trace_block) {
+    auto src_block = trace_block->data;
+    auto src_width = trace_block->size;
+    uint32_t src_offset = 0;
+    while (src_offset < src_width) {
+      uint32_t mask_offset = src_offset;
+      auto in_offset = mask_offset + mask_width;
+      auto out_offset = mask_offset + mask_width;
+      bool trace_enable = false;
+      {
+        for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+          bool valid = bv_get(src_block, mask_offset + i);
+          if (valid) {
+            auto signal = signals_[i];
+            auto signal_type = signal->type();
+            auto signal_size = signal->size();
+            auto signal_name = get_signal_name(signal);
+            if ((type_input != signal_type)
+             || signal_name == "clk"
+             || signal_name == "reset") {
+              in_offset += signal_size;
+              continue;
+            }
+            if (!trace_enable) {
+              out << "case " << tc << ":" << std::endl;
+              trace_enable = true;
+            }
+            auto value = get_value(src_block, signal_size, in_offset);
+            in_offset += signal_size;
+            print_input(value, signal_name, signal_size);
+          }
+        }
+      }
+
+      {
+        for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+          auto signal = signals_[i];
+          auto signal_type = signal->type();
+          auto signal_size = signal->size();
+          auto signal_name = get_signal_name(signal);
+          bool valid = bv_get(src_block, mask_offset + i);
+          if (valid) {
+            if (type_input == signal_type) {
+              out_offset += signal_size;
+              continue;
+            }
+            auto& prev = prev_values_.at(i);
+            prev.first = src_block;
+            prev.second = out_offset;
+            if ((tc + 1) < ticks_) {
+              out_offset += signal_size;
+              continue;
+            }
+            if (!trace_enable) {
+              out << "case " << (tc + 1) << ":" << std::endl;
+              trace_enable = true;
+            }
+            auto value = get_value(src_block, signal_size, out_offset);
+            out_offset += signal_size;
+            print_output(value, signal_name, signal_size);
+          } else {
+            if (type_input == signal_type)
+              continue;
+            if ((tc + 1) < ticks_)
+              continue;
+            if (!trace_enable) {
+              out << "case " << (tc + 1) << ":" << std::endl;
+              trace_enable = true;
+            }
+            auto& prev = prev_values_.at(i);
+            assert(prev.first);
+            auto value = get_value(prev.first, signal_size, prev.second);
+            print_output(value, signal_name, signal_size);
+          }
+        }
+      }
+      if (trace_enable) {
+        out << "break;" << std::endl;
+      }
+      src_offset = in_offset;
+      ++tc;
+    }
+    trace_block = trace_block->next;
+  }
+  out << "}" << std::endl;
+  out << "return (tick < " << ticks_ << ");" << std::endl;
+  out << "}" << std::endl;
+  out << "auto reset(uint64_t tick) { return sim_.reset(tick); }" << std::endl;
+  out << "auto step(uint64_t tick) { return sim_.step(tick); }" << std::endl;
+  out << "private:" << std::endl;
+  out << "sc_simulator<" << moduleTypeName << "> sim_;" << std::endl;
+  for (auto signal : signals_) {
+    if (signal->name() == "clk" || signal->name() == "reset")
+      continue;
+    auto signal_size = signal->size();
+    auto signal_name = get_signal_name(signal);
+    out << "sc_signal<";
+    if (signal_size == 1) {
+      out << "bool";
+    } else if (signal_size <= 32) {
+      out << "uint32_t";
+    } else if (signal_size <= 64) {
+      out << "uint64_t";
+    } else {
+      out << "sc_bv<" << signal_size << ">";
+    }
+    out << "> " << signal_name << "_;" << std::endl;
+  }
+  out << "};" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -849,4 +1079,9 @@ void ch_tracer::toTestBench(std::ofstream& out,
 void ch_tracer::toVerilator(std::ofstream& out,
                             const std::string& moduleTypeName) {
   return reinterpret_cast<tracerimpl*>(impl_)->toVerilator(out, moduleTypeName);
+}
+
+void ch_tracer::toSystemC(std::ofstream& out,
+                          const std::string& moduleTypeName) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toSystemC(out, moduleTypeName);
 }
