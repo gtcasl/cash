@@ -267,7 +267,6 @@ void context::delete_node(lnodeimpl* node) {
     break;
   case type_proxy:
     proxies_.remove(node);
-    ext_nodes_.remove(node);
     break;
   case type_input:
     inputs_.remove(node);
@@ -363,6 +362,9 @@ void context::reset_system_node(lnodeimpl* node) {
     if (node == sys_time_) {
       sys_time_ = nullptr;
     }
+    break;
+  case type_proxy:
+    ext_nodes_.remove(node);
     break;
   default:
     break;
