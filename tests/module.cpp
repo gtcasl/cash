@@ -329,7 +329,7 @@ TEST_CASE("module", "[module]") {
       ch_toVerilog("filter.v", device);
       ch_toFIRRTL("filter.fir", device);
 
-      trace.toTestBench("filter_tb.v", "filter.v");
+      trace.toVerilog("filter_tb.v", "filter.v");
       ret &= (checkVerilog("filter_tb.v"));      
 
       return !!ret;

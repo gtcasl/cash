@@ -30,7 +30,7 @@ public:
     tracer_.run(std::bind(&TestBench::tick, this, _1));
     tracer_.toText("router.log");
     tracer_.toVCD("router.vcd");
-    tracer_.toTestBench("router_tb.v", "router.v");
+    tracer_.toVerilog("router_tb.v", "router.v");
     tracer_.toVerilator("vl_router_tb.h", "TestBench");
     tracer_.toSystemC("sc_router_tb.h", "TestBench");
     status_ |= system("iverilog router_tb.v -o router_tb.iv");

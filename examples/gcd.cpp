@@ -64,7 +64,7 @@ int main() {
 
   tracer.toText("gcd.log");
   tracer.toVCD("gcd.vcd");
-  tracer.toTestBench("gcd_tb.v", "gcd.v");
+  tracer.toVerilog("gcd_tb.v", "gcd.v");
   int ret = !system("iverilog gcd_tb.v -o gcd_tb.iv")
           & !system("! vvp gcd_tb.iv | grep 'ERROR' || false");
   return (0 == ret);

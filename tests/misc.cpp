@@ -167,7 +167,7 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 4);
       trace.toText("taps.log");
       trace.toVCD("taps.vcd");
-      trace.toTestBench("taps_tb.v", "taps.v");
+      trace.toVerilog("taps_tb.v", "taps.v");
       ret &= (checkVerilog("taps_tb.v"));
       return ret;
     });
@@ -197,7 +197,7 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 4);
       trace.toText("taps2.log");
       trace.toVCD("taps2.vcd");
-      trace.toTestBench("taps2_tb.v", "taps2.v");
+      trace.toVerilog("taps2_tb.v", "taps2.v");
       ret &= (checkVerilog("taps2_tb.v"));
       return ret;
     });
@@ -446,7 +446,7 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 6);
       trace.toText("merged.log");
       trace.toVCD("merged.vcd");
-      trace.toTestBench("merged_tb.v", "merged.v");
+      trace.toVerilog("merged_tb.v", "merged.v");
       ret &= (checkVerilog("merged_tb.v"));
       return ret;
     });
@@ -469,7 +469,7 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 6);
       trace.toText("merged2.log");
       trace.toVCD("merged2.vcd");
-      trace.toTestBench("merged2_tb.v", "merged2.v");
+      trace.toVerilog("merged2_tb.v", "merged2.v");
       ret &= (checkVerilog("merged2_tb.v"));
       return ret;
     });
@@ -496,7 +496,7 @@ TEST_CASE("misc", "[misc]") {
       ret &= (device.io.out == 10);
       trace.toText("bypass.log");
       trace.toVCD("bypass.vcd");
-      trace.toTestBench("bypass_tb.v", "bypass.v");
+      trace.toVerilog("bypass_tb.v", "bypass.v");
       ret &= (checkVerilog("bypass_tb.v"));
       return ret;
     });

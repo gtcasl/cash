@@ -316,9 +316,9 @@ void tracerimpl::toVCD(std::ofstream& out) {
   }
 }
 
-void tracerimpl::toTestBench(std::ofstream& out,
-                             const std::string& moduleFileName,
-                             bool passthru) {
+void tracerimpl::toVerilog(std::ofstream& out,
+                           const std::string& moduleFileName,
+                           bool passthru) {
   //--
   auto netlist_name = [&](lnodeimpl* node)->std::string {
     switch (node->type()) {
@@ -1070,10 +1070,10 @@ void ch_tracer::toVCD(std::ofstream& out) {
   return reinterpret_cast<tracerimpl*>(impl_)->toVCD(out);
 }
 
-void ch_tracer::toTestBench(std::ofstream& out,
-                            const std::string& moduleFileName,
-                            bool passthru) {
-  return reinterpret_cast<tracerimpl*>(impl_)->toTestBench(out, moduleFileName, passthru);
+void ch_tracer::toVerilog(std::ofstream& out,
+                          const std::string& moduleFileName,
+                          bool passthru) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toVerilog(out, moduleFileName, passthru);
 }
 
 void ch_tracer::toVerilator(std::ofstream& out,

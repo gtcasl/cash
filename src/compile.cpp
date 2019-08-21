@@ -798,7 +798,7 @@ bool compiler::constant_folding() {
     }
     if (!node->has_init_data()
      && node->next().id() == node->id()) {
-      throw std::domain_error(sstreamf() << "uninitialized register " << node->debug_info());
+        fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
     }
     if (node->has_enable()) {
       if (is_literal_one(node->enable().impl())) {
@@ -810,7 +810,7 @@ bool compiler::constant_folding() {
       } else
       if (is_literal_zero(node->enable().impl())) {
         if (!node->has_init_data()) {
-          throw std::domain_error(sstreamf() << "uninitialized register " << node->debug_info());
+          fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
         }
         node->set_next(node);
         auto enable = node->remove_enable();

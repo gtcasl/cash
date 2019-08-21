@@ -217,7 +217,7 @@ int main() {
 
   tracer.toText("fft.log");
   tracer.toVCD("fft.vcd");
-  tracer.toTestBench("fft_tb.v", "fft.v");
+  tracer.toVerilog("fft_tb.v", "fft.v");
   int ret = !system("iverilog fft_tb.v -o fft_tb.iv")
           & !system("! vvp fft_tb.iv | grep 'ERROR' || false");
 

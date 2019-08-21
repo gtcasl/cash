@@ -42,7 +42,7 @@ int main() {
 
   tracer.toText("adder.log");
   tracer.toVCD("adder.vcd");
-  tracer.toTestBench("adder_tb.v", "adder.v");
+  tracer.toVerilog("adder_tb.v", "adder.v");
   int ret = !system("iverilog adder_tb.v -o adder_tb.iv")
           & !system("! vvp adder_tb.iv | grep 'ERROR' || false");
   return (0 == ret);

@@ -185,7 +185,7 @@ int main() {
 
   tracer.toText("vectoradd.log");
   tracer.toVCD("vectoradd.vcd");
-  tracer.toTestBench("vectoradd_tb.v", "vectoradd.v");
+  tracer.toVerilog("vectoradd_tb.v", "vectoradd.v");
   int ret = !system("iverilog vectoradd_tb.v -o vectoradd_tb.iv")
           & !system("! vvp vectoradd_tb.iv | grep 'ERROR' || false");
 

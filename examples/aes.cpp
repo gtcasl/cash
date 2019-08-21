@@ -207,7 +207,7 @@ int main() {
 
   tracer.toText("aes.log");
   tracer.toVCD("aes.vcd");
-  tracer.toTestBench("aes_tb.v", "aes.v");
+  tracer.toVerilog("aes_tb.v", "aes.v");
   int ret = !system("iverilog aes_tb.v -o aes_tb.iv")
           & !system("! vvp aes_tb.iv | grep 'ERROR' || false");
 

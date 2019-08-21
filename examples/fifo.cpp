@@ -97,7 +97,7 @@ int main() {
 
   tracer.toText("fifo.log");
   tracer.toVCD("fifo.vcd");
-  tracer.toTestBench("fifo_tb.v", "fifo.v");
+  tracer.toVerilog("fifo_tb.v", "fifo.v");
   int ret = !system("iverilog fifo_tb.v -o fifo_tb.iv")
           & !system("! vvp fifo_tb.iv | grep 'ERROR' || false");
   return (0 == ret);

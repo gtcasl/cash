@@ -480,7 +480,7 @@ TEST_CASE("htl", "[htl]") {
         ret &= !!queue.io.enq.ready; // !full
         ret &= 0 == queue.io.size;   // 0
 
-        trace.toTestBench("queue_tb.v", v_file);
+        trace.toVerilog("queue_tb.v", v_file);
         ret &= (checkVerilog("queue_tb.v"));
       });
     });

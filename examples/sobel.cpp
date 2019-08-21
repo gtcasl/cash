@@ -145,7 +145,7 @@ int main() {
 
   tracer.toText("sobel.log");
   tracer.toVCD("sobel.vcd");
-  tracer.toTestBench("sobel_tb.v", "sobel.v");
+  tracer.toVerilog("sobel_tb.v", "sobel.v");
   int ret = !system("iverilog sobel_tb.v -o sobel_tb.iv")
           & !system("! vvp sobel_tb.iv | grep 'ERROR' || false");
 

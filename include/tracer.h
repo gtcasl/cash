@@ -41,15 +41,15 @@ public:
     toVCD(out);
   }
 
-  void toTestBench(std::ofstream& out,
-                   const std::string& moduleFileName,
-                   bool passthru = false);
+  void toVerilog(std::ofstream& out,
+                 const std::string& moduleFileName,
+                 bool passthru = false);
 
-  void toTestBench(const std::string& file,
-                   const std::string& moduleFileName,
-                   bool passthru = false) {
+  void toVerilog(const std::string& file,
+                 const std::string& moduleFileName,
+                 bool passthru = false) {
     std::ofstream out(file);
-    toTestBench(out, moduleFileName, passthru);
+    toVerilog(out, moduleFileName, passthru);
   }
 
   void toVerilator(std::ofstream& out,

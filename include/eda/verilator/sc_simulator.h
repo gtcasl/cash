@@ -30,15 +30,14 @@ public:
 
   unsigned long reset(unsigned long ticks) {
     reset_.write(true);
-    ticks = tick(ticks);
-    ticks = tick(ticks);
+    ticks = this->step(ticks);
     reset_.write(false);
     return ticks;
   }
 
   unsigned long step(unsigned long ticks) {
-    ticks = tick(ticks);
-    ticks = tick(ticks);
+    ticks = this->tick(ticks);
+    ticks = this->tick(ticks);
     return ticks;
   }
 

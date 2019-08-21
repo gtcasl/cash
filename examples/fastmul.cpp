@@ -43,7 +43,7 @@ int main() {
 
   tracer.toText("fastmul.log");
   tracer.toVCD("fastmul.vcd");
-  tracer.toTestBench("fastmul_tb.v", "fastmul.v");
+  tracer.toVerilog("fastmul_tb.v", "fastmul.v");
   int ret = !system("iverilog fastmul_tb.v -o fastmul_tb.iv")
           & !system("! vvp fastmul_tb.iv | grep 'ERROR' || false");
   return (0 == ret);

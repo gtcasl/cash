@@ -19,9 +19,9 @@ public:
 
   void toVCD(std::ofstream& out);
 
-  void toTestBench(std::ofstream& out,
-                   const std::string& moduleFileName,
-                   bool passthru);
+  void toVerilog(std::ofstream& out,
+                 const std::string& moduleFileName,
+                 bool passthru);
 
   void toVerilator(std::ofstream& out,
                    const std::string& moduleTypeName);

@@ -104,7 +104,7 @@ int main() {
 
   tracer.toText("sqrt.log");
   tracer.toVCD("sqrt.vcd");
-  tracer.toTestBench("sqrt_tb.v", "sqrt.v", true);
+  tracer.toVerilog("sqrt_tb.v", "sqrt.v", true);
   int ret = !system("iverilog sqrt_tb.v -o sqrt_tb.iv")
           & !system("! vvp sqrt_tb.iv | grep 'ERROR' || false");
   return (0 == ret);

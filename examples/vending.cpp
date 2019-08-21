@@ -56,7 +56,7 @@ int main() {
 
   tracer.toText("vending.log");
   tracer.toVCD("vending.vcd");
-  tracer.toTestBench("vending_tb.v", "vending.v");
+  tracer.toVerilog("vending_tb.v", "vending.v");
   int ret = !system("iverilog vending_tb.v -o vending_tb.iv")
           & !system("! vvp vending_tb.iv | grep 'ERROR' || false");
   std::cout << "ret=" << ret << std::endl;

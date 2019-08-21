@@ -368,7 +368,7 @@ TEST_CASE("cache", "[cache]") {
 
       tracer.toText("cache.log");
       tracer.toVCD("cache.vcd");
-      tracer.toTestBench("cache_tb.v", "cache.v");
+      tracer.toVerilog("cache_tb.v", "cache.v");
       ret &= (0 == system("iverilog cache_tb.v -o cache_tb.iv"));
       ret &= (0 == system("! vvp cache_tb.iv | grep 'ERROR' || false"));
       return ret;
