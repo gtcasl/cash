@@ -63,9 +63,21 @@ public:
 };
 
 template <typename... Args>
-void vl_setw(uint32_t* dst, Args&&... args) {
+void vl_setw(uint32_t* sig, Args&&... args) {
   std::array<uint32_t, sizeof... (Args)> arr{static_cast<uint32_t>(std::forward<Args>(args))...};
   for (size_t i = 0; i < sizeof... (Args); ++i) {
-    dst[i] = arr[i];
+    sig[i] = arr[i];
   }
+}
+
+template <typename... Args>
+int  vl_cmpw(const uint32_t* sig, Args&&... args) {
+  std::array<uint32_t, sizeof... (Args)> arr{static_cast<uint32_t>(std::forward<Args>(args))...};
+  for (size_t i = 0; i < sizeof... (Args); ++i) {
+    if (sig[i] < arr[i])
+      return -1;
+    if (sig[i] > arr[i])
+      return 1;
+  }
+  return 0;
 }

@@ -400,7 +400,10 @@ void tracerimpl::toVerilog(std::ofstream& out,
 
   //--
   auto print_value = [](std::ostream& out, const bv_t& value) {
-    out << value.size() << "'h";
+    if (value.size() > 4 || value.word(0) > 9) {
+      out << value.size() << "'h";
+    }
+
     auto oldflags = out.flags();
     out.setf(std::ios_base::hex, std::ios_base::basefield);
 
@@ -443,8 +446,8 @@ void tracerimpl::toVerilog(std::ofstream& out,
   // log header
   out << "`timescale 1ns/1ns" << std::endl;
   out << "`include \"" << moduleFileName << "\"" << std::endl << std::endl;
-  out << "`define check(x, y) if ((x == y) !== 1'b1)"
-         " if ((x == y) === 1'b0) $error(\"x=%h, expected=%h\", x, y);"
+  out << "`define check(x, y) if ((x == y) !== 1)"
+         " if ((x == y) === 0) $error(\"x=%h, expected=%h\", x, y);"
          " else $warning(\"x=%h, expected=%h\", x, y)" << std::endl << std::endl;
   out << "module testbench();" << std::endl << std::endl;
 
@@ -634,7 +637,9 @@ void tracerimpl::toVerilator(std::ofstream& out,
                         const bv_t& value,
                         uint32_t size = 0,
                         uint32_t offset = 0) {
-    out << "0x";
+    if (size > 4 || value.word(0) > 9) {
+      out << "0x";
+    }
 
     bool skip_zeros = true;
     if (0 == size) {
@@ -682,13 +687,14 @@ void tracerimpl::toVerilator(std::ofstream& out,
   //--
   auto print_output = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
     if (signal_size > 64) {
+      out << "CHECK(vl_cmpw(sim_->" << signal_name;
       for (uint32_t j = 0; j < signal_size;) {
-        out << "CHECK(((uint32_t*)&sim_->" << signal_name << ")[" << (j/32) << "] == ";
+        out << ", ";
         auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
         print_value(out, value, s, j);
-        out << ");" << std::endl;
         j += s;
       }
+      out << ") == 0);" << std::endl;
     } else {
       out << "CHECK(sim_->" << signal_name << " == ";
       print_value(out, value);
@@ -828,7 +834,9 @@ void tracerimpl::toSystemC(std::ofstream& out,
                         const bv_t& value,
                         uint32_t size = 0,
                         uint32_t offset = 0) {
-    out << "0x";
+    if (size > 4 || value.word(0) > 9) {
+      out << "0x";
+    }
 
     bool skip_zeros = true;
     if (0 == size) {
@@ -858,9 +866,9 @@ void tracerimpl::toSystemC(std::ofstream& out,
   //--
   auto print_input = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
     if (signal_size > 64) {
-      out << signal_name << "_ = sc_make_bv<" << signal_size << ">(";
+      out << "sc_setw(" << signal_name << "_";
       for (uint32_t j = 0; j < signal_size;) {
-        if (j) out << ", ";
+        out << ", ";
         auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
         print_value(out, value, s, j);        
         j += s;
@@ -876,13 +884,14 @@ void tracerimpl::toSystemC(std::ofstream& out,
   //--
   auto print_output = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
     if (signal_size > 64) {
+      out << "CHECK(sc_cmpw(" << signal_name<< "_";
       for (uint32_t j = 0; j < signal_size;) {
-        out << "CHECK(" << signal_name << "_.read().get_word(" << (j/32) << ") == ";
+        out << ", ";
         auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
         print_value(out, value, s, j);
-        out << ");" << std::endl;
         j += s;
       }
+      out << ") == 0);" << std::endl;
     } else {
       out << "CHECK(" << signal_name << "_.read() == ";
       print_value(out, value);

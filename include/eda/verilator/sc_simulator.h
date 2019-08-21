@@ -59,12 +59,24 @@ public:
   }
 };
 
-template <unsigned N, typename... Args>
-auto sc_make_bv(Args&&... args) {
-  std::array<uint32_t, sizeof... (Args)> arr{static_cast<uint32_t>(std::forward<Args>(args))...};
-  sc_bv<N> ret;
+template <typename T, typename... Args>
+void sc_setw(sc_signal<T>& sig, Args&&... args) {
+  T value;
+  std::array<uint32_t, sizeof... (Args)> arr{static_cast<uint32_t>(std::forward<Args>(args))...};  
   for (size_t i = 0; i < sizeof... (Args); ++i) {
-    ret.set_word(i, arr[i]);
+    value.set_word(i, arr[i]);
   }
-  return ret;
+  sig.write(value);
+}
+
+template <typename T, typename... Args>
+int sc_cmpw(const sc_signal<T>& sig, Args&&... args) {
+  std::array<uint32_t, sizeof... (Args)> arr{static_cast<uint32_t>(std::forward<Args>(args))...};
+  for (size_t i = 0; i < sizeof... (Args); ++i) {
+    if (sig.read().get_word(i) < arr[i])
+      return -1;
+    if (sig.read().get_word(i) > arr[i])
+      return 1;
+  }
+  return 0;
 }
