@@ -153,7 +153,7 @@ struct system_t_impl<T, std::enable_if_t<(is_object_type_v<T>)>> {
 };
 
 template <typename T>
-struct system_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+struct system_t_impl<T, std::enable_if_t<std::is_integral_v<T>>> {
   using type = std::conditional_t<std::is_signed_v<T>, ch_sint<ch_width_v<T>>, ch_suint<ch_width_v<T>>>;
 };
 }
@@ -192,7 +192,7 @@ struct logic_t_impl<T, std::enable_if_t<is_object_type_v<T>>> {
 };
 
 template <typename T>
-struct logic_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+struct logic_t_impl<T, std::enable_if_t<std::is_integral_v<T>>> {
   using type = std::conditional_t<std::is_signed_v<T>, ch_int<ch_width_v<T>>, ch_uint<ch_width_v<T>>>;
 };
 }

@@ -23,8 +23,8 @@ CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_andr)
 CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_orr)
 CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_xorr)
 
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_shl)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_shr)
+CH_SYSTEM_FUNCTION2Y_DECL(ch_sbitbase, ch_shl)
+CH_SYSTEM_FUNCTION2Y_DECL(ch_sbitbase, ch_shr)
 
 template <typename T>
 class ch_sbitbase {
@@ -184,14 +184,14 @@ protected:
 
   template <typename R, typename U>
   auto do_shl(const U& other) const {
-    static_assert(ch_width_v<U> <= 32, "invalid size");
+    static_assert(ch_width_v<U> <= 64, "invalid size");
     auto self = reinterpret_cast<const T*>(this);
     return make_system_op<R, ch_op::shl>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shr(const U& other) const {
-    static_assert(ch_width_v<U> <= 32, "invalid size");
+    static_assert(ch_width_v<U> <= 64, "invalid size");
     auto self = reinterpret_cast<const T*>(this);
     return make_system_op<R, ch_op::shr>(*self, other);
   }
@@ -237,8 +237,8 @@ CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_andr)
 CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_orr)
 CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_xorr)
 
-CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_shl)
-CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_shr)
+CH_LOGIC_FUNCTION2Y_DECL(ch_bitbase, ch_shl)
+CH_LOGIC_FUNCTION2Y_DECL(ch_bitbase, ch_shr)
 
 template <typename T>
 class ch_bitbase {
@@ -421,14 +421,14 @@ protected:
   template <typename R, typename U>
   auto do_shl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    static_assert(ch_width_v<U> <= 32, "invalid size");
+    static_assert(ch_width_v<U> <= 64, "invalid size");
     return make_logic_op<R, ch_op::shl>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shr(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    static_assert(ch_width_v<U> <= 32, "invalid size");
+    static_assert(ch_width_v<U> <= 64, "invalid size");
     return make_logic_op<R, ch_op::shr>(*self, other);
   }
 

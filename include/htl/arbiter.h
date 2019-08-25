@@ -37,6 +37,19 @@ struct ch_rrArbiter {
   }
 };
 
+template <unsigned N>
+struct ch_ctrArbiter {
+  __io (
+    __in (ch_bit<N>) in,
+    __out (ch_bit<N>) grant
+  );
+
+  void describe() {
+    ch_counter<N> ctr(0);
+    io.grant = ch_bit<N>(1) << ctr.value();
+  }
+};
+
 template <typename T, unsigned I, typename Arbiter = ch_rrArbiter<I>>
 struct ch_xbar_switch {
   using value_type   = T;
@@ -61,7 +74,7 @@ struct ch_xbar_switch {
     }
     io.out.data  = xbar.io.out[0].data;
     io.out.valid = xbar.io.out[0].valid;
-    xbar.io.sel = arb.io.grant;
+    xbar.io.sel  = arb.io.grant;
     for (unsigned i = 0; i < I; ++i) {
       io.in[i].ready = io.out.ready && (arb.io.grant == (1 << i));
     }

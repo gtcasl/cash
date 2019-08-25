@@ -55,10 +55,9 @@ auto ch_hmux(const ch_bit<(1+sizeof...(Args))>& sel,
              const Args&... args) {
   static_assert((is_data_type_v<ArgN>), "invalid type");
   static_assert(sizeof...(Args) >= 1, "invalid size");
-  static_assert(sizeof...(Args) <= 63, "invalid size");
-  auto cs = ch_case(sel, (1ull << sizeof...(Args)), argN);
+  auto cs = ch_case(sel, (ch_sbit<1+sizeof...(Args)>(1) << sizeof...(Args)), argN);
   int i = 0;
-  for_each_reverse([&](auto arg){ cs(1ull << i++, arg); }, args...);
+  for_each_reverse([&](auto arg){ cs(ch_sbit<1+sizeof...(Args)>(1) << i++, arg); }, args...);
   return cs(0);
 }
 
@@ -67,10 +66,9 @@ auto ch_hmux(const ch_bit<N>& sel, const std::array<T, M>& args) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N == M, "invalid size");
   static_assert(N >= 2, "invalid size");
-  static_assert(N <= 64, "invalid size");
   auto cs = ch_case(sel, 0x1, args[0]);
   for (unsigned i = 1; i < N; ++i) {
-    cs(1ull << i, args[i]);
+    cs(ch_sbit<N>(1) << i, args[i]);
   }
   T def;
   def.as_int() = 0;
@@ -82,10 +80,9 @@ auto ch_hmux(const ch_bit<N>& sel, const ch_bit<M>& args) {
   static constexpr unsigned K = M / N;
   static_assert(N*K == M, "invalid size");
   static_assert(N >= 2, "invalid size");
-  static_assert(N <= 64, "invalid size");
   auto cs = ch_case(sel, 0x1, ch_aslice<K>(args, 0));
   for (unsigned i = 1; i < N; ++i) {
-    cs(1ull << i, ch_aslice<K>(args, i));
+    cs(ch_sbit<N>(1) << i, ch_aslice<K>(args, i));
   }
   return cs(0);
 }

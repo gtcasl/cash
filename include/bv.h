@@ -756,8 +756,7 @@ int bv_msb(const T* in, uint32_t size) {
 
 template <typename U, typename T>
 U bv_cast(const T* in, uint32_t size) {
-  static_assert(std::is_integral_v<T>, "invalid type");  
-  CH_DBGCHECK(bitwidth_v<U> >= size, "invalid size");
+  static_assert(std::is_integral_v<T>, "invalid type");
   if constexpr (bitwidth_v<U> <= bitwidth_v<T>) {
     CH_UNUSED(size);
     return bit_cast<U>(in[0]);

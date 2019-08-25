@@ -587,7 +587,7 @@ auto make_logic_op(const A& a, const B& b) {
     return logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
     CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
@@ -595,20 +595,12 @@ auto make_logic_op(const A& a, const B& b) {
     return logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
     CH_API_ENTRY(1); \
+    auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs); \
-      if constexpr (std::is_integral_v<U>) { \
-        return logic_accessor::method<T>(_lhs, _rhs); \
-      } else { \
-        return logic_accessor::method<ch_size_cast_t<T, ch_width_v<U>>>(_lhs, _rhs); \
-      } \
-    } else { \
-      return op(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
-    } \
+    return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs); \
   }
   
 #define CH_LOGIC_OPERATOR2Z_IMPL(base, op, method) \
@@ -651,6 +643,14 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs); \
   template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
+
+#define CH_LOGIC_FUNCTION2Y_DECL(base, func) \
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs);
 
 #define CH_LOGIC_FUNCTION1B_IMPL(base, func, method) \
   friend auto func(const base& self) { \
@@ -831,7 +831,7 @@ auto make_logic_op(const A& a, const B& b) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
     CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
@@ -839,53 +839,37 @@ auto make_logic_op(const A& a, const B& b) {
     return logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
     CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
-    if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = ch_logic_t<U>(rhs); \
-      if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
-        static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return logic_accessor::method<T>(_lhs, _rhs); \
-      } else { \
-        return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
-      } \
+    auto _rhs = ch_logic_t<U>(rhs); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
+      return logic_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return func<R>(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs)); \
+      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
     CH_API_ENTRY(1); \
+    auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs); \
-      if constexpr (std::is_integral_v<U>) { \
-        return logic_accessor::method<T>(_lhs, _rhs); \
-      } else { \
-        return logic_accessor::method<ch_size_cast_t<T, ch_width_v<U>>>(_lhs, _rhs); \
-      } \
-    } else { \
-      return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
-    } \
+    return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
     CH_API_ENTRY(1); \
+    auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs); \
-      if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
-        static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return logic_accessor::method<T>(_lhs, _rhs); \
-      } else { \
-        return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
-      } \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
+      return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs); \
     } else { \
-      return func<R>(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
+      return logic_accessor::method<ch_size_cast_t<ch_logic_t<U>, R>>(_lhs, _rhs); \
     } \
   }
 

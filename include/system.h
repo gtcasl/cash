@@ -626,18 +626,18 @@ auto make_system_op(const A& lhs, const B& rhs) {
     return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
     return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+            CH_REQUIRE(std::is_integral_v<U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
-    auto _lhs = system_op_cast<T>(lhs); \
+    auto _lhs = ch_system_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<ch_system_t<U>>(_lhs, _rhs); \
   }
 
  #define CH_SYSTEM_OPERATOR2Z_IMPL(base, op, method) \
@@ -680,6 +680,14 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs); \
   template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
+
+#define CH_SYSTEM_FUNCTION2Y_DECL(base, func) \
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <typename T, typename U, CH_REQUIRE(std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs);
 
 #define CH_SYSTEM_FUNCTION1B_IMPL(base, func, method) \
   friend auto func(const base& self) { \
@@ -822,14 +830,14 @@ auto make_system_op(const A& lhs, const B& rhs) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
     return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
@@ -841,30 +849,24 @@ auto make_system_op(const A& lhs, const B& rhs) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+            CH_REQUIRE(std::is_integral_v<U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    auto _lhs = system_op_cast<T>(lhs); \
+    auto _lhs = ch_system_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<ch_system_t<U>>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+            CH_REQUIRE(std::is_integral_v<U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    auto _lhs = system_op_cast<T>(lhs); \
+    auto _lhs = ch_system_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
-      static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return system_accessor::method<T>(_lhs, _rhs); \
-    } else { \
-      return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
-    } \
+    return system_accessor::method<ch_size_cast_t<ch_system_t<U>, R>>(_lhs, _rhs); \
   }
 
 #define CH_SYSTEM_OP_CAST(type) \
   template <typename U, \
             CH_REQUIRE(std::is_integral_v<U>)> \
   explicit operator U() const { \
-    static_assert(bitwidth_v<U> >= type::traits::bitwidth, "invalid size"); \
     auto self = reinterpret_cast<const type*>(this); \
     auto ret = static_cast<U>(system_accessor::data(*self)); \
     if constexpr(is_signed_v<type> && (bitwidth_v<U> > type::traits::bitwidth)) { \

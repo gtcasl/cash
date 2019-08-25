@@ -95,20 +95,19 @@ void selectimpl::print(std::ostream& out) const {
 
 lnode select_impl::emit(const lnode& def_value) {
   auto& stmts = stmts_;
-  auto key = key_.empty() ? nullptr : key_.impl();
+  auto key  = key_.empty() ? nullptr : key_.impl();
   auto sloc = get_source_location();
-  auto sel = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc);
+  auto sel  = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc);
   if (key) {
     // insert switch cases in ascending order
-    assert(key->size() <= 64);
     for (auto& stmt : stmts) {
       auto pred = stmt.first.impl();
       assert(type_lit == pred->type()); // the case predicate should be a literal value
-      auto ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(pred)->value());
+      auto& ipred = reinterpret_cast<litimpl*>(pred)->value();
       uint32_t i = 1;
       for (; i < sel->num_srcs(); i += 2) {
-        auto sel_ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(sel->src(i).impl())->value());
-        CH_CHECK(sel_ipred != ipred, "duplicate switch case predicate");
+        auto& sel_ipred = reinterpret_cast<litimpl*>(sel->src(i).impl())->value();
+        CH_CHECK(sel_ipred != ipred, "duplicate switch case");
         if (sel_ipred > ipred) {
           sel->insert_src(i, stmt.second.impl());
           sel->insert_src(i, pred);

@@ -664,6 +664,22 @@ public:
     return !(*this == other);
   }
 
+  bool operator<(const bitvector& other) const {
+    return bv_lt<false>(words_, size_, other.words_, other.size_);
+  }
+
+  bool operator>=(const bitvector& other) const {
+    return !(*this < other);
+  }
+
+  bool operator>(const bitvector<word_t>& other) const {
+    return (other < *this);
+  }
+
+  bool operator<=(const bitvector& other) const {
+    return !(other < *this);
+  }
+
   void reset() {
     bv_reset(words_, size_);
   }
