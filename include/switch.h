@@ -46,14 +46,17 @@ public:
 
   switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
 
-  template <typename V,
-            CH_REQUIRE(!std::is_convertible_v<V, fvoid_t>)>
-  switch_body_t<K> operator,(const V& value) {
-    static_assert(is_equality_comparable_v<K, V>, "invalid type");
-    if constexpr (std::is_enum_v<V>) {
-      return switch_body_t<K>(switch_, sdata_type(ch_width_v<K>, (int)value));
+  template <typename P,
+            CH_REQUIRE(!std::is_convertible_v<P, fvoid_t>)>
+  switch_body_t<K> operator,(const P& pred) {
+    static_assert(is_equality_comparable_v<K, P>, "invalid type");
+    static_assert(!is_logic_type_v<P>, "invalid type");
+    if constexpr (std::is_integral_v<P>) {
+      return switch_body_t<K>(switch_, sdata_type(ch_width_v<K>, pred));
+    } if constexpr (std::is_enum_v<P>) {
+      return switch_body_t<K>(switch_, sdata_type(ch_width_v<K>, static_cast<int>(pred)));
     } else {
-      return switch_body_t<K>(switch_, sdata_type(ch_width_v<K>, value));
+      return switch_body_t<K>(switch_, static_cast<sdata_type>(pred));
     }
   }
 
