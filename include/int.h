@@ -52,7 +52,7 @@ public:
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRE(M < N)>
   ch_sint(const ch_suint<M>& other)
     : ch_sint(make_system_buffer(N, idname<ch_sint>())) {
     this->operator=(other);
@@ -168,7 +168,7 @@ public:
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRE(M < N)>
   ch_int(const ch_uint<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
     this->operator=(other);
