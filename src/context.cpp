@@ -571,7 +571,7 @@ enum_string_cb context::enum_to_string(uint32_t id) {
   return iter->second;
 }
 
-void context::dump_ast(std::ostream& out) {
+void context::dump_cfg(std::ostream& out) {
   for (auto node : nodes_) {
     node->print(out);
     out << std::endl;
@@ -579,7 +579,7 @@ void context::dump_ast(std::ostream& out) {
   std::cout << "total nodes: " << nodes_.size() << std::endl;
 }
 
-void context::dump_cfg(lnodeimpl* target, std::ostream& out) {
+void context::debug_cfg(lnodeimpl* target, std::ostream& out) {
   std::unordered_set<uint32_t> visited_nodes;
   std::unordered_map<uint32_t, tapimpl*> taps;
 

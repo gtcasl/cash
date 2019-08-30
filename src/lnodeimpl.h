@@ -111,8 +111,6 @@ public:
 
   virtual void write(uint32_t, lnodeimpl*, uint32_t, uint32_t);
 
-  virtual bool check_fully_initialized() const;
-
   auto users() const {
    return users_;
   }

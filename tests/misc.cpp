@@ -150,7 +150,7 @@ TEST_CASE("misc", "[misc]") {
   
   SECTION("taps", "[tap]") {
     TESTX([]()->bool {
-      auto_cflags_enable dump_enable(cflags::dump_ast | cflags::dump_cfg);
+      auto_cflags_enable dump_enable(cflags::dump_cfg | cflags::debug_cfg);
       ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device("taps",
         [](auto lhs, auto rhs) {
           auto ret = (lhs + rhs) / 2;
@@ -173,7 +173,7 @@ TEST_CASE("misc", "[misc]") {
     });
 
     TESTX([]()->bool {
-      auto_cflags_enable dump_enable(cflags::dump_ast | cflags::dump_cfg);
+      auto_cflags_enable dump_enable(cflags::dump_cfg | cflags::debug_cfg);
       ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device("taps2",
         [](auto lhs, auto rhs) {
           auto f = [](auto in) {

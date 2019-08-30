@@ -257,9 +257,9 @@ public:
 
   //--
   
-  void dump_ast(std::ostream& out);
+  void dump_cfg(std::ostream& out);
 
-  void dump_cfg(lnodeimpl* target, std::ostream& out);
+  void debug_cfg(lnodeimpl* target, std::ostream& out);
 
   void dump_stats(std::ostream& out);
 

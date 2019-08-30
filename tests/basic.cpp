@@ -154,16 +154,6 @@ TEST_CASE("basics", "[basics]") {
       return (b == 1);
     });
 
-    /*TODO(BUG - fails in no-opt mode)
-    TEST([]()->ch_bool {
-      ch_uint32 a;
-      ch_uint8 x, y;
-      ch_asliceref<8>(a, 0) = x;
-      ch_asliceref<8>(a, 1) = y;
-      ch_asliceref<4>(y, 1) = 0x5;
-      return (ch_aslice<4>(a, 3) == 0x5);
-    });*/
-
     TEST([]()->ch_bool {
       ch_module<TestAssign> m;
       m.io.in = 0xA;
@@ -232,6 +222,20 @@ TEST_CASE("basics", "[basics]") {
       ch_bit4 a(0);
       auto b = !a;
       return b;
+    });
+    TEST([]()->ch_bool {
+      ch_uint16 a;
+      ch_asliceref<4>(a, 1) = 0x5;
+      auto b = ch_aslice<4>(a, 1);
+      return (b == 0x5);
+    });
+    TEST([]()->ch_bool {
+      ch_uint16 a;
+      ch_uint8 x;
+      ch_asliceref<8>(a, 1) = x;
+      ch_asliceref<4>(x, 0) = 0x5;
+      auto b = ch_aslice<4>(a, 2);
+      return (b == 0x5);
     });
   }
   SECTION("clone", "[clone]") {

@@ -112,6 +112,7 @@ src/deviceimpl.h
 src/eda/altera/avalon_sim.cpp
 src/firrtlwriter.cpp
 src/firrtlwriter.h
+src/interval.h
 src/ioimpl.cpp
 src/ioimpl.h
 src/libjit.cpp

@@ -2938,7 +2938,7 @@ private:
                                        uint32_t length) {
     __source_marker();
 
-    if (nullptr == j_cur)
+    if (nullptr == j_cur && 0 == dst_offset)
       return j_src;
 
     auto xsize = std::max(get_value_size(j_src), dst_offset + length);
@@ -2946,32 +2946,40 @@ private:
 
     if (jit_value_is_constant(j_src)) {
       auto src = this->get_constant_value(j_src);
-      if (0 == src)
+      if (0 == src && j_cur != nullptr)
         return j_cur;
+
       assert(dst_offset < WORD_SIZE);
-      src = (block_type(src) << dst_offset);
+      auto src_s = (block_type(src) << dst_offset);
+
+      if (nullptr == j_cur)
+        return this->emit_constant(src_s, j_xtype);
+
       if (jit_value_is_constant(j_cur)) {
         auto val = this->get_constant_value(j_cur);
-        return this->emit_constant(src | val, j_xtype);
-      } else {
-        auto j_tmp = this->emit_constant(src, j_xtype);
-        return jit_insn_or(j_func_, j_cur, j_tmp);
+        return this->emit_constant(src_s | val, j_xtype);
       }
+
+      auto j_tmp = this->emit_constant(src_s, j_xtype);
+      return jit_insn_or(j_func_, j_cur, j_tmp);
     }
 
     jit_value_t j_src_s(j_src);
-   if (dst_offset) {
+    if (dst_offset) {
       auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_int32);
       auto j_src_n = this->emit_cast(j_src, j_xtype);
       j_src_s = jit_insn_shl(j_func_, j_src_n, j_dst_lsb);
-   }
+    }
+
+    if (nullptr == j_cur)
+      return j_src_s;
 
     if (jit_value_is_constant(j_cur)
      && 0 == this->get_constant_value(j_cur)) {
       return j_src_s;
     }
 
-    return jit_insn_or(j_func_, j_src_s, j_cur);
+    return jit_insn_or(j_func_, j_cur, j_src_s);
   }
 
   void emit_clear_extra_bits(lnodeimpl* node) {
@@ -3232,7 +3240,7 @@ public:
     jit_insn_return(j_func_, j_zero);
 
     // dump JIT assembly code
-    if (platform::self().cflags() & cflags::dump_jit) {
+    if (platform::self().cflags() & cflags::dump_ast) {
       auto file = fopen("simjit.ast", "w");
       jit_dump_ast(file, j_func_, "simjit");
       fclose(file);

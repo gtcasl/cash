@@ -29,14 +29,6 @@ proxyimpl::proxyimpl(context* ctx,
   this->add_source(0, src, offset, length);
 }
 
-bool proxyimpl::check_fully_initialized() const {
-  uint32_t size = 0;
-  for (auto& range : ranges_) {
-    size += range.length;
-  }
-  return (size == this->size());
-}
-
 lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto node = ctx->create_node<proxyimpl>(this->size(), name_, sloc_);
   for (auto& src : this->srcs()) {
@@ -46,6 +38,14 @@ lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
     node->ranges().emplace_back(range);
   }
   return node;
+}
+
+bool proxyimpl::has_sparse_range() const {
+  uint32_t size = 0;
+  for (auto& r : ranges_) {
+    size += r.length;
+  }
+  return (size != this->size());
 }
 
 void proxyimpl::add_source(uint32_t dst_offset,
@@ -239,12 +239,12 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
     auto& range = ranges_[i];
     if (range.src_idx >= index) {
       if (range.src_idx > index) {
-        range.dst_offset = d;
+        if (resize) {
+          range.dst_offset = d;
+        }
         range.src_idx -= 1;
       } else {
-        if (resize) {
-          size -= range.length;
-        }
+        size -= range.length;
         ranges_.erase(ranges_.begin() + i);
         --i;
         --n;
@@ -255,7 +255,9 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
   }
   // remove src
   this->remove_src(index);
-  this->resize(size);
+  if (resize) {
+    this->resize(size);
+  }
 }
 
 void proxyimpl::write(uint32_t dst_offset,
@@ -366,34 +368,4 @@ void refimpl::write(
     src,
     src_offset,
     length);
-}
-
-bool refimpl::check_fully_initialized() const {
-  auto start = ranges_[0].src_offset;
-  auto end = start + this->size();
-  for (auto& range : reinterpret_cast<proxyimpl*>(this->src(0).impl())->ranges()) {
-    auto src_start = range.dst_offset;
-    auto src_end = range.dst_offset + range.length;
-    // check overlap
-    if (src_start < end && start < src_end) {
-      if (src_start <= start && src_end >= end) {
-        // source fully overlaps
-        return true;
-      } else if (src_start < start) {
-        // source overlaps on the left
-        auto delta = src_end - start;
-        start +=  delta;
-      } else if (src_end > end) {
-        // source overlaps on the right
-        auto delta = end - src_start;
-        end -= delta;
-      } else {
-        // source fully included
-        assert(src_start == start); // no overlap on left
-        auto delta = src_end - start;
-        start += delta;
-      }
-    }
-  }
-  return (start == end);
 }

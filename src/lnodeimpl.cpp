@@ -107,10 +107,6 @@ void lnodeimpl::write(uint32_t dst_offset,
   assert(false);
 }
 
-bool lnodeimpl::check_fully_initialized() const {
-  return true;
-}
-
 lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
   assert(length <= size_);
   auto self = const_cast<lnodeimpl*>(this);

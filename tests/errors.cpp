@@ -13,19 +13,24 @@ TEST_CASE("errors", "[errors]") {
       ch_uint8 x, y;
       ch_asliceref<8>(a, 0) = x;
       ch_asliceref<8>(a, 1) = y;
-      ch_asliceref<4>(y, 1) = 0x5;
-      return (ch_aslice<4>(a, 0) == 0x5);
+      ch_asliceref<4>(y, 1) = 0x1;
+      return (ch_aslice<4>(a, 0) == 0x2);
     }), std::domain_error);
 
-    /*TODO(bug!)
+    CHECK_THROWS_AS(TEST([]()->ch_bool {
+      ch_uint16 a;
+      ch_asliceref<4>(a, 0) = 0x1;
+      return (ch_aslice<4>(a, 1) == 0x2);
+    }), std::domain_error);
+
     CHECK_THROWS_AS(TEST([]()->ch_bool {
       ch_uint32 a;
       ch_uint8 x, y;
       ch_asliceref<8>(a, 0) = x;
       ch_asliceref<8>(a, 1) = y;
-      ch_asliceref<4>(y, 1) = 0x5;
-      return (ch_aslice<4>(a, 2) == 0x5);
-    }), std::domain_error);*/
+      ch_asliceref<4>(y, 1) = 0x1;
+      return (ch_aslice<4>(a, 2) == 0x2);
+    }), std::domain_error);
 
     CHECK_THROWS_AS(TEST([]()->ch_bool {  
       ch_int4 a(0), b;

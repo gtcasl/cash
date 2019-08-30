@@ -98,9 +98,9 @@ public:
   }
 
 private:
-    std::stringstream ss_;
-    sstreamf(const sstreamf&);
-    sstreamf& operator=(const sstreamf&);
+  std::stringstream ss_;
+  sstreamf(const sstreamf&);
+  sstreamf& operator=(const sstreamf&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

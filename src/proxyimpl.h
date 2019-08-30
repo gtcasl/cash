@@ -39,8 +39,6 @@ public:
         && (this->src(0).size() == this->size());
   }
 
-  bool check_fully_initialized() const override;
-
   const range_t& range(uint32_t index) const {
     return ranges_[index];
   }
@@ -52,6 +50,8 @@ public:
   std::vector<range_t>& ranges() {
     return ranges_;
   }
+
+  bool has_sparse_range() const;
 
   void add_source(uint32_t dst_offset,
                   lnodeimpl* src,
@@ -108,8 +108,6 @@ public:
              lnodeimpl* src,
              uint32_t src_offset,
              uint32_t length) override;
-
-  bool check_fully_initialized() const override;
 
 protected:
 

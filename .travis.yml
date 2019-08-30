@@ -46,11 +46,13 @@ script:
   - make -j8 all
   - make test   
   - CASH_CFLAGS=256 make test    # Turn off JIT
+  - CASH_CFLAGS=512 make test    # Turn off CFO opts
   - CASH_CFLAGS=523904 make test # Turn off all opts
   #- valgrind bin/testsuite
   - pushd tests
   - valgrind ../bin/testsuite
   - CASH_CFLAGS=256 valgrind ../bin/testsuite
+  - CASH_CFLAGS=512 valgrind ../bin/testsuite
   - CASH_CFLAGS=523904 valgrind ../bin/testsuite
   - popd
   - popd
@@ -74,6 +76,7 @@ script:
   - make -j8 all 
   - CASH_CFLAGS=15  make test
   - CASH_CFLAGS=271 make test
+  - CASH_CFLAGS=527 make test
   - CASH_CFLAGS=523919 make test
   - CASH_CFLAGS=524288 make test
   - popd  

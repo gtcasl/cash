@@ -143,7 +143,7 @@ struct ch_llqueue {
       ch_bit<N> data_upd, data_new;
       for (unsigned i = 0; i < N; ++i) {
         data_upd[i] = reading | (writing & ptr[i]);
-        data_new[i] = (!reading) | ptr[i+1];
+        data_new[i] = ~reading | ptr[i+1];
       }
 
       std::array<ch_reg<T>, N> data;

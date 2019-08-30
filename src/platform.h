@@ -6,9 +6,9 @@ namespace ch {
 namespace internal {
 
 enum class cflags {
-  dump_ast        = (1 << 0),
+  debug_cfg       = (1 << 0),
   dump_cfg        = (1 << 1),
-  dump_jit        = (1 << 2),
+  dump_ast        = (1 << 2),
   dump_asm        = (1 << 3),
   show_sloc       = (1 << 4),
   check_reg_init  = (1 << 5),
