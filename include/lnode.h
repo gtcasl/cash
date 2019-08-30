@@ -52,10 +52,10 @@ enum class op_flags {
   is_signed  = 1 << 12,
 };
 
-#define CH_OP_ARY(x)    op_flags((int)x & (0x1 << 5))
-#define CH_OP_CLASS(x)  op_flags((int)x & (0x7 << 6))
-#define CH_OP_RESIZE(x) op_flags((int)x & (0x3 << 9))
-#define CH_OP_PROP(x)   op_flags((int)x & ~((1<<11)-1))
+#define CH_OP_ARY(x)    op_flags(int(x) & (0x1 << 5))
+#define CH_OP_CLASS(x)  op_flags(int(x) & (0x7 << 6))
+#define CH_OP_RESIZE(x) op_flags(int(x) & (0x3 << 9))
+#define CH_OP_PROP(x)   op_flags(int(x) & ~((1<<11)-1))
 
 #define CH_OP_IS_SIGNED(x)    (0 != (CH_OP_PROP(x) & op_flags::is_signed))
 #define CH_OP_IS_SYMMETRIC(x) (0 != (CH_OP_PROP(x) & op_flags::symmetric))

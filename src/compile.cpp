@@ -789,6 +789,20 @@ bool compiler::constant_folding() {
         return ctx_->create_literal(sdata_type(1, true));
       }
       break;
+    case ch_op::eq:
+      if (src0_is_zero) {
+        return ctx_->create_node<opimpl>(ch_op::notl, node->size(), node->is_signed(), src1, node->sloc());
+      } else if (src1_is_zero) {
+        return ctx_->create_node<opimpl>(ch_op::notl, node->size(), node->is_signed(), src0, node->sloc());
+      }
+      break;
+    case ch_op::ne:
+      if (src0_is_zero) {
+        return ctx_->create_node<opimpl>(ch_op::orr, node->size(), node->is_signed(), src1, node->sloc());
+      } else if (src1_is_zero) {
+        return ctx_->create_node<opimpl>(ch_op::orr, node->size(), node->is_signed(), src0, node->sloc());
+      }
+      break;
     default:
       break;
     }
