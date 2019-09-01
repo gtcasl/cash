@@ -13,7 +13,7 @@ option(CALLTRACE "Enable call trace." ON)
 set(DEFAULT_BUILD_TYPE "Release")
 
 # use C++17 compiler
-set(CMAKE_CXX_STANDARD 17)
+add_compile_options(-std=c++17)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)

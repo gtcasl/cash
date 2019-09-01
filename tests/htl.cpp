@@ -328,7 +328,7 @@ TEST_CASE("htl", "[htl]") {
   }
   SECTION("rrArbiter", "[rrArbiter]") {
     TESTX([]()->bool {
-      ch_device<ch_rrArbiter<4>> device;
+      ch_device<ch_matArbiter<4>> device;
       ch_simulator sim(device);
       ch_tick t = sim.reset(0);
       device.io.in[0] = false;

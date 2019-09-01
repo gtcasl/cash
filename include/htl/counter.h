@@ -44,28 +44,44 @@ public:
 
   ch_counter(const ch_bool& incr = true) : ch_counter(incr, 1) {}
 
-  const auto& value() const {
+  auto& value() const {
     return value_;
   }
 
-  const auto& next() const {
+  auto& next() const {
     return next_;
   }
 
-  auto& init() {
+  auto& init() const {
     return init_;
   }
 
-  auto& step() {
+  void init(const ch_uint<log2up(N)>& init) {
+    init_ = init;
+  }
+
+  auto& step() const {
     return step_;
   }
 
-  auto& incr() {
+  void step(const ch_uint<log2up(N)>& step) {
+    step_ = step;
+  }
+
+  auto& incr() const {
     return incr_;
   }
 
-  auto& reset() {
+  void incr(const ch_bool& incr) {
+    incr_ = incr;
+  }
+
+  auto& reset() const {
     return reset_;
+  }
+
+  void reset(const ch_bool& reset) {
+    reset_ = reset;
   }
 
 protected:

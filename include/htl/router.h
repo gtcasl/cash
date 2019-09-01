@@ -165,7 +165,7 @@ public:
     }
 
     // switch allocation response
-    std::array<ch_module<ch_rrArbiter<Cfg::num_input_ports>>, Cfg::num_output_ports> arbiter;
+    std::array<ch_module<ch_matArbiter<Cfg::num_input_ports>>, Cfg::num_output_ports> arbiter;
     ch_vec<bits_in_t, Cfg::num_output_ports> sa_resp;
     for (unsigned j = 0; j < Cfg::num_output_ports; ++j) {
       arbiter[j].io.in = sa_req[j];

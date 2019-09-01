@@ -353,7 +353,7 @@ public:
       auto tmp_buf_push = io.enq.valid && io.enq.ready;
       ch_counter<DataPerBlk> counter(tmp_buf_push);
       auto is_last_entry = counter.value() && io.done;
-      counter.reset() = is_last_entry;
+      counter.reset(is_last_entry);
 
       auto tmp_buf_going_full = (counter.value() == (DataPerBlk-1)) && io.enq.valid;
       auto tmp_buf_flush = (tmp_buf_full || is_last_entry) && in_fifo_.io.enq.ready;
