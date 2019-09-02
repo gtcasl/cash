@@ -384,7 +384,7 @@ bool verilogwriter::print_decl(std::ostream& out,
     }
     visited.insert(node->id());
     if (!ref) {      
-      if (platform::self().cflags() & cflags::show_sloc) {
+      if (platform::self().cflags() & cflags::codegen_sloc) {
         out << ";";
         auto& sloc = node->sloc();
         if (!sloc.empty()) {

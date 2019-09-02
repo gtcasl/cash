@@ -188,9 +188,10 @@ void printimpl::print(std::ostream& out) const {
   uint32_t n = this->num_srcs();
   if (n > 0) {
     out << "(";
+    out << "format=\"" << format_ << "\"";
     uint32_t i = 0;
     if (this->has_pred()) {
-      out << "pred=" << this->src(i++).id();
+      out << ", pred=" << this->src(i++).id();
     }
     for (; i < n; ++i) {
       if (i > 0)

@@ -10,10 +10,10 @@ enum class cflags {
   dump_cfg        = (1 << 1),
   dump_ast        = (1 << 2),
   dump_asm        = (1 << 3),
-  show_sloc       = (1 << 4),
-  check_reg_init  = (1 << 5),
-  force_reg_init  = (1 << 6),
-  disable_smo     = (1 << 7),
+  codegen_sloc    = (1 << 4),
+  codegen_merged  = (1 << 5),
+  check_reg_init  = (1 << 6),
+  force_reg_init  = (1 << 7),
   disable_jit     = (1 << 8),
   disable_cfo     = (1 << 9),
   disable_cse     = (1 << 10),
@@ -25,7 +25,7 @@ enum class cflags {
   disable_swo     = (1 << 16),
   disable_sro     = (1 << 17),
   disable_snc     = (1 << 18),
-  codegen_merged  = (1 << 19),
+  disable_smo     = (1 << 19),
   verbose_tracing = (1 << 20)
 };
 

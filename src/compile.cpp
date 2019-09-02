@@ -326,7 +326,8 @@ bool compiler::dead_code_elimination() {
   for (auto node : ctx_->gtaps()) {
     live_nodes.insert(node);
   }
-  for (auto node : ctx_->ext_nodes()) {    if (nullptr == node->users())
+  for (auto node : ctx_->ext_nodes()) {
+    if (nullptr == node->users())
       continue;
     live_nodes.insert(node);
   }
