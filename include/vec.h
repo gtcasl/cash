@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ioport.h"
+#include "streams.h"
 
 namespace ch {
 namespace internal {
@@ -159,7 +160,9 @@ protected:
   friend ch_ostream& operator<<(ch_ostream& out, const ch_vec& in) {
     out << "(";
     for (unsigned i = 0; i < N; ++i) {
-      if (i) { out << ", "; }
+      if (i) {
+        out << ", ";
+      }
       out << in[N - 1 - i];
     }
     out << ")";

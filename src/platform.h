@@ -30,27 +30,27 @@ enum class cflags {
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {
-  return ((int)lsh | (int)rhs);
+  return static_cast<int>(lsh) | static_cast<int>(rhs);
 }
 
 inline constexpr auto operator|(int lsh, cflags rhs) {
-  return (lsh | (int)rhs);
+  return lsh | static_cast<int>(rhs);
 }
 
 inline constexpr auto operator|(cflags lsh, int rhs) {
-  return ((int)lsh | rhs);
+  return static_cast<int>(lsh) | rhs;
 }
 
 inline constexpr auto operator&(cflags lsh, cflags rhs) {
-  return ((int)lsh & (int)rhs);
+  return static_cast<int>(lsh) & static_cast<int>(rhs);
 }
 
 inline constexpr auto operator&(int lsh, cflags rhs) {
-  return (lsh & (int)rhs);
+  return lsh & static_cast<int>(rhs);
 }
 
 inline constexpr auto operator&(cflags lsh, int rhs) {
-  return ((int)lsh & rhs);
+  return static_cast<int>(lsh) & rhs;
 }
 
 class platform {

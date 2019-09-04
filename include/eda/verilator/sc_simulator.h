@@ -35,16 +35,13 @@ public:
     return ticks;
   }
 
-  unsigned long step(unsigned long ticks) {
-    ticks = this->tick(ticks);
-    ticks = this->tick(ticks);
+  unsigned long step(unsigned long ticks, uint32_t count = 1) {
+    while (count--) {
+      sc_start(1, SC_NS);
+      clock_.write(!clock_.read());
+      ++ticks;
+    }
     return ticks;
-  }
-
-  unsigned long tick(unsigned long ticks) {
-    sc_start(1, SC_NS);
-    clock_.write(!clock_.read());
-    return ticks + 1;
   }
 
   auto create_trace(const char* name) {

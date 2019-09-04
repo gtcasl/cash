@@ -108,7 +108,7 @@ auto TestFunction(F&& f) {
   using GF = GenericFunction<F>;
   ch_device<GF> device(f);
   ch_simulator sim(device);
-  sim.run();
+  sim.run(2);
   ch_system_t<typename GF::return_type> ret;
   ret = device.io.out;
   return ret;
@@ -120,7 +120,7 @@ auto TestFunction(F&& f, const T0& a) {
   ch_device<GF> device(f);
   device.io.in0 = a;
   ch_simulator sim(device);
-  sim.run();
+  sim.run(2);
   ch_system_t<typename GF::return_type> ret;
   ret = device.io.out;
   return ret;
@@ -133,7 +133,7 @@ auto TestFunction(F&& f, const T0& a, const T1& b) {
   device.io.in0 = a;
   device.io.in1 = b;
   ch_simulator sim(device);
-  sim.run();
+  sim.run(2);
   ch_system_t<typename GF::return_type> ret;
   ret = device.io.out;
   return ret;
@@ -147,7 +147,7 @@ auto TestFunction(F&& f, const T0& a, const T1& b, const T2& c) {
   device.io.in1 = b;
   device.io.in2 = c;
   ch_simulator sim(device);
-  sim.run();
+  sim.run(2);
   ch_system_t<typename GF::return_type> ret;
   ret = device.io.out;
   return ret;
@@ -162,7 +162,7 @@ auto TestFunction(F&& f, const T0& a, const T1& b, const T2& c, const T2& d) {
   device.io.in2 = c;
   device.io.in3 = d;
   ch_simulator sim(device);
-  sim.run();
+  sim.run(2);
   ch_system_t<typename GF::return_type> ret;
   ret = device.io.out;
   return ret;
@@ -207,7 +207,7 @@ public:
 
   auto_cflags_enable(cflags flags) {
     cflags_ = platform::self().cflags();
-    platform::self().set_cflags(cflags(cflags_ | (int)flags));
+    platform::self().set_cflags(cflags(cflags_ | flags));
   }
 
   ~auto_cflags_enable() {
@@ -229,7 +229,7 @@ public:
 
   auto_cflags_disable(cflags flags) {
     cflags_ = platform::self().cflags();
-    platform::self().set_cflags(cflags(cflags_ & ~(int)flags));
+    platform::self().set_cflags(cflags(cflags_ & ~static_cast<int>(flags)));
   }
 
   ~auto_cflags_disable() {

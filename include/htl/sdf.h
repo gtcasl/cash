@@ -8,7 +8,7 @@ namespace htl {
 
 using namespace ch::logic;
 
-template <typename T, unsigned I=2, unsigned O=2>
+template <typename T, unsigned I=1, unsigned O=1>
 struct ch_sdf {
   __io (
     (ch_enq_io<T>) in,

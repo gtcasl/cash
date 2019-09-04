@@ -44,7 +44,7 @@ int main() {
   vending.io.coin = Coin::nickel;
 
   ch_tracer tracer(vending);
-  tracer.run(2*(1+4));
+  tracer.run(4*(1+4));
 
   std::cout << "result:" << std::endl;
   std::cout << "valid = "  << vending.io.valid << std::endl;

@@ -23,7 +23,7 @@ int main() {
   tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": out="  << counter.io.out << std::endl;
     return (t != 2*10);
-  });
+  }, 2);
 
   CHECK(counter.io.out == 12);
 

@@ -191,7 +191,7 @@ int main() {
       break;
     }
     return (!encrypt.io.out.valid && t < MAX_TICKS);
-  });
+  }, 2);
 
   std::cout << "simulation ended after " << ticks << " ticks" << std::endl;
   std::cout << "encrypt.key      = " << encrypt.io.key << std::endl;
@@ -199,7 +199,7 @@ int main() {
   std::cout << "encrypt.out.data = " << encrypt.io.out.data << std::endl;
   std::cout << "encrypt.out.valid = " << encrypt.io.out.valid << std::endl;
 
-  CHECK(!!encrypt.io.out.valid);
+  CHECK(encrypt.io.out.valid);
   CHECK(encrypt.io.out.data == CIPHER_TEXT);
 
   ch_toVerilog("aes.v", encrypt);

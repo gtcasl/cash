@@ -42,19 +42,16 @@ public:
     return ticks;
   }
 
-  unsigned long step(unsigned long ticks) {
-    ticks = this->tick(ticks);
-    ticks = this->tick(ticks);
+  unsigned long step(unsigned long ticks, uint32_t count = 1) {
+    while (count--) {
+      top_.eval();
+    #if VM_TRACE
+      tfp.dump(ticks);
+    #endif
+      top_.clk = !top_.clk;
+      ++ticks;
+    }
     return ticks;
-  }
-
-  unsigned long tick(unsigned long ticks) {
-    top_.eval();
-  #if VM_TRACE
-    tfp.dump(ticks);
-  #endif
-    top_.clk = !top_.clk;
-    return ticks + 1;
   }
 
   auto operator->() {

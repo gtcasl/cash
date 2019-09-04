@@ -1,9 +1,16 @@
 #include <stdarg.h>
 #include <cxxabi.h>
 #include "common.h"
+#include "utils.h"
 #include "platform.h"
 
 using namespace ch::internal;
+
+refcounted::refcounted() : refcount_(0) {}
+
+refcounted::~refcounted() {}
+
+///////////////////////////////////////////////////////////////////////////////
 
 std::string ch::internal::stringf(const char* format, ...) {
   static constexpr uint32_t STACK_BUFFER_SIZE = 1024;

@@ -26,8 +26,8 @@ TEST_CASE("simulation", "[sim]") {
       device.io.in = 2;
       ch_device<inverter<ch_bit2>> x(device);
       auto d1 = x;
-      ch_device<> d2(d1), d3;
-      d3 = d2;
+      auto d2(d1);
+      auto d3(d2);
       ch_simulator s1, s2;
       s1 = ch_simulator(d3);
       s2 = s1;
@@ -48,7 +48,7 @@ TEST_CASE("simulation", "[sim]") {
       ch_tracer t3(t2);
       ch_tracer t4(std::move(t3));
       auto y = device.io.out ^ 3_h;
-      t4.run();
+      t4.run(2);
       t4.toText("trace.log");
       return (1 == device.io.out);
     });
@@ -62,7 +62,7 @@ TEST_CASE("simulation", "[sim]") {
       t2 = t1;
       ch_tracer t3(t2);
       ch_tracer t4(std::move(t3));
-      t4.run();
+      t4.run(2);
       t4.toVCD("trace.vcd");
       return (1 == device1.io.out && 1 == device2.io.out);
     });

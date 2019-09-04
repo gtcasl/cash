@@ -43,7 +43,7 @@ enum class ch_direction {
 };
 
 inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
-  return ch_direction((int)lsh | (int)rhs);
+  return ch_direction(static_cast<int>(lsh) | static_cast<int>(rhs));
 }
 
 CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type != traits_none));

@@ -4,6 +4,7 @@
 #include "bit.h"
 #include "int.h"
 #include "uint.h"
+#include "vec.h"
 
 namespace ch {
 namespace internal {

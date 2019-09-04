@@ -61,7 +61,7 @@ void registerEnumString(const lnode& node, void* callback);
   enum_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
     : buffer_(buffer) { \
-    ch::internal::registerEnumString(ch::internal::get_lnode(*this), (void*)to_string); \
+    ch::internal::registerEnumString(ch::internal::get_lnode(*this), reinterpret_cast<void*>(to_string)); \
   } \
   enum_name(type __other) \
     : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \

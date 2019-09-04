@@ -27,7 +27,7 @@ public:
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_module(Args&&... args)
-    : base(std::type_index(typeid(T)), is_reuse_module_v<T, Args...>, idname<T>())
+    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, idname<T>())
     , obj_(this->load<T>(std::forward<Args>(args)...))
     , io(obj_->io)
   {}

@@ -262,11 +262,11 @@ int main() {
     ch_device<inverter> device;
     device.io.in = 2;
     //auto s = ch_simulator(device);
-    //s.run();
+    //s.run(2);
     ch_simulator s1; //, s2;
     s1 = ch_simulator(device);
     //s2 = s1;
-    s1.run();
+    s1.run(2);
   }
   {
     ch_sbit<4> a(1), b;
@@ -287,7 +287,7 @@ int main() {
     device.io.x.data   = 3;
     device.io.x.valid  = 1;
     device.io.x.parity = 0;
-    t = sim.step(t, 2);
+    t = sim.step(t, 4);
 
     RetCheck ret;
     ret &= !!device.io.y.valid;
@@ -305,7 +305,7 @@ int main() {
     device.io.x.data   = 3;
     device.io.x.valid  = 1;
     device.io.x.parity = 0;
-    t = sim.step(t, 3);
+    t = sim.step(t, 6);
 
     RetCheck ret;
     ret &= !!device.io.y.valid;
@@ -326,23 +326,23 @@ int main() {
     queue.io.deq.ready = 0;
     queue.io.enq.data = 0xA;
     queue.io.enq.valid = 1; // push
-    t = sim.step(t);
+    t = sim.step(t, 2);
 
     ret &= !!queue.io.deq.valid;  // !empty
     queue.io.enq.data = 0xB;
-    t = sim.step(t);
+    t = sim.step(t, 2);
 
     ret &= !queue.io.enq.ready; // full
     ret &= !!queue.io.deq.valid;
     ret &= (0xA == queue.io.deq.data);
     queue.io.enq.valid = 0; // !push
     queue.io.deq.ready = 1; // pop
-    t = sim.step(t);
+    t = sim.step(t, 2);
 
     ret &= !!queue.io.enq.ready;  // !full
     ret &= (0xB == queue.io.deq.data);
     queue.io.deq.ready = 1; // pop
-    t = sim.step(t, 4);
+    t = sim.step(t, 8);
 
     ret &= !queue.io.deq.valid; // empty
     ch_toVerilog("queue.v", queue);
@@ -361,7 +361,7 @@ int main() {
     device.io.in1 = 1;
     device.io.in2 = 2;
     ch_simulator sim(device);
-    sim.run(1);
+    sim.run(2);
     ch_toVerilog("foo.v", device);
     std::cout << "foo.io.out=" << device.io.out << std::endl;
     assert(3 == device.io.out);
@@ -370,7 +370,7 @@ int main() {
   {
     ch_device<Foo2> device;
     ch_simulator sim(device);
-    sim.run(1);
+    sim.run(2);
     assert(device.io);
   }
 
@@ -381,7 +381,7 @@ int main() {
       device.io.y[i] = i;
       device.io.x[i].a = 2-i;
     }
-    sim.run(1);
+    sim.run(2);
     RetCheck ret;
     for (int i = 0; i < 2; ++i) {
       ret &= (2 == device.io.z[i]);
@@ -533,7 +533,7 @@ int main() {
       queue.io.enq.data = (0xA + i);
       queue.io.enq.valid = true;      // push
       queue.io.deq.ready = false;
-      t = trace.step(t);
+      t = trace.step(t, 2);
     }
 
     // empty the queue
@@ -544,7 +544,7 @@ int main() {
       ret &= (N-i) == queue.io.size;  // N-i
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;      // pop
-      t = trace.step(t);
+      t = trace.step(t, 2);
     }
 
     // fill the queue again
@@ -558,7 +558,7 @@ int main() {
       queue.io.enq.data = (0xA + i);
       queue.io.enq.valid = true;      // push
       queue.io.deq.ready = false;
-      t = trace.step(t);
+      t = trace.step(t, 2);
     }
 
     // empty queue leaving one entry
@@ -569,7 +569,7 @@ int main() {
       ret &= (N-i) == queue.io.size;  // N-i
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;      // pop
-      t = trace.step(t);
+      t = trace.step(t, 2);
     }
 
     if (N == 1) {
@@ -579,7 +579,7 @@ int main() {
       ret &= 1 == queue.io.size;      // 1
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;      // pop
-      t = trace.step(t);
+      t = trace.step(t, 2);
     } else {
       ret &= ((0xA + N-1) == queue.io.deq.data);
       ret &= !!queue.io.deq.valid; // !empty
@@ -588,7 +588,7 @@ int main() {
       queue.io.enq.data = (0xA + N);
       queue.io.enq.valid = true;   // push
       queue.io.deq.ready = true;   // pop
-      t = trace.step(t);
+      t = trace.step(t, 2);
 
       ret &= ((0xA + N) == queue.io.deq.data);
       ret &= !!queue.io.deq.valid; // !empty
@@ -596,7 +596,7 @@ int main() {
       ret &= 1 == queue.io.size;   // 1
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;   // pop
-      t = trace.step(t);
+      t = trace.step(t, 2);
     }
 
     ret &= !queue.io.deq.valid;  // empty

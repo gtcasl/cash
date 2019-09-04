@@ -12,9 +12,9 @@ sdata_type loadInitData(const std::string& file,
                         uint32_t num_items);
 
 template <typename T>
-static sdata_type loadInitData(const T& container,
-                               uint32_t data_width,
-                               uint32_t num_items) {
+sdata_type loadInitData(const T& container,
+                        uint32_t data_width,
+                        uint32_t num_items) {
   // the container has data elements size aligned to the buffer stride
   static constexpr uint32_t WORD_SIZE = bitwidth_v<block_type>;
   static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;

@@ -77,7 +77,7 @@ public:
 
   const auto& io() const {
     return io_;
-  };
+  }
 
 protected:
 

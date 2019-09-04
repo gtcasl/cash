@@ -14,17 +14,17 @@ class platform::Impl {
 
     auto dbg_level = std::getenv("CASH_DEBUG_LEVEL");
     if (dbg_level) {
-      dbg_level_ = atol(dbg_level);
+      dbg_level_ = atoi(dbg_level);
     }
 
     auto dbg_node = std::getenv("CASH_DEBUG_NODE");
     if (dbg_node) {
-      dbg_node_ = atol(dbg_node);
+      dbg_node_ = atoi(dbg_node);
     }
 
     auto cflags = std::getenv("CASH_CFLAGS");
     if (cflags) {
-      cflags_ = atol(cflags);
+      cflags_ = atoi(cflags);
     }
   }
 

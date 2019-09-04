@@ -67,11 +67,9 @@ public:
 
   virtual void initialize();
 
-  ch_tick run(const std::function<bool(ch_tick t)>& callback);
+  ch_tick run(const std::function<bool(ch_tick t)>& callback, uint32_t steps);
 
   ch_tick reset(ch_tick t);
-
-  ch_tick step(ch_tick t);
 
   ch_tick step(ch_tick t, uint32_t count);
 

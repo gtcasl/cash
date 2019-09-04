@@ -65,19 +65,19 @@ enum class op_flags {
                            || (op_flags::reduce == CH_OP_CLASS(x)))
 
 inline constexpr auto operator|(op_flags lsh, op_flags rhs) {
-  return (int)lsh | (int)rhs;
+  return static_cast<int>(lsh) | static_cast<int>(rhs);
 }
 
 inline constexpr auto operator|(int lsh, op_flags rhs) {
-  return lsh | (int)rhs;
+  return lsh | static_cast<int>(rhs);
 }
 
 inline constexpr auto operator|(op_flags lsh, int rhs) {
-  return (int)lsh | rhs;
+  return static_cast<int>(lsh) | rhs;
 }
 
 inline constexpr auto operator&(op_flags lsh, op_flags rhs) {
-  return (int)lsh & (int)rhs;
+  return static_cast<int>(lsh) & static_cast<int>(rhs);
 }
 
 enum class ch_op {

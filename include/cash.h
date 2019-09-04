@@ -344,24 +344,14 @@ namespace logic {
   using ch::internal::ch_cd;
 
   //
-  // time function
-  //
-
-  using ch::internal::ch_now;
-
-  //
-  // print functions
+  // debug functions
   //
 
   using ch::internal::ch_print;
   using ch::internal::ch_println;
-
-  //
-  // debug functions
-  //
-
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;
+  using ch::internal::ch_now;
 }
 
 //

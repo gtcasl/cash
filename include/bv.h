@@ -631,9 +631,9 @@ void bv_assign(T* dst, uint32_t size, const char* value, uint32_t length, int ba
     length -= 2;
   }
 
-  uint32_t str_size = string_literal_size(buf, length, base);
+  auto str_size = string_literal_size(buf, static_cast<int>(length), base);
   CH_CHECK(str_size >= 0, "invalid string size");
-  CH_CHECK(size >= str_size, "value out of range");
+  CH_CHECK(static_cast<int32_t>(size) >= str_size, "value out of range");
 
   // clear remaining words
   uint32_t num_words = ceildiv(size, WORD_SIZE);
@@ -645,7 +645,7 @@ void bv_assign(T* dst, uint32_t size, const char* value, uint32_t length, int ba
   // write the value
   T w(0);
   T* d = dst;
-  for (int32_t i = length - 1, j = 0; i >= 0; --i) {
+  for (int32_t i = static_cast<int32_t>(length) - 1, j = 0; i >= 0; --i) {
     char chr = buf[i];
     if (chr == '\'' || chr == '_') // skip number separator
       continue;
@@ -666,7 +666,7 @@ void bv_assign(T* dst, uint32_t size, const char* value, uint32_t length, int ba
 
 template <typename T>
 void bv_assign(T* dst, uint32_t size, const std::string& value) {
-  size_t len = value.length();
+  int len = static_cast<int>(value.length());
   CH_CHECK(len >= 3, "invalid string size");
 
   const char* buf = value.c_str();
@@ -731,7 +731,7 @@ int bv_msb_vector(const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (int32_t i = num_words - 1; i >= 0; --i) {
+  for (int32_t i = static_cast<int32_t>(num_words) - 1; i >= 0; --i) {
     auto w = in[i];
     if (w) {
       int z = count_leading_zeros<T>(w);
@@ -1254,7 +1254,7 @@ bool bv_lt_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_si
 
   // same-sign words comparison
   uint32_t num_words = ceildiv(std::max(lhs_size, rhs_size), WORD_SIZE);
-  for (int32_t i = num_words - 1; i >= 0; --i) {
+  for (int32_t i = static_cast<int32_t>(num_words) - 1; i >= 0; --i) {
     if (arg0.get(i) != arg1.get(i))
       return (arg0.get(i) < arg1.get(i));
   }
@@ -1292,7 +1292,7 @@ bool bv_andr_vector(const T* in, uint32_t size) {
 
   auto rem = size % WORD_SIZE;
   auto max = WORD_MAX >> ((WORD_SIZE - rem) % WORD_SIZE);
-  int32_t i = num_words - 1;
+  int32_t i = static_cast<int32_t>(num_words) - 1;
   if (in[i--] != max)
       return false;
   for (; i >= 0; --i) {

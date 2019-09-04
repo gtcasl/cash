@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <sstream>
 #include <functional>
 #include <unordered_map>
 #include <assert.h>
@@ -433,8 +434,8 @@ public:
   
 protected:
   
-  refcounted() : refcount_(0) {}
-  virtual ~refcounted() {}
+  refcounted();
+  virtual ~refcounted();
   
   mutable long refcount_;
 };

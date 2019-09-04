@@ -39,8 +39,8 @@ public:
 class udf_iface: public refcounted {
 public:
 
-  udf_iface() {}
-  virtual ~udf_iface() {}
+  udf_iface();
+  virtual ~udf_iface();
 
   virtual void eval() = 0;
 

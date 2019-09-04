@@ -7,6 +7,12 @@
 
 using namespace ch::internal;
 
+udf_iface::udf_iface() {}
+
+udf_iface::~udf_iface() {}
+
+///////////////////////////////////////////////////////////////////////////////
+
 udfimpl::udfimpl(context* ctx,
                  lnodetype type,
                  udf_iface* udf,

@@ -93,10 +93,10 @@ public:
   void tick() {
     // get requests status
     uint32_t reqs_mask = 0;
-    for (unsigned i = 0; i < ports_.size(); ++i) {
+    for (uint32_t i = 0; i < ports_.size(); ++i) {
       auto& port = ports_[i];
-      bool read(port->read);
-      bool write(port->write);
+      auto read  = static_cast<uint32_t>(port->read);
+      auto write = static_cast<uint32_t>(port->write);
       assert(!(read && write));
       reqs_mask |= ((read | write) << i);
     }
@@ -126,11 +126,11 @@ protected:
   request_t get_request_info(uint32_t channel) override {
     assert(channel < ports_.size());
     auto& port = ports_[channel];
-    return request_t{(bool)port->write,
-                     (sdata_type)port->writedata,
-                     (uint64_t)port->address,
-                     (uint64_t)port->byteenable,
-                     (uint32_t)port->burstcount};
+    return request_t{static_cast<bool>(port->write),
+                     static_cast<sdata_type>(port->writedata),
+                     static_cast<uint64_t>(port->address),
+                     static_cast<uint64_t>(port->byteenable),
+                     static_cast<uint32_t>(port->burstcount)};
   }
 
   std::vector<std::unique_ptr<io_type>> ports_;

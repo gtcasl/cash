@@ -51,7 +51,7 @@ int main() {
   ch_tracer tracer(gcd);
   auto ticks = tracer.run([&](ch_tick t)->bool {
     return !gcd.io.out.valid && (t < 20);
-  });
+  }, 2);
 
   std::cout << "completed after " << (ticks/2) << " cycles" << std::endl;
   std::cout << "result:" << std::endl;

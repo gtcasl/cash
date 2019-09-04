@@ -27,7 +27,7 @@ public:
   }
 
   bool run() {
-    tracer_.run(std::bind(&TestBench::tick, this, _1));
+    tracer_.run(std::bind(&TestBench::tick, this, _1), 2);
     tracer_.toText("router.log");
     tracer_.toVCD("router.vcd");
     tracer_.toVerilog("router_tb.v", "router.v");

@@ -31,7 +31,7 @@ public:
   
   void run(ch_tick ticks = 1);
 
-  ch_tick run(const std::function<bool(ch_tick t)>& callback);
+  ch_tick run(const std::function<bool(ch_tick t)>& callback, uint32_t steps = 1);
 
   ch_tick reset(ch_tick t);
 

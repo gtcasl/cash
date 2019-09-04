@@ -194,16 +194,16 @@ int main() {
     device.io.in.valid = (in_sample < FFT_SIZE);
     device.io.out.ready = (out_sample < FFT_SIZE);
     // enqueue data
-    if (!!device.io.in.valid && !!device.io.in.ready) {
+    if (device.io.in.valid && device.io.in.ready) {
       device.io.in.data.as_int() = in_samples[in_sample++];
     }
     // dequeue data
-    if (!!device.io.out.valid && !!device.io.out.ready) {
+    if (device.io.out.valid && device.io.out.ready) {
       out_samples[out_sample++] = (int)device.io.out.data.as_int();
     }
     // stop simulation when done
     return (out_sample < FFT_SIZE) && (t < MAX_TICKS);
-  });
+  }, 2);
 
   std::cout << "Simulation run time: " << std::dec << ticks/2 << " cycles" << std::endl;
 

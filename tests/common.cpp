@@ -93,15 +93,18 @@ bool TEST(const std::function<ch_bool ()>& test,
   ch_simulator sim(device);  
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);  
+  auto steps = (0 == cycles) ? 1 : 2;
   bool ret = true;
 
   sim.run([&](ch_tick t)->bool {
+    ret &= (cycles != 0 && t == 0) || static_cast<bool>(device.io.out);
   #ifndef NDEBUG
-    std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+    if (!ret) {
+      std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+    }
   #endif
-    ret &= (cycles && !t) || (bool)device.io.out;
     return (t < ticks);
-  });
+  }, steps);
 
   return end_test(ret, sloc);
 }
@@ -116,17 +119,20 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
   ch_simulator sim(device);
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
+  auto steps = (0 == cycles) ? 1 : 2;
   bool ret = true;
 
   device.io.in1 = 1;
 
   sim.run([&](ch_tick t)->bool {
+    ret &= (cycles != 0 && t == 0) || static_cast<bool>(device.io.out);
   #ifndef NDEBUG
-    std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
-  #endif
-    ret &= (cycles && !t) || (bool)device.io.out;
+    if (!ret) {
+      std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+    }
+  #endif    
     return (t < ticks);
-  });
+  }, steps);
 
   return end_test(ret, sloc);
 }
@@ -141,18 +147,21 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
   ch_simulator sim(device);
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
+  auto steps = (0 == cycles) ? 1 : 2;
   bool ret = true;
 
   device.io.in1 = 1;
   device.io.in2 = 2;
 
   sim.run([&](ch_tick t)->bool {
+    ret &= (cycles != 0 && t == 0) || static_cast<bool>(device.io.out);
   #ifndef NDEBUG
-    std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+    if (!ret) {
+      std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+    }
   #endif
-    ret &= (cycles && !t) || (bool)device.io.out;
     return (t < ticks);
-  });
+  }, steps);
 
   return end_test(ret, sloc);
 }

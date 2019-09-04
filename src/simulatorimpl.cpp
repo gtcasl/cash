@@ -116,45 +116,36 @@ void simulatorimpl::eval() {
 }
 
 ch_tick simulatorimpl::reset(ch_tick t) {
-  // reset signal
   if (!reset_driver_.empty()) {
     reset_driver_.eval();
-    t = this->step(t);
+    t = this->step(t, 2);
     reset_driver_.eval();
   }
-  return t;
-}
-
-ch_tick simulatorimpl::step(ch_tick t) {
-  if (!clk_driver_.empty()) {
-    clk_driver_.eval();
-    this->eval();
-    clk_driver_.eval();
-    ++t;
-  }
-  this->eval();
-  ++t;
   return t;
 }
 
 ch_tick simulatorimpl::step(ch_tick t, uint32_t count) {
   while (count--) {
-    t = this->step(t);
+    if (!clk_driver_.empty())
+      clk_driver_.eval();
+    this->eval();
+    ++t;
   }
   return t;
 }
 
-ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
+ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback,
+                           uint32_t steps) {
   auto t = this->reset(0);
   for (auto start = t; callback(t - start);) {
-    t = this->step(t);
+    t = this->step(t, steps);
   }
   return t;
 }
 
 void simulatorimpl::run(ch_tick num_ticks) {
   for (auto t = this->reset(0); t < num_ticks;) {
-    t = this->step(t);
+    t = this->step(t, 1);
   }
 }
 
@@ -214,8 +205,8 @@ ch_simulator& ch_simulator::operator=(ch_simulator&& other) {
   return *this;
 }
 
-ch_tick ch_simulator::run(const std::function<bool(ch_tick t)>& callback) {
-  return impl_->run(callback);
+ch_tick ch_simulator::run(const std::function<bool(ch_tick t)>& callback, uint32_t steps) {
+  return impl_->run(callback, steps);
 }
 
 void ch_simulator::run(ch_tick num_ticks) {

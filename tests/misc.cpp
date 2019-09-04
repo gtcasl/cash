@@ -162,7 +162,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 5;
       device.io.rhs = 3;
       ch_tracer trace(device);
-      trace.run();
+      trace.run(2);
       RetCheck ret;
       ret &= (device.io.out == 4);
       trace.toText("taps.log");
@@ -192,7 +192,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 5;
       device.io.rhs = 3;
       ch_tracer trace(device);
-      trace.run();
+      trace.run(2);
       RetCheck ret;
       ret &= (device.io.out == 4);
       trace.toText("taps2.log");
@@ -231,7 +231,7 @@ TEST_CASE("misc", "[misc]") {
       ch_device<Print<ch_bit128>> device;
       device.io.in = 0x5555;
       ch_simulator sim(device);
-      sim.run();
+      sim.run(2);
       return (device.io.out == 0x5555);
     });
     
@@ -408,7 +408,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 2;
       device.io.rhs = 3;
       ch_simulator sim(device);
-      sim.run();
+      sim.run(2);
       return (device.io.out == 6);
     });
     
@@ -423,7 +423,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 2;
       device.io.rhs = 3;
       ch_simulator sim(device);
-      sim.run();
+      sim.run(2);
       return (device.io.out == 6);
     });
 
@@ -441,7 +441,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 2;
       device.io.rhs = 3;
       ch_tracer trace(device);
-      trace.run();
+      trace.run(2);
       RetCheck ret;
       ret &= (device.io.out == 6);
       trace.toText("merged.log");
@@ -464,7 +464,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 2;
       device.io.rhs = 3;
       ch_tracer trace(device);
-      trace.run();
+      trace.run(2);
       RetCheck ret;
       ret &= (device.io.out == 6);
       trace.toText("merged2.log");
@@ -491,7 +491,7 @@ TEST_CASE("misc", "[misc]") {
       device.io.lhs = 2;
       device.io.rhs = 3;
       ch_tracer trace(device);
-      trace.run();
+      trace.run(2);
       RetCheck ret;
       ret &= (device.io.out == 10);
       trace.toText("bypass.log");

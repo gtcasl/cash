@@ -90,7 +90,7 @@ int main() {
       break;
     }
     return (t <= 10);
-  });
+  }, 2);
 
   ch_toVerilog("fifo.v", fifo);
   ch_toFIRRTL("fifo.fir", fifo);

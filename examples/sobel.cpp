@@ -121,16 +121,16 @@ int main() {
     device.io.in.valid = (in_pixel < num_pixels);
     device.io.out.ready = (out_pixel < num_pixels);
     // enqueue data
-    if (!!device.io.in.valid && !!device.io.in.ready) {
+    if (device.io.in.valid && device.io.in.ready) {
       device.io.in.data = src_image[in_pixel++];
     }
     // dequeue data
-    if (!!device.io.out.valid && !!device.io.out.ready) {
+    if (device.io.out.valid && device.io.out.ready) {
       dst_image.at(out_pixel++) = static_cast<uint8_t>(device.io.out.data);
     }
     // stop simulation when done
     return !device.io.done && (t < MAX_TICKS);
-  });
+  }, 2);
 
   std::cout << "Simulation run time: " << std::dec << ticks/2 << " cycles" << std::endl;
 

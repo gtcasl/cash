@@ -49,7 +49,7 @@ struct lit_bin {
     return is_escape(c) ? N : (N + 1);
   }
   static constexpr unsigned chr2int(char c) {
-    return (c - '0');
+    return static_cast<unsigned>(c - '0');
   }
   static constexpr unsigned sizex(char c, unsigned N) {
     return is_escape(c) ? N : (N ? (N + 1) : chr2int(c));
@@ -67,7 +67,7 @@ struct lit_oct {
     return is_escape(c) ? N : (N + 3);
   }
   static constexpr unsigned chr2int(char c) {
-    return (c - '0');
+    return static_cast<unsigned>(c - '0');
   }
   static constexpr unsigned sizex(char c, unsigned N) {
     return is_escape(c) ? N :
@@ -86,9 +86,10 @@ struct lit_hex {
     return (c == 'x' || c == 'X') ? 0 : (is_escape(c) ? N : (N + 4));
   }
   static constexpr unsigned chr2int(char c) {
-    return (c >= '0' && c <= '9') ? (c - '0') :
+    return static_cast<unsigned>(
+          (c >= '0' && c <= '9') ? (c - '0') :
           ((c >= 'A' && c <= 'F') ? (c - 'A' + 10) :
-          ((c >= 'a' && c <= 'f') ? (c - 'a' + 10) : 0));
+          ((c >= 'a' && c <= 'f') ? (c - 'a' + 10) : 0)));
   }
   static constexpr unsigned sizex(char c, unsigned N) {
     return (c == 'x' || c == 'X') ? 0 :

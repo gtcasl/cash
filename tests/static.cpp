@@ -111,8 +111,7 @@ void foo() {
   }
   {
     auto d1 = ch_device<TestModule>();
-    ch_device<> d2;
-    d2 = d1;
+    auto d2(d1);
   }
   {
     ch_sbit<4> x("5h");

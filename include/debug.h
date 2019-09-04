@@ -7,7 +7,6 @@ namespace ch {
 namespace internal {
 
 lnodeimpl* getCurrentTimeNode();
-
 void createAssertNode(const lnode& cond, const std::string& msg);
 
 void createPrintNode(const std::string& format, const std::vector<lnode>& args);

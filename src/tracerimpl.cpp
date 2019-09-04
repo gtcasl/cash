@@ -809,7 +809,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
   out << "return (tick < " << ticks_ << ");" << std::endl;
   out << "}" << std::endl;
   out << "auto reset(uint64_t tick) { return sim_.reset(tick); }" << std::endl;
-  out << "auto step(uint64_t tick) { return sim_.step(tick); }" << std::endl;
+  out << "auto step(uint64_t tick) { return sim_.step(tick, 2); }" << std::endl;
   out << "private:" << std::endl;
   out << "vl_simulator<" << moduleTypeName << "> sim_;" << std::endl;
   out << "};" << std::endl;
@@ -1023,7 +1023,7 @@ void tracerimpl::toSystemC(std::ofstream& out,
   out << "return (tick < " << ticks_ << ");" << std::endl;
   out << "}" << std::endl;
   out << "auto reset(uint64_t tick) { return sim_.reset(tick); }" << std::endl;
-  out << "auto step(uint64_t tick) { return sim_.step(tick); }" << std::endl;
+  out << "auto step(uint64_t tick) { return sim_.step(tick, 2); }" << std::endl;
   out << "private:" << std::endl;
   out << "sc_simulator<" << moduleTypeName << "> sim_;" << std::endl;
   for (auto signal : signals_) {

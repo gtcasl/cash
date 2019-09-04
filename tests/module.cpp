@@ -266,7 +266,7 @@ TEST_CASE("module", "[module]") {
       device.io.in1 = 1;
       device.io.in2 = 2;
       ch_simulator sim(device);
-      sim.run(1);
+      sim.run(2);
       return (3 == device.io.out);
     });
 
@@ -277,7 +277,7 @@ TEST_CASE("module", "[module]") {
         device.io.y[i] = i;
         device.io.x[i].a = 2-i;
       }
-      sim.run(1);
+      sim.run(2);
       RetCheck ret;
       for (int i = 0; i < 2; ++i) {
         ret &= (2 == device.io.z[i]);
@@ -290,7 +290,7 @@ TEST_CASE("module", "[module]") {
       ch_device<Foo4> device;
       device.io.in = 0x00000000'00000000'00000000'00005500_h128;
       ch_simulator sim(device);
-      sim.run(1);
+      sim.run(2);
       return (device.io.out == 0x5555);
     });
   }
@@ -300,14 +300,14 @@ TEST_CASE("module", "[module]") {
       device.io.in1 = 1;
       device.io.in2 = 2;
       ch_simulator sim(device);
-      sim.run(1);
+      sim.run(2);
       return (3 == device.io.out);
     });
 
     TESTX([]()->bool {
       ch_device<Foo2> device;
       ch_simulator sim(device);
-      sim.run(1);
+      sim.run(2);
       return (bool)device.io;
     });
 
@@ -319,7 +319,7 @@ TEST_CASE("module", "[module]") {
       device.io.x.data   = 3;
       device.io.x.valid  = 1;
       device.io.x.parity = 0;
-      t = trace.step(t, 2);
+      t = trace.step(t, 4);
 
       RetCheck ret;
       ret &= !!device.io.y.valid;
@@ -342,7 +342,7 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(device);
       device.io.in = 0xA;
       sim.run(10);
-      std::cout << "out = "  << device.io.out << std::endl;
+      std::cout << "out = " << device.io.out << std::endl;
       RetCheck ret;
       ret &= device.io.out == 0xe;
       return !!ret;
@@ -382,7 +382,7 @@ TEST_CASE("module", "[module]") {
       device.io.in1 = 1;
       device.io.in2 = 2;
       ch_simulator sim(device);
-      sim.run();
+      sim.run(2);
 
       std::cout << "out = "  << device.io.out << std::endl;
 

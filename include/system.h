@@ -428,7 +428,7 @@ auto get_op_function1() {
 template <ch_op op, typename A, typename B>
 auto get_op_function2() {
   static const auto resize_type = CH_OP_RESIZE(op);  
-  if constexpr (0 != (int)resize_type) {
+  if constexpr (0 != static_cast<int>(resize_type)) {
     static_assert(op_flags::resize_src == resize_type, "invalid type");
     static const bool sign_enable = is_signed_v<A>;
     static const bool resize_enable = (ch_width_v<A> != ch_width_v<B>);
@@ -444,7 +444,7 @@ template <typename R, ch_op op, typename A, typename B>
 auto get_op_function2() {
   static const auto resize_type = CH_OP_RESIZE(op);
   static const bool sign_enable = is_signed_v<R>;
-  if constexpr (0 != (int)resize_type) {
+  if constexpr (0 != static_cast<int>(resize_type)) {
     static_assert(op_flags::resize_dst == resize_type, "invalid type");
     static const bool resize_enable = (ch_width_v<A> < ch_width_v<R>)
                                    || (ch_width_v<B> < ch_width_v<R>);

@@ -73,8 +73,8 @@ template<typename T>
 using detect_describe_t = decltype(std::declval<T&>().describe());
 
 template <typename T, typename... Args>
-inline constexpr bool is_reuse_module_v = (0 == sizeof...(Args))
-                                       && (sizeof(T) == sizeof(decltype(T::io)));
+inline constexpr bool is_pod_module_v = (0 == sizeof...(Args))
+                                     && (sizeof(T) == sizeof(decltype(T::io)));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -100,7 +100,7 @@ public:
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(const std::string& name, Args&&... args)
-    : base(std::type_index(typeid(T)), is_reuse_module_v<T, Args...>, name)
+    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, name)
     , obj_(this->load<T>(std::forward<Args>(args)...))
     , io(obj_->io)
   {}
@@ -108,7 +108,7 @@ public:
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(Args&&... args)
-    : base(std::type_index(typeid(T)), is_reuse_module_v<T, Args...>, idname<T>(true))
+    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, idname<T>(true))
     , obj_(this->load<T>(std::forward<Args>(args)...))
     , io(obj_->io)
   {}
@@ -124,28 +124,6 @@ public:
     , obj_(std::move(other.obj_))
     , io(std::move(other.io))
   {}
-};
-
-template <>
-class ch_device<void> : public device_base {
-public:
-  using base = device_base;
-
-  ch_device() {}
-
-  ch_device(const base& other) : base(other) {}
-
-  ch_device(base&& other) : base(std::move(other)) {}
-
-  ch_device& operator=(const base& other) {
-    base::operator=(other);
-    return *this;
-  }
-
-  ch_device& operator=(base&& other) {
-    base::operator=(std::move(other));
-    return *this;
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

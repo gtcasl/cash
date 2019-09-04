@@ -162,7 +162,7 @@ int main() {
 
     // stop when device done
     return (!device.io.avs.valid_out && (t < MAX_TICKS));
-  });
+  }, 2);
 
   std::cout << "Simulation run time: " << std::dec << ticks/2 << " cycles" << std::endl;
 

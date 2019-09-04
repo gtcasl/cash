@@ -82,7 +82,7 @@ int main() {
       matmul.io.b_in[i] = (j < a.width()) ? b.at(i, j) : 0;
     }
     return (!matmul.io.valid_out) && (t < MAX_TICKS);
-  });
+  }, 2);
 
   std::cout << "result:" << std::endl;
   std::cout << "out = "  << matmul.io.c_out << std::endl;

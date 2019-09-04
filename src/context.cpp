@@ -34,7 +34,6 @@ public:
   std::pair<context*, uint32_t> create_context(const std::type_index& signature,
                                                bool is_pod,
                                                const std::string& name) {
-    context* ctx;
     if (is_pod) {
       auto it = pod_ctx_map_.find(signature);
       if (it != pod_ctx_map_.end()) {
@@ -47,10 +46,10 @@ public:
     auto unique_name = name;
     auto instance = dup_ctx_names_.insert(unique_name);
     if (instance) {
-       unique_name = stringf("%s_%ld", unique_name.c_str(), instance);
+       unique_name = stringf("%s_%ld", name.c_str(), instance);
     }
 
-    ctx = new context(unique_name, curr_ctx_);
+    auto ctx = new context(unique_name, curr_ctx_);
     if (is_pod) {
       ctx->set_managed(true);
       pod_ctx_map_.emplace(signature, std::pair<context*, uint32_t>{ctx, 0});
@@ -155,11 +154,9 @@ context::~context() {
 uint32_t context::node_id() {
   auto nodeid = context_manager::instance().node_id();
 #ifndef NDEBUG
-  uint32_t dbg_nodeid = platform::self().dbg_node();
-  if (dbg_nodeid) {
-    if (nodeid == dbg_nodeid) {
-      CH_ABORT("debugbreak on nodeid %d hit!", nodeid);
-    }
+  auto dbg_nodeid = static_cast<uint32_t>(platform::self().dbg_node());
+  if (dbg_nodeid && nodeid == dbg_nodeid) {
+    CH_ABORT("debugbreak on nodeid %d hit!", nodeid);
   }
 #endif
   return nodeid;
@@ -726,5 +723,5 @@ void ch::internal::registerTap(const lnode& node, const std::string& name) {
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
-  ctx_curr()->register_enum_string(node.id(), (enum_string_cb)callback);
+  ctx_curr()->register_enum_string(node.id(), reinterpret_cast<enum_string_cb>(callback));
 }
