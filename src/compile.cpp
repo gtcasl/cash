@@ -155,7 +155,7 @@ void compiler::optimize() {
   // run optimization passes
   bool changed =true;
   if (ctx_->parent()
-   && (platform::self().cflags() & cflags::disable_smo) != 0) {
+   && (platform::self().cflags() & cflags::merged_only_opt) != 0) {
     changed = false;
   }
 

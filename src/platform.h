@@ -25,7 +25,7 @@ enum class cflags {
   disable_sro     = (1 << 16), // 65536
   disable_snc     = (1 << 17), // 131072
   disable_cpb     = (1 << 18), // 262144
-  disable_smo     = (1 << 19), // 524288
+  merged_only_opt = (1 << 19), // 524288
   verbose_tracing = (1 << 20)  // 1048576
 };
 
