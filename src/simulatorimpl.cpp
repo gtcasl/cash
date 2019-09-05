@@ -125,13 +125,18 @@ ch_tick simulatorimpl::reset(ch_tick t) {
 }
 
 ch_tick simulatorimpl::step(ch_tick t, uint32_t count) {
-  while (count--) {
-    if (!clk_driver_.empty())
+  auto ret = t + count;
+  if (clk_driver_.empty()) {
+    while (count--) {
+      this->eval();
+    }
+  } else {
+    while (count--) {
       clk_driver_.eval();
-    this->eval();
-    ++t;
-  }
-  return t;
+      this->eval();
+    }
+  }   
+  return ret;
 }
 
 ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback,
@@ -144,8 +149,9 @@ ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback,
 }
 
 void simulatorimpl::run(ch_tick num_ticks) {
-  for (auto t = this->reset(0); t < num_ticks;) {
-    t = this->step(t, 1);
+  auto start = this->reset(0);
+  if (num_ticks > start) {
+    this->step(start, num_ticks - start);
   }
 }
 

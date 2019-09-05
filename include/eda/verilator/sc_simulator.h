@@ -30,7 +30,7 @@ public:
 
   unsigned long reset(unsigned long ticks) {
     reset_.write(true);
-    ticks = this->step(ticks);
+    ticks = this->step(ticks, 2);
     reset_.write(false);
     return ticks;
   }

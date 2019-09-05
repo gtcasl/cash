@@ -37,7 +37,7 @@ public:
 
   unsigned long reset(unsigned long ticks) {
     top_.reset = 1;
-    ticks = this->step(ticks);
+    ticks = this->step(ticks, 2);
     top_.reset = 0;
     return ticks;
   }
