@@ -11,8 +11,11 @@ import math
 multi_context = False
 
 DCE = 0
-CSE = 0
 PIP = 0
+CFO = 0
+CSE = 0
+BRO = 0
+RPO = 0
 PCX = 0
 
 Before = 0
@@ -25,8 +28,11 @@ def analyze(logfile):
 
 	global multi_context
 	global DCE
+        global PIP
+        global CFO
 	global CSE
-	global PIP 
+        global BRO
+	global RPO 
 	global PCX
 	global Before
 	global After
@@ -35,7 +41,7 @@ def analyze(logfile):
 
 	with open(logfile, 'r') as fp:
 		for line in fp:	
-			if line.startswith('build evaluation context'):
+			if line.startswith('create merged context'):
 				multi_context = True
 				continue
 			match = re.search('deleted (\d+) (\w+) nodes', line)			
@@ -49,6 +55,12 @@ def analyze(logfile):
 					PIP += int(match.group(1))
 				elif token == 'PCX':
 					PCX += int(match.group(1))
+				elif token == 'CFO':
+					CFO += int(match.group(1))
+				elif token == 'BRO':
+					BRO += int(match.group(1))
+				elif token == 'RPO':
+					RPO += int(match.group(1))
 				else:
 					raise Exception("Invalid token!")
 				continue
@@ -72,8 +84,11 @@ def analyze(logfile):
 	else:
 		print("Before: %d" % Before)
 	print("DCE total: %d" % DCE)
-	print("CSE total: %d" % CSE)
 	print("PIP total: %d" % PIP)
+	print("CFO total: %d" % CFO)
+        print("CSE total: %d" % CSE)
+       	print("BRO total: %d" % BRO)
+	print("RPO total: %d" % RPO)
 	print("PCX total: %d" % PCX)
 	if multi_context:
 		print("After: %d" % AfterM)
