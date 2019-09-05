@@ -324,6 +324,8 @@ bool compiler::dead_code_elimination() {
     live_nodes.insert(node);
   }
   for (auto node : ctx_->gtaps()) {
+    if (node->size() != 0)
+      continue;
     live_nodes.insert(node);
   }
   for (auto node : ctx_->ext_nodes()) {
@@ -981,6 +983,8 @@ bool compiler::constant_folding() {
     dfs_visit(node);
   }
   for (auto node : ctx_->gtaps()) {
+    if (node->size() != 0)
+      continue;
     dfs_visit(node);
   }
   for (auto node : ctx_->ext_nodes()) {
@@ -1047,7 +1051,9 @@ bool compiler::subexpressions_elimination() {
   for (auto node : ctx_->taps()) {
     dfs_visit(node);
   }
-  for (auto node : ctx_->gtaps()) {
+  for (auto node : ctx_->gtaps()) {      
+    if (node->size() != 0)
+      continue;
     dfs_visit(node);
   }
   for (auto node : ctx_->ext_nodes()) {
@@ -1821,7 +1827,9 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   for (auto node : ctx_->taps()) {
     dfs_visit(node);
   }
-  for (auto node : ctx_->gtaps()) {
+  for (auto node : ctx_->gtaps()) {      
+    if (node->size() != 0)
+      continue;
     dfs_visit(node);
   }
 
@@ -1915,6 +1923,8 @@ bool compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
     dfs_visit(node);
   }
   for (auto node : ctx->gtaps()) {
+    if (node->size() != 0)
+      continue;
     dfs_visit(node);
   }
   auto sys_time = ctx->sys_time();

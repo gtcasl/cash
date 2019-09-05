@@ -648,7 +648,7 @@ void context::dump_stats(std::ostream& out) {
   std::function<void(context*)> calc_stats = [&](context* ctx) {
     for (lnodeimpl* node : ctx->nodes()) {
       switch (node->type()) {
-      case type_input:
+      case type_input:      
         if (nullptr == ctx->parent()) {
           inputs_bits += node->size();
           ++num_inputs;
@@ -686,6 +686,9 @@ void context::dump_stats(std::ostream& out) {
         break;
       case type_bind:
         calc_stats(reinterpret_cast<bindimpl*>(node)->module());
+        break;
+      case type_bindin:
+      case type_bindout:
         break;
       default:
         other_bits += node->size();
