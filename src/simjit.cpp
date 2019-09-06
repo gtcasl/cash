@@ -1541,7 +1541,7 @@ private:
 
     auto bypass_enable = (1 == node->ctx()->cdomains().size())
                        && 0 == (platform::self().cflags() & cflags::disable_cpb)
-      && ch::internal::compiler::build_bypass_list(bypass_nodes_, node->ctx(), node->id());
+                       && ch::internal::compiler::build_bypass_list(bypass_nodes_, node->ctx(), node->id());
     if (bypass_enable) {      
       jit_label_t l_skip(jit_label_undefined);
       jit_insn_branch_if_not(j_func_, j_changed, &l_skip);

@@ -163,8 +163,12 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {
+  std::string desc(to_string(type_));
+  if (!name_.empty()) {
+    desc += "-" + name_;
+  }
   return stringf("'%s (%d)' in module '%s (%d)' (%s:%d)",
-                 name_.c_str(),
+                 desc.c_str(),
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),

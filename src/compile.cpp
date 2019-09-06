@@ -1723,6 +1723,27 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   std::unordered_set<lnodeimpl*> uninitialized_regs;
 
   //--
+  std::function<bool (lnodeimpl*, lnodeimpl*, std::unordered_set<uint32_t>&)>
+      print_cycle =[&](lnodeimpl* node, lnodeimpl* target, std::unordered_set<uint32_t>& map)->bool {
+    if (map.count(node->id()))
+      return false;
+    map.insert(node->id());
+    if (node->type() == type_reg) {
+      map.insert(reinterpret_cast<regimpl*>(node)->next().id());
+    }
+    if (node == target)
+      return true;
+    for (auto& src : node->srcs()) {
+      auto ret = print_cycle(src.impl(), target, map);
+      if (ret) {
+        std::cout << "  path: " << src.impl()->debug_info() << std::endl;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  //--
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
     if (visited_nodes.count(node->id())) {
       // if a node depends on an update node, it also needs to be updated.
@@ -1744,6 +1765,17 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
           std::cerr << _node->ctx()->id() << ": ";
           _node->print(std::cerr);
           std::cerr << std::endl;
+        }
+      }
+      std::cout << "found a cycle on variable " << node->debug_info() << std::endl;
+      {
+        std::unordered_set<uint32_t> visited;
+        for (auto& src : node->srcs()) {
+          auto ret = print_cycle(src.impl(), node, visited);
+          if (ret) {
+            std::cout << "  path: " << src.impl()->debug_info() << std::endl;
+            break;
+          }
         }
       }
       throw std::domain_error(sstreamf() << "found a cycle on variable " << node->debug_info());
@@ -1899,7 +1931,7 @@ bool compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
     if (changed) {
       out.emplace(node->id());
 
-      switch (node->type()) {
+      switch (type) {
       case type_output:
       case type_tap:
       case type_time:
