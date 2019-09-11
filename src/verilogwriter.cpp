@@ -1053,7 +1053,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_bindout: {
     auto bindport = reinterpret_cast<bindportimpl*>(node);
     print_name(out, bindport->binding());
-    out << "_" << identifier_from_string(bindport->ioport().name());
+    out << "_" << identifier_from_string(bindport->name());
   } break;
   default:
     assert(false);

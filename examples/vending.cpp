@@ -3,8 +3,18 @@
 
 using namespace ch::core;
 
-__enum (Coin, (dime, nickel));
-__enum (State, (idle, s5, s10, s15, sOk));
+__enum (Coin, (
+  dime, 
+  nickel
+));
+
+__enum (State, (
+  idle, 
+  s5, 
+  s10, 
+  s15, 
+  sOk
+));
 
 struct VendingMachine {
   __io (

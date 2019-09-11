@@ -36,7 +36,6 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
 ///////////////////////////////////////////////////////////////////////////////
 
 #define __align_word_size(...) ((((__VA_ARGS__) + WORD_MASK) / WORD_SIZE) * sizeof(block_type))
-#define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifndef NDEBUG
   #define __source_marker() SrcMarker marker(this, __func__)
@@ -1097,7 +1096,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_int32,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_in, j_in_size};
     auto ret = jit_insn_call_native(j_func_,
@@ -1105,7 +1104,7 @@ private:
                                     pfn,
                                     j_sig,
                                     args,
-                                    __countof(args),
+                                    CH_COUNTOF(args),
                                     JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
     return ret;
@@ -1129,7 +1128,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_int32,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_lhs, j_lhs_size, j_rhs, j_rhs_size};
     auto ret = jit_insn_call_native(j_func_,
@@ -1137,7 +1136,7 @@ private:
                                     pfn,
                                     j_sig,
                                     args,
-                                    __countof(args),
+                                    CH_COUNTOF(args),
                                     JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
     return ret;
@@ -1161,7 +1160,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_out, j_out_size, j_in, j_in_size};
     jit_insn_call_native(j_func_,
@@ -1169,7 +1168,7 @@ private:
                          pfn,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }
@@ -1196,7 +1195,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs, j_rhs_size};
     jit_insn_call_native(j_func_,
@@ -1204,7 +1203,7 @@ private:
                          pfn,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }
@@ -1230,7 +1229,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs};
     jit_insn_call_native(j_func_,
@@ -1238,7 +1237,7 @@ private:
                          pfn,
                           j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }
@@ -2051,7 +2050,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
@@ -2059,7 +2058,7 @@ private:
                          (void*)print_data_eval,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
 
@@ -2101,7 +2100,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
@@ -2109,7 +2108,7 @@ private:
                          (void*)assert_data_eval,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
 
@@ -2129,7 +2128,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
@@ -2137,7 +2136,7 @@ private:
                          (void*)udf_data_eval,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }
@@ -2164,7 +2163,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
@@ -2172,7 +2171,7 @@ private:
                          (void*)udf_data_reset,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }
@@ -2831,7 +2830,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_dst_ptr, j_dst_offset, j_src_ptr, j_src_offset, j_length};
     jit_insn_call_native(j_func_,
@@ -2839,7 +2838,7 @@ private:
                          (void*)ext_copy_vector,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }
@@ -3126,7 +3125,7 @@ private:
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
-                                           __countof(params),
+                                           CH_COUNTOF(params),
                                            1);
     jit_value_t args[] = {j_arg0, j_arg1};
     jit_insn_call_native(j_func_,
@@ -3134,7 +3133,7 @@ private:
                          (void*)ext_watch,
                          j_sig,
                          args,
-                         __countof(args),
+                         CH_COUNTOF(args),
                          JIT_CALL_NOTHROW);
     jit_type_free(j_sig);
   }

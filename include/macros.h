@@ -12,6 +12,8 @@
 #define CH_CONCAT_(x, ...) x ## __VA_ARGS__
 #define CH_CONCAT(x, ...) CH_CONCAT_(x, __VA_ARGS__)
 
+#define CH_COUNTOF(arr) (sizeof(arr) / sizeof(arr[0]))
+
 // conditional macro
 
 #define CH_IIF_0(x, y) y

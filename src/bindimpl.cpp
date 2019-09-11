@@ -115,7 +115,7 @@ bindportimpl::bindportimpl(context* ctx,
                            lnodeimpl* src,
                            inputimpl* ioport,
                            const source_location& sloc)
-  : ioimpl(ctx, type_bindin, ioport->size(), "", sloc)
+  : ioimpl(ctx, type_bindin, ioport->size(), ioport->name(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
@@ -126,7 +126,7 @@ bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            outputimpl* ioport,
                            const source_location& sloc)
-  : ioimpl(ctx, type_bindout, ioport->size(), "", sloc)
+  : ioimpl(ctx, type_bindout, ioport->size(), ioport->name(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();

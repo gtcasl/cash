@@ -325,9 +325,9 @@ void tracerimpl::toVerilog(std::ofstream& out,
     case type_bindin:
     case type_bindout: {
       std::stringstream ss;
-      auto p = reinterpret_cast<bindportimpl*>(node);
-      ss << p->binding()->name() << "_"
-         << p->binding()->id() << "_" << identifier_from_string(p->ioport().name());
+      auto bp = reinterpret_cast<bindportimpl*>(node);
+      ss << bp->binding()->name() << "_"
+         << bp->binding()->id() << "_" << identifier_from_string(bp->name());
       return ss.str();
     }
     case type_time:
