@@ -54,6 +54,7 @@ __struct (sq_t, (
 using v2_1_t = ch_vec<ch_bit2, 1>;
 using v2_2_t = ch_vec<ch_bit2, 2>;
 using v2_3_t = ch_vec<ch_bit2, 3>;
+using v_sd3_2_t = ch_vec<sd3_t, 2>;
 
 }
 
@@ -710,5 +711,51 @@ TEST_CASE("system", "[system]") {
       auto y = ch_shuffle<2>(x, {0, 1});
       return (y == 00111100_b);
     });
+    TESTX([]()->bool {
+      ch_sbit4 a(1010_b);
+      return (a[0] == a[2] && a[1] == a[3]);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a;
+      a[3] = 1_b;
+      a[1] = 0_b;
+      return (a[3] == 1_b && a[1] == 0_b);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a(1100_b);
+      auto c = ch_slice<2>(a, 1) ^ 01_b;
+      return (c == 11_b);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a(1100_b);
+      auto c = ch_aslice<2>(a, 1) ^ 01_b;
+      return (c == 10_b);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a(0);
+      ch_sliceref<2>(a) = 10_b;
+      return (a == 0010_b);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a(0);
+      ch_asliceref<2>(a, 1) = 11_b;
+      return (a == 1100_b);
+    });
+    TESTX([]()->bool {
+      ch_sbit128 a(0);
+      ch_system_t<v_sd3_2_t> b{{3_h, {1_b2, 2_h}}, {2_h, {0_b2, 1_h}}};
+      ch_sliceref<ch_system_t<v_sd3_2_t>>(a) = b;
+      return (ch_slice<ch_system_t<v_sd3_2_t>>(a) == b);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a(1100_b);
+      auto c = ch_cat(a, 1_b);
+      return (c == 11001_b);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 a(1100_b);
+      auto c = ch_dup<2>(a);
+      return (c == 11001100_b);
+    });   
   }
 }
