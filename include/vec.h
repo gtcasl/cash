@@ -50,10 +50,8 @@ public:
 
   template <typename Arg0, typename... Args,
               CH_REQUIRE(std::is_constructible_v<T, Arg0>
-                      && !std::is_same_v<remove_cv_ref_t<Arg0>, logic_buffer>
-                      && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_vec>
-                      && (std::is_same_v<Arg0, Args> && ...)
-                      && (sizeof... (Args) == N-1))>
+                      && !std::is_convertible_v<remove_cv_ref_t<Arg0>, logic_buffer>
+                      && (std::is_same_v<Arg0, Args> && ...))>
   ch_vec(Arg0&& arg0, Args&&... args)
     : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=({std::forward<Arg0>(arg0), std::forward<Args>(args)...});
@@ -97,10 +95,18 @@ public:
 
   ch_vec& operator=(const std::initializer_list<T>& values) {
     CH_API_ENTRY(1);
-    assert(values.size() == N);
+    assert(values.size() <= N);
+    if (0 == values.size())
+      return *this;
+    auto it = values.begin();
+    auto last = *it++;
     int i = N - 1;
-    for (auto& value : values) {
-      (*this)[i--] = value;
+    for (unsigned j = N - values.size(); j--;) {
+      (*this)[i--] = last;
+    } 
+    (*this)[i--] = last;   
+    while (it != values.end()) {
+      (*this)[i--] = *it++;
     }
     return *this;
   }
@@ -191,11 +197,16 @@ public:
 
   ch_vec(const std::initializer_list<T>& values)
     : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
-    assert(values.size() == N);
-    int i = N - 1;
-    for (auto& value : values) {
-      (*this)[i--] = value;
-    }
+    this->operator=(values);
+  }
+
+  template <typename Arg0, typename... Args,
+              CH_REQUIRE(std::is_constructible_v<T, Arg0>
+                      && !std::is_convertible_v<remove_cv_ref_t<Arg0>, system_buffer>
+                      && (std::is_same_v<Arg0, Args> && ...))>
+  ch_vec(Arg0&& arg0, Args&&... args)
+    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
+    this->operator=({std::forward<Arg0>(arg0), std::forward<Args>(args)...});
   }
 
   template <typename U,
@@ -232,10 +243,18 @@ public:
   }
 
   ch_vec& operator=(const std::initializer_list<T>& values) {
-    assert(values.size() == N);
+    assert(values.size() <= N);
+    if (0 == values.size())
+      return *this;
+    auto it = values.begin();
+    auto last = *it++;
     int i = N - 1;
-    for (auto& value : values) {
-      (*this)[i--] = value;
+    for (unsigned j = N - values.size(); j--;) {
+      (*this)[i--] = last;
+    }    
+    (*this)[i--] = last;
+    while (it != values.end()) {
+      (*this)[i--] = *it++;
     }
     return *this;
   }

@@ -326,7 +326,7 @@ TEST_CASE("htl", "[htl]") {
       return !!ret;
     });
   }
-  SECTION("rrArbiter", "[rrArbiter]") {
+  SECTION("matArbiter", "[matArbiter]") {
     TESTX([]()->bool {
       ch_device<ch_matArbiter<4>> device;
       ch_simulator sim(device);
@@ -359,8 +359,49 @@ TEST_CASE("htl", "[htl]") {
       ret &= 1 == device.io.grant;
       return !!ret;
     });
+    TESTX([]()->bool {
+      RetCheck ret;
+      ch_device<ch_matArbiter<5>> device;
+      ch_simulator sim(device);
+      ch_tick t = sim.reset(0);
+      device.io.in = 0x1f;  
+      t = sim.step(t, 2);
+      ret &= 0x8 == device.io.grant;
+      t = sim.step(t, 2);
+      device.io.in = 0xf;
+      ret &= 0x4 == device.io.grant;
+      t = sim.step(t, 2);
+      ret &= 0x2 == device.io.grant;
+      t = sim.step(t, 2);
+      ret &= 0x1 == device.io.grant;
+      t = sim.step(t, 2);
+      ret &= 0x8 == device.io.grant;
+      return !!ret;
+    });
   }
-  SECTION("arbiter", "[arbiter]") {
+
+  SECTION("ctrArbiter", "[ctrArbiter]") {
+    TESTX([]()->bool {
+      RetCheck ret;
+      ch_device<ch_ctrArbiter<5>> device;
+      ch_simulator sim(device);
+      ch_tick t = sim.reset(0);
+      device.io.in = 0x1f;  
+      ret &= 0x1 == device.io.grant;
+      t = sim.step(t, 2);
+      device.io.in = 0xf;
+      ret &= 0x2 == device.io.grant;
+      t = sim.step(t, 2);
+      ret &= 0x4 == device.io.grant;
+      t = sim.step(t, 2);
+      ret &= 0x8 == device.io.grant;
+      t = sim.step(t, 2);
+      ret &= 0x0 == device.io.grant;
+      return !!ret;
+    });
+  }
+
+  SECTION("switch", "[switch]") {
     TESTX([]()->bool {
       ch_device<ch_xbar_switch<ch_bit4, 2>> device;
       ch_simulator sim(device);

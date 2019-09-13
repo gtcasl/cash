@@ -19,22 +19,32 @@ struct ch_matArbiter {
   );
 
   void describe() {
-    ch_bit<N*N> state(0);
-    ch_bit<N> dis[N], grant;
+    ch_vec<ch_vec<ch_bool, N>, N> fill_ones(ch_vec<ch_bool, N>(true));
+    ch_reg<ch_vec<ch_vec<ch_bool, N>, N>> priority(fill_ones);
+
     for (unsigned i = 0; i < N; ++i) {
-      for (unsigned j = 0; j < i; ++j) {
-        dis[j][i] = io.in[i] & ~state[j*N+i];
+      ch_bit<N> dis;
+      for (unsigned j = 0; j < N; ++j) {
+        if (j > i) {
+          dis[j] = io.in[j] & priority[j][i];
+        } else if (j < i) {
+          dis[j] = io.in[j] & ~priority[i][j];
+        } else {
+          dis[j] = false;
+        }
       }
-      dis[i][i] = 0;
-      for (unsigned j = i + 1; j < N; ++j) {
-        dis[j][i] = io.in[i] & state[i*N+j];
-      }
-      grant[i] = io.in[i] & ~ch_orr(dis[i]);
-      for (unsigned j = i + 1; j < N; ++j) {
-        state[i*N+j] = ch_next((state[i*N+j] | grant[j]) & ~grant[i]);
-      }
+      auto g = io.in[i] & ~ch_orr(dis);
+      __if (g) {
+        for (unsigned j = 0; j < N; ++j) {
+          if (j > i) {
+            priority->next[j][i] = true;
+          } else if (j < i) {
+            priority->next[i][j] = false;
+          }
+        }
+      };
+      io.grant[i] = g;
     }
-    io.grant = grant;
   }
 };
 
@@ -46,8 +56,8 @@ struct ch_ctrArbiter {
   );
 
   void describe() {
-    ch_counter<N> ctr(0);
-    io.grant = ch_bit<N>(1) << ctr.value();
+    ch_counter<N> ctr;
+    io.grant = io.in & (ch_bit<N>(1) << ctr.value());
   }
 };
 
@@ -71,7 +81,7 @@ struct ch_xbar_switch {
     for (unsigned i = 0; i < I; ++i) {
       xbar.io.in[i].data  = io.in[i].data;
       xbar.io.in[i].valid = io.in[i].valid;
-      arb.io.in[i]        = io.in[i].valid && io.out.ready;
+      arb.io.in[i]        = io.in[i].valid;
     }
 
     io.out.data  = xbar.io.out[0].data;
@@ -79,7 +89,7 @@ struct ch_xbar_switch {
     xbar.io.sel  = arb.io.grant;
 
     for (unsigned i = 0; i < I; ++i) {
-      io.in[i].ready = io.out.ready && (arb.io.grant == (1 << i));
+      io.in[i].ready = io.out.ready && arb.io.grant[i];
     }
 
     io.grant = arb.io.grant;

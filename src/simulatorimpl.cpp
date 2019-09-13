@@ -26,7 +26,7 @@ void clock_driver::eval() {
 
 simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   : eval_ctx_(nullptr)
-  , clk_driver_(true)
+  , clk_driver_(false)
   , reset_driver_(false)
   , sim_driver_(nullptr)
   , verbose_tracing_(false) {
@@ -131,9 +131,9 @@ ch_tick simulatorimpl::step(ch_tick t, uint32_t count) {
       this->eval();
     }
   } else {
-    while (count--) {
-      clk_driver_.eval();
+    while (count--) {      
       this->eval();
+      clk_driver_.eval();
     }
   }   
   return ret;
