@@ -1224,7 +1224,7 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
          "  overhead += (t1.tv_nsec - t0.tv_nsec) * .000001;\n"
          "  if (++ticks == " << ticks_ << ") {\n"
          "    clock_gettime(CLOCK_REALTIME, &end_time);\n"
-         "    auto elapsed_time = (end_time.tv_nsec - start_time.tv_nsec) * .000001;\n"
+         "    double elapsed_time = (end_time.tv_nsec - start_time.tv_nsec) * .000001;\n"
          "    std::cout << \"Elapsed Time: \" << elapsed_time << \"ms\" << std::endl;\n"
          "    std::cout << \"Kernel Time: \" << (elapsed_time - overhead)  << \"ms\" << std::endl;\n"
          "    std::cout << \"overhead Time: \" << overhead << \"ms\" << std::endl;\n"
