@@ -1113,6 +1113,24 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
     }
   };
 
+  //--
+  auto print_output = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
+    if (signal_size > 32) {
+      out << "    vpi_cmpw(s_" << signal_name << ", {";
+      for (uint32_t j = 0; j < signal_size;) {
+        if (j) out << ", ";
+        auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
+        print_value(out, value, s, j);        
+        j += s;
+      }
+      out << "});" << std::endl;
+    } else {
+      out << "    vpi_cmpi(s_" << signal_name << ", ";
+      print_value(out, value);        
+      out << ");" << std::endl;
+    }
+  };
+
   if (contexts_.size() > 1) {
     throw std::invalid_argument("multiple devices not supported!");
   }
@@ -1151,6 +1169,30 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
          "}\n" 
       << std::endl;
 
+  out << "static bool vpi_cmpw(vpiHandle sig, std::initializer_list<unsigned> values) {\n"
+         "  static std::vector<s_vpi_vecval> buf;\n"
+         "  buf.resize(values.size());  \n"
+         "  s_vpi_value value_s;\n"
+         "  value_s.format = vpiVectorVal;\n"
+         "  value_s.value.vector = buf.data();\n"
+         "  vpi_get_value(sig, &value_s);\n"
+         "  auto bi = buf.begin();\n"
+         "  for (auto vi = values.begin(), ve = values.end(); vi != ve; ++vi, ++bi) {\n"
+         "    if (unsigned(bi->aval) != *vi) return false;\n"
+         "  }\n"
+         "  return true;\n"
+         "}\n"
+      << std::endl;
+
+  out << "static bool vpi_cmpi(vpiHandle sig, unsigned value) {\n"
+         "  s_vpi_value value_s;\n"
+         "  value_s.format = vpiIntVal;\n"
+         "  value_s.value.integer = value;\n"
+        "  vpi_get_value(sig, &value_s);\n"
+        "  return (unsigned(value_s.value.integer) == value);\n"
+        "}\n"
+      << std::endl;
+
   out << "bool initialized = false;\n"
          "timespec start_time, end_time;\n"
          "double overhead = 0;\n" 
@@ -1182,6 +1224,7 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
     while (src_offset < src_width) {
       uint32_t mask_offset = src_offset;
       auto in_offset = mask_offset + mask_width;
+      auto out_offset = mask_offset + mask_width;
       bool trace_enable = false;
       {
         for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
@@ -1204,6 +1247,49 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
             auto value = get_value(src_block, signal_size, in_offset);
             in_offset += signal_size;
             print_input(value, signal_name, signal_size);
+          }
+        }
+      }
+
+      {
+        for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+          auto signal = signals_[i];
+          auto signal_type = signal->type();
+          auto signal_size = signal->size();
+          auto signal_name = get_signal_name(signal);
+          bool valid = bv_get(src_block, mask_offset + i);
+          if (valid) {
+            if (type_input == signal_type) {
+              out_offset += signal_size;
+              continue;
+            }
+            auto& prev = prev_values.at(i);
+            prev.first = src_block;
+            prev.second = out_offset;
+            if ((tc + 1) < ticks_) {
+              out_offset += signal_size;
+              continue;
+            }
+            if (!trace_enable) {
+              out << "  case " << (tc + 1) << ":" << std::endl;
+              trace_enable = true;
+            }
+            auto value = get_value(src_block, signal_size, out_offset);
+            out_offset += signal_size;
+            print_output(value, signal_name, signal_size);
+          } else {
+            if (type_input == signal_type)
+              continue;
+            if ((tc + 1) < ticks_)
+              continue;
+            if (!trace_enable) {
+              out << "  case " << (tc + 1) << ":" << std::endl;
+              trace_enable = true;
+            }
+            auto& prev = prev_values.at(i);
+            assert(prev.first);
+            auto value = get_value(prev.first, signal_size, prev.second);
+            print_output(value, signal_name, signal_size);
           }
         }
       }
