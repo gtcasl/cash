@@ -1143,7 +1143,7 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
 
   out << "#include <iostream>\n"
          "#include <vector>\n"
-         "#include <time.h>\n"
+         "#include <chrono>\n"
          "#include <vpi_user.h>\n" 
       << std::endl;
 
@@ -1194,7 +1194,7 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
       << std::endl;
 
   out << "bool initialized = false;\n"
-         "timespec start_time, end_time;\n"
+         "std::chrono::time_point<std::chrono::system_clock> start_time;\n"
          "double overhead = 0;\n" 
       << std::endl;
 
@@ -1207,11 +1207,10 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
   out << "static PLI_INT32 eval_callback(p_cb_data cb_data) {\n"
          "  static long int ticks = 0;\n"
          "  if (!initialized) {\n"
-         "    clock_gettime(CLOCK_REALTIME, &start_time);\n"
+         "    start_time = std::chrono::system_clock::now();\n"
          "    initialized = true;\n"
          "  }\n"
-         "  timespec t0 ,t1;\n"
-         "  clock_gettime(CLOCK_REALTIME, &t0);\n" 
+         "  auto t0 = std::chrono::system_clock::now();\n"
       << std::endl;
 
   out << "  switch (ticks) {\n";
@@ -1305,11 +1304,11 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
 
   out << "  }\n" << std::endl;
   
-  out << "  clock_gettime(CLOCK_REALTIME, &t1);\n"
-         "  overhead += (t1.tv_nsec - t0.tv_nsec) * .000001;\n"
+  out << "  auto t1 = std::chrono::system_clock::now();\n"
+         "  overhead += std::chrono::duration<double, std::milli>(t1 - t0).count();\n"
          "  if (++ticks == " << ticks_ << ") {\n"
-         "    clock_gettime(CLOCK_REALTIME, &end_time);\n"
-         "    double elapsed_time = (end_time.tv_nsec - start_time.tv_nsec) * .000001;\n"
+         "    auto end_time = std::chrono::system_clock::now();\n"
+         "    double elapsed_time = std::chrono::duration<double, std::milli>(end_time - start_time).count();\n"
          "    std::cout << \"Elapsed Time: \" << elapsed_time << \"ms\" << std::endl;\n"
          "    std::cout << \"Kernel Time: \" << (elapsed_time - overhead)  << \"ms\" << std::endl;\n"
          "    std::cout << \"overhead Time: \" << overhead << \"ms\" << std::endl;\n"
