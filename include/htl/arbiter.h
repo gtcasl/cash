@@ -61,6 +61,24 @@ struct ch_ctrArbiter {
   }
 };
 
+template <unsigned N, unsigned P, typename Arbiter = ch_matArbiter<N>>
+struct ch_idxArbiter {
+  __io (
+    __in (ch_bit<N*P>)  in,
+    __out (ch_bit<N*P>) grant
+  );
+
+  void describe() {
+    std::array<ch_module<Arbiter>,P> arbiters;
+    ch_counter<P> ctr;
+
+    for (unsigned i = 0; i < P; ++i) {
+      arbiters.at(i).io.in = ch_aslice<N>(io.in, i);
+      ch_asliceref<N>(io.grant, i) = ch_sel(ctr.value() == i, arbiters.at(i).io.grant, 0);
+    }    
+  }
+};
+
 template <typename T, unsigned I, typename Arbiter = ch_matArbiter<I>>
 struct ch_xbar_switch {
   using value_type   = T;
