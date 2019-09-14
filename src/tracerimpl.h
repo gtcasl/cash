@@ -15,19 +15,23 @@ public:
 
   void initialize() override;
 
-  void toText(std::ofstream& out);
+  void toText(std::ofstream& out) const;
 
-  void toVCD(std::ofstream& out);
+  void toVCD(std::ofstream& out) const;
 
   void toVerilog(std::ofstream& out,
                  const std::string& moduleFileName,
-                 bool passthru);
+                 bool passthru) const;
 
   void toVerilator(std::ofstream& out,
-                   const std::string& moduleTypeName);
+                   const std::string& moduleTypeName) const;
 
   void toSystemC(std::ofstream& out,
-                 const std::string& moduleTypeName);
+                 const std::string& moduleTypeName) const;
+
+  void toVPI(const std::string& vfile, 
+             const std::string& cfile, 
+             const std::string& moduleFileName) const;
 
 protected:
 
@@ -56,6 +60,10 @@ protected:
     bv_copy(value.words(), 0, src, src_offset, size);
     return value;
   }
+
+  void toVPI_c(std::ofstream& out) const;
+
+  void toVPI_v(std::ofstream& out, const std::string& moduleTypeName) const;
 
   std::vector<ioportimpl*> signals_;
   std::vector<std::pair<block_t*, uint32_t>> prev_values_;

@@ -31,6 +31,7 @@ public:
     tracer_.toText("router.log");
     tracer_.toVCD("router.vcd");
     tracer_.toVerilog("router_tb.v", "router.v");
+    tracer_.toVPI("vpi_router_tb.v", "vpi_router_tb.cpp", "router.v");
     tracer_.toVerilator("vl_router_tb.h", "TestBench");
     tracer_.toSystemC("sc_router_tb.h", "TestBench");
     status_ |= system("iverilog router_tb.v -o router_tb.iv");

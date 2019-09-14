@@ -62,13 +62,17 @@ public:
   }
 
   void toSystemC(std::ofstream& out,
-                   const std::string& moduleTypeName);
+                 const std::string& moduleTypeName);
 
   void toSystemC(const std::string& file,
-                   const std::string& moduleTypeName) {
+                 const std::string& moduleTypeName) {
     std::ofstream out(file);
     toSystemC(out, moduleTypeName);
   }
+
+  void toVPI(const std::string& vfile, 
+             const std::string& cfile, 
+             const std::string& moduleFileName);
 
 protected:
 

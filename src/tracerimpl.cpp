@@ -152,7 +152,7 @@ void tracerimpl::allocate_trace(uint32_t block_width) {
   ++num_traces_;
 }
 
-void tracerimpl::toText(std::ofstream& out) {
+void tracerimpl::toText(std::ofstream& out) const {
   //--
   auto get_signal_name = [&](ioportimpl* node) {
     if (!is_single_context_ && 1 == contexts_.size()) {
@@ -165,9 +165,8 @@ void tracerimpl::toText(std::ofstream& out) {
   auto mask_width = valid_mask_.size();
   auto indices_width = std::to_string(ticks_).length();
 
-  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-    prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
-  }
+  std::vector<std::pair<block_t*, uint32_t>> 
+      prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
 
   auto trace_block = trace_head_;
   while (trace_block) {
@@ -189,14 +188,14 @@ void tracerimpl::toText(std::ofstream& out) {
           auto value = get_value(src_block, signal_size, src_offset);
           out << sep << " " << signal_name << "=" << value;
           if (type_input != signal_type) {
-            auto& prev = prev_values_.at(i);
+            auto& prev = prev_values.at(i);
             prev.first = src_block;
             prev.second = src_offset;
           }
           src_offset += signal_size;
         } else {
           if (type_input != signal_type) {
-            auto& prev = prev_values_.at(i);
+            auto& prev = prev_values.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
             out << sep << " " << signal_name << "=" << value;
@@ -210,7 +209,7 @@ void tracerimpl::toText(std::ofstream& out) {
   }
 }
 
-void tracerimpl::toVCD(std::ofstream& out) {  
+void tracerimpl::toVCD(std::ofstream& out) const {  
   dup_tracker<std::string> dup_mod_names;
   std::list<std::string> mod_stack;
 
@@ -318,7 +317,7 @@ void tracerimpl::toVCD(std::ofstream& out) {
 
 void tracerimpl::toVerilog(std::ofstream& out,
                            const std::string& moduleFileName,
-                           bool passthru) {
+                           bool passthru) const {
   //--
   auto netlist_name = [&](lnodeimpl* node)->std::string {
     switch (node->type()) {
@@ -500,9 +499,8 @@ void tracerimpl::toVerilog(std::ofstream& out,
       uint64_t tc = 0, tp = 0;
       auto mask_width = valid_mask_.size();
 
-      for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-        prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
-      }
+      std::vector<std::pair<block_t*, uint32_t>> 
+          prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
 
       auto trace_block = trace_head_;
       while (trace_block) {
@@ -558,7 +556,7 @@ void tracerimpl::toVerilog(std::ofstream& out,
                   continue;
                 }
 
-                auto& prev = prev_values_.at(i);
+                auto& prev = prev_values.at(i);
                 prev.first = src_block;
                 prev.second = out_offset;
 
@@ -593,7 +591,7 @@ void tracerimpl::toVerilog(std::ofstream& out,
                   out_trace = true;
                 }
 
-                auto& prev = prev_values_.at(i);
+                auto& prev = prev_values.at(i);
                 assert(prev.first);
                 auto value = get_value(prev.first, signal_size, prev.second);
                 out << " `check(" << signal_name << ", ";
@@ -621,7 +619,7 @@ void tracerimpl::toVerilog(std::ofstream& out,
 }
 
 void tracerimpl::toVerilator(std::ofstream& out,
-                             const std::string& moduleTypeName) {
+                             const std::string& moduleTypeName) const {
   //--
   auto get_signal_name = [&](ioportimpl* node) {
     auto path = node->name();
@@ -709,9 +707,8 @@ void tracerimpl::toVerilator(std::ofstream& out,
   uint64_t tc = 0;
   auto mask_width = valid_mask_.size();
 
-  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-    prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
-  }
+  std::vector<std::pair<block_t*, uint32_t>> 
+      prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
 
   out << "#pragma once" << std::endl;
   out << "#include <eda/verilator/vl_simulator.h>" << std::endl;
@@ -720,6 +717,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
   out << "public:" << std::endl;
   out << "bool eval(uint64_t tick) {" << std::endl;
   out << "switch (tick) {" << std::endl;
+
   auto trace_block = trace_head_;
   while (trace_block) {
     auto src_block = trace_block->data;
@@ -767,7 +765,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
               out_offset += signal_size;
               continue;
             }
-            auto& prev = prev_values_.at(i);
+            auto& prev = prev_values.at(i);
             prev.first = src_block;
             prev.second = out_offset;
             if ((tc + 1) < ticks_) {
@@ -790,7 +788,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
               out << "case " << (tc + 1) << ":" << std::endl;
               trace_enable = true;
             }
-            auto& prev = prev_values_.at(i);
+            auto& prev = prev_values.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
             print_output(value, signal_name, signal_size);
@@ -805,6 +803,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
     }
     trace_block = trace_block->next;
   }
+
   out << "}" << std::endl;
   out << "return (tick < " << ticks_ << ");" << std::endl;
   out << "}" << std::endl;
@@ -818,7 +817,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
 ///////////////////////////////////////////////////////////////////////////////
 
 void tracerimpl::toSystemC(std::ofstream& out,
-                           const std::string& moduleTypeName) {
+                           const std::string& moduleTypeName) const {
   //--
   auto get_signal_name = [&](ioportimpl* node) {
     auto path = node->name();
@@ -906,9 +905,8 @@ void tracerimpl::toSystemC(std::ofstream& out,
   uint64_t tc = 0;
   auto mask_width = valid_mask_.size();
 
-  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-    prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
-  }
+  std::vector<std::pair<block_t*, uint32_t>> 
+      prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
 
   out << "#pragma once" << std::endl;
   out << "#include <eda/verilator/sc_simulator.h>" << std::endl;
@@ -916,12 +914,14 @@ void tracerimpl::toSystemC(std::ofstream& out,
   out << "class sc_testbench {" << std::endl;
   out << "public:" << std::endl;
   out << "sc_testbench() {" << std::endl;
+
   for (auto signal : signals_) {
     if (signal->name() == "clk" || signal->name() == "reset")
       continue;
     auto signal_name = get_signal_name(signal);
     out << "sim_->" << signal_name << "(" << signal_name << "_);" << std::endl;
   }
+
   out << "#if VM_TRACE" << std::endl;
   out << "auto tfp = sim->create_trace(\""<< moduleTypeName <<"\")" << std::endl;
   for (auto signal : signals_) {
@@ -981,7 +981,7 @@ void tracerimpl::toSystemC(std::ofstream& out,
               out_offset += signal_size;
               continue;
             }
-            auto& prev = prev_values_.at(i);
+            auto& prev = prev_values.at(i);
             prev.first = src_block;
             prev.second = out_offset;
             if ((tc + 1) < ticks_) {
@@ -1004,7 +1004,7 @@ void tracerimpl::toSystemC(std::ofstream& out,
               out << "case " << (tc + 1) << ":" << std::endl;
               trace_enable = true;
             }
-            auto& prev = prev_values_.at(i);
+            auto& prev = prev_values.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
             print_output(value, signal_name, signal_size);
@@ -1019,6 +1019,7 @@ void tracerimpl::toSystemC(std::ofstream& out,
     }
     trace_block = trace_block->next;
   }
+
   out << "}" << std::endl;
   out << "return (tick < " << ticks_ << ");" << std::endl;
   out << "}" << std::endl;
@@ -1026,6 +1027,7 @@ void tracerimpl::toSystemC(std::ofstream& out,
   out << "auto step(uint64_t tick) { return sim_.step(tick, 2); }" << std::endl;
   out << "private:" << std::endl;
   out << "sc_simulator<" << moduleTypeName << "> sim_;" << std::endl;
+
   for (auto signal : signals_) {
     if (signal->name() == "clk" || signal->name() == "reset")
       continue;
@@ -1044,6 +1046,401 @@ void tracerimpl::toSystemC(std::ofstream& out,
     out << "> " << signal_name << "_;" << std::endl;
   }
   out << "};" << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void tracerimpl::toVPI_c(std::ofstream& out) const {
+  //--
+  auto get_signal_name = [&](ioportimpl* node) {
+    auto path = node->name();
+    if (!is_single_context_ && 1 == contexts_.size()) {
+      path = remove_path(path);
+    }
+    path = identifier_from_string(path);
+    return path;
+  };
+
+  //--
+  auto print_value = [](std::ostream& out,
+                        const bv_t& value,
+                        uint32_t size = 0,
+                        uint32_t offset = 0) {
+    if (size > 4 || value.word(0) > 9) {
+      out << "0x";
+    }
+
+    bool skip_zeros = true;
+    if (0 == size) {
+      size = value.size();
+    }
+
+    auto oldflags = out.flags();
+    out.setf(std::ios_base::hex, std::ios_base::basefield);
+
+    uint32_t word(0);
+    for (auto it = value.begin() + offset + (size - 1); size;) {
+      word = (word << 0x1) | *it--;
+      if (0 == (--size & 0x3)) {
+        if (0 == size || (word != 0 ) || !skip_zeros) {
+          out << word;
+          skip_zeros = false;
+        }
+        word = 0;
+      }
+    }
+    if (0 != (size & 0x3)) {
+      out << word;
+    }
+    out.flags(oldflags);
+  };
+
+  //--
+  auto print_input = [&](const bv_t& value, const std::string& signal_name, uint32_t signal_size) {
+    if (signal_size > 32) {
+      out << "    vpi_setw(s_" << signal_name << ", {";
+      for (uint32_t j = 0; j < signal_size;) {
+        if (j) out << ", ";
+        auto s = (j+32 <= signal_size) ? 32 : (signal_size-j);
+        print_value(out, value, s, j);        
+        j += s;
+      }
+      out << "});" << std::endl;
+    } else {
+      out << "    vpi_seti(s_" << signal_name << ", ";
+      print_value(out, value);        
+      out << ");" << std::endl;
+    }
+  };
+
+  if (contexts_.size() > 1) {
+    throw std::invalid_argument("multiple devices not supported!");
+  }
+
+  uint64_t tc = 0;
+  auto mask_width = valid_mask_.size();
+
+  std::vector<std::pair<block_t*, uint32_t>> 
+      prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
+
+  out << "#include <iostream>\n"
+         "#include <vector>\n"
+         "#include <chrono>\n"
+         "#include <vpi_user.h>\n" 
+      << std::endl;
+
+  out << "static void vpi_setw(vpiHandle sig, std::initializer_list<unsigned> values) {\n"
+         "  static std::vector<s_vpi_vecval> buf;\n"
+         "  buf.resize(values.size());\n"
+         "  auto it = buf.begin();\n"
+         "  for (auto& value : values) {\n"
+         "    it->aval = value;\n"
+         "    ++it;\n"
+         "  }\n"
+         "  s_vpi_value value_s;\n"
+         "  value_s.format = vpiVectorVal;\n"
+         "  value_s.value.vector = buf.data();\n"
+         "  vpi_put_value(sig, &value_s, NULL, vpiNoDelay);\n"
+         "}\n" 
+      << std::endl;
+      
+  out << "static void vpi_seti(vpiHandle sig, unsigned value) {\n"
+         "  s_vpi_value value_s;\n"
+         "  value_s.format = vpiIntVal;\n"
+         "  value_s.value.integer = value;\n"
+         "  vpi_put_value(sig, &value_s, NULL, vpiNoDelay);\n"
+         "}\n" 
+      << std::endl;
+
+  out << "bool initialized = false;\n"
+         "std::chrono::time_point<std::chrono::system_clock> start_time;\n"
+         "double overhead = 0;\n" 
+      << std::endl;
+
+  for (auto signal : signals_) {
+    auto signal_name = get_signal_name(signal);
+    out << "vpiHandle s_" << signal_name << ";\n";
+  }
+  out << std::endl;
+
+  out << "static PLI_INT32 eval_callback(p_cb_data cb_data) {\n"
+         "  static long int ticks = 0;\n"
+         "  if (!initialized) {\n"
+         "    start_time = std::chrono::system_clock::now();\n"
+         "    initialized = true;\n"
+         "  }\n"
+         "  auto t0 = std::chrono::system_clock::now();\n" 
+      << std::endl;
+
+  out << "  switch (ticks) {\n";
+
+  auto trace_block = trace_head_;
+  while (trace_block) {
+    auto src_block = trace_block->data;
+    auto src_width = trace_block->size;
+    uint32_t src_offset = 0;
+    while (src_offset < src_width) {
+      uint32_t mask_offset = src_offset;
+      auto in_offset = mask_offset + mask_width;
+      bool trace_enable = false;
+      {
+        for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+          bool valid = bv_get(src_block, mask_offset + i);
+          if (valid) {
+            auto signal = signals_[i];
+            auto signal_type = signal->type();
+            auto signal_size = signal->size();
+            auto signal_name = get_signal_name(signal);
+            if ((type_input != signal_type)
+              || signal_name == "clk"
+              || signal_name == "reset") {
+              in_offset += signal_size;
+              continue;
+            }
+            if (!trace_enable) {
+              out << "  case " << tc << ":\n";
+              trace_enable = true;
+            }
+            auto value = get_value(src_block, signal_size, in_offset);
+            in_offset += signal_size;
+            print_input(value, signal_name, signal_size);
+          }
+        }
+      }
+
+      if (trace_enable) {
+        out << "    break;\n";
+      }
+      src_offset = in_offset;
+      ++tc;
+    }
+    trace_block = trace_block->next;
+  }
+
+  out << "  }\n" << std::endl;
+  
+  out << "  auto t1 = std::chrono::system_clock::now();\n"
+         "  overhead += std::chrono::duration<double, std::milli>(t1 - t0).count();\n"
+         "  if (++ticks == " << ticks_ << ") {\n"
+         "    auto end_time = std::chrono::system_clock::now();\n"
+         "    auto elapsed_time = std::chrono::duration<double, std::milli>(end_time - start_time).count();\n"
+         "    std::cout << \"Elapsed Time: \" << elapsed_time << \"ms\" << std::endl;\n"
+         "    std::cout << \"Kernel Time: \" << (elapsed_time - overhead)  << \"ms\" << std::endl;\n"
+         "    std::cout << \"overhead Time: \" << overhead << \"ms\" << std::endl;\n"
+         "    vpi_control(vpiFinish);\n"
+         "  }\n"
+	       "  return 0;\n"
+         "}\n" << std::endl;
+
+  out << "static PLI_INT32 register_callbacks(char *user_data) {\n";
+
+  for (auto signal : signals_) {
+    auto signal_name = get_signal_name(signal);
+    out << "  s_" << signal_name << " = vpi_handle_by_name(\"testbench." << signal_name << "\", NULL);\n";
+  }
+  out << std::endl;
+         
+  out << "  s_vpi_value value_s;\n"
+         "  s_vpi_time time_s;\n"
+         "  s_cb_data cb_data_s;\n"
+         "\n"
+         "  time_s.type = vpiSuppressTime;\n"
+         "  value_s.format = vpiIntVal;\n"
+         "\n"
+         "  cb_data_s.user_data = NULL;\n"
+         "  cb_data_s.reason = cbValueChange;\n"
+         "  cb_data_s.cb_rtn = eval_callback;\n"
+         "  cb_data_s.time = &time_s;\n"
+         "  cb_data_s.value = &value_s;\n"
+         "\n"         
+         "  cb_data_s.obj  = s_clk;\n"
+         "  vpi_register_cb(&cb_data_s);\n"
+         "  return 0;\n"
+         "}\n" << std::endl;
+
+  out << "static void register_verilog_functions() {\n"
+         "  s_vpi_systf_data tf;\n"
+         "  tf.type = vpiSysTask;\n"
+         "  tf.tfname = \"$eval_callback\";\n"
+         "  tf.calltf = register_callbacks;\n"
+         "  tf.compiletf = NULL;\n"
+         "  tf.sizetf = 0;\n"
+         "  tf.user_data = NULL;\n"
+         "  vpi_register_systf(&tf);\n"
+         "}\n" << std::endl;
+
+  out << "void (*vlog_startup_routines[])() = {\n"
+         "  register_verilog_functions,\n"
+         "  0\n"
+         "};";
+}
+
+void tracerimpl::toVPI_v(std::ofstream& out, const std::string& moduleFileName) const {
+  //--
+  auto netlist_name = [&](lnodeimpl* node)->std::string {
+    switch (node->type()) {
+    case type_bindin:
+    case type_bindout: {
+      std::stringstream ss;
+      auto bp = reinterpret_cast<bindportimpl*>(node);
+      ss << bp->binding()->name() << "_"
+         << bp->binding()->id() << "_" << identifier_from_string(bp->name());
+      return ss.str();
+    }
+    case type_time:
+      return "$time";
+    case type_tap:
+      return identifier_from_string(node->name());
+    default: {
+      std::stringstream ss;
+      ss << node->type();
+      if (!node->name().empty()) {
+        ss << "_" << identifier_from_string(node->name());
+      }
+      ss << "_" << node->id();
+      return ss.str();
+    }
+    }
+  };
+
+  //--
+  auto get_tap_path = [&](tapimpl* node) {    
+    if (is_single_context_) {
+      auto sname = netlist_name(node);
+      return stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), sname.c_str());
+    } else {
+      auto pos   = node->name().find_last_of('/');
+      auto path  = node->name().substr(0, pos);
+      std::replace(path.begin(), path.end(), '/', '.');
+      auto sname = identifier_from_string(node->name().substr(pos+1));
+      return stringf("%s.%s", path.c_str(), sname.c_str());;
+    }
+  };
+
+  //--
+  auto get_signal_name = [&](ioportimpl* node) {
+    auto path = node->name();
+    if (!is_single_context_) {
+      auto sname = remove_path(path);
+      if (sname == "clk" || sname == "reset")
+        return sname;
+      if (1 == contexts_.size()) {
+        path = sname;
+      }
+    }
+    path = identifier_from_string(path);
+    return path;
+  };
+
+  //--
+  auto find_signal_name = [&](ioportimpl* node) {
+    if ((node->name() == "clk") || (node->name() == "reset"))
+      return node->name();
+    auto name = node->name();
+    if (!is_single_context_) {
+      name = stringf("%s_%d/%s", node->ctx()->name().c_str(), node->ctx()->id(), name.c_str());
+    }
+    for (auto signal : signals_) {      
+      if (signal->name() == name)
+        return get_signal_name(signal);
+    }
+    std::abort();
+    return std::string();
+  };
+
+  //--
+  auto print_type = [](std::ostream& out, ioimpl* node) {
+    out << (type_input == node->type() ? "reg" : "wire");
+    if (node->size() > 1)
+      out << "[" << (node->size() - 1) << ":0]";
+  };
+
+  //--
+  auto print_module = [&](std::ostream& out, context* ctx) {
+    auto_separator sep(", ");
+    out << ctx->name() << " " << ctx->name() << "_" << ctx->id() << "(";
+    for (auto node : ctx->inputs()) {
+      auto input = reinterpret_cast<inputimpl*>(node);
+      out << sep << '.' << identifier_from_string(input->name()) << "(" << find_signal_name(input) << ")";
+    }
+    for (auto node : ctx->outputs()) {
+      auto output = reinterpret_cast<outputimpl*>(node);
+      out << sep << '.' << identifier_from_string(output->name()) << "(" << find_signal_name(output) << ")";
+    }
+    out << ");" << std::endl;
+    return true;
+  };
+
+  // log header
+  out << "`timescale 1ns/1ns" << std::endl;
+  out << "`include \"" << moduleFileName << "\"" << std::endl << std::endl;
+  out << "module testbench();" << std::endl << std::endl;
+
+  {
+    auto_indent indent(out);
+    int has_clock = 0;
+    int has_taps = 0;
+
+    // declare signals
+    for (auto signal : signals_) {
+      print_type(out, signal);
+      auto name = get_signal_name(signal);
+      out << " " << name << ";" << std::endl;
+      has_clock |= (name == "clk");
+      has_taps |= (type_tap == signal->type());
+    }
+    out << std::endl;
+
+    // declare modules
+    for (auto ctx : contexts_) {
+      print_module(out, ctx);
+      out << std::endl;
+    }
+
+    if (has_taps) {
+      for (auto signal : signals_) {
+        if (type_tap != signal->type())
+          continue;
+        out << "assign " << get_signal_name(signal) << " = "
+            << get_tap_path(reinterpret_cast<tapimpl*>(signal)) << ";" << std::endl;
+      }
+      out << std::endl;
+    }
+
+    // declare clock process
+    if (has_clock) {
+      out << "always begin" << std::endl;
+      {
+        auto_indent indent1(out);
+        out << "#1 clk = !clk;" << std::endl;
+      }
+      out << "end" << std::endl << std::endl;
+    }
+
+    // declare simulation process
+    out << "initial begin" << std::endl;
+    out << "$eval_callback;" << std::endl;
+    if (has_clock) {
+      out << "clk = 0;" << std::endl;
+    }
+    out << "end" << std::endl << std::endl;
+  }
+
+  // log footer
+  out << "endmodule" << std::endl;
+}
+
+void tracerimpl::toVPI(const std::string& vfile, 
+                       const std::string& cfile, 
+                       const std::string& moduleFileName) const {
+  {
+    std::ofstream out(vfile);
+    this->toVPI_v(out, moduleFileName);
+  }
+  {
+    std::ofstream out(cfile);
+    this->toVPI_c(out);
+  }   
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1093,4 +1490,10 @@ void ch_tracer::toVerilator(std::ofstream& out,
 void ch_tracer::toSystemC(std::ofstream& out,
                           const std::string& moduleTypeName) {
   return reinterpret_cast<tracerimpl*>(impl_)->toSystemC(out, moduleTypeName);
+}
+
+void ch_tracer::toVPI(const std::string& vfile, 
+                      const std::string& cfile, 
+                      const std::string& moduleFileName) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toVPI(vfile, cfile, moduleFileName);
 }
