@@ -61,20 +61,28 @@ struct ch_ctrArbiter {
   }
 };
 
-template <unsigned N, unsigned P, typename Arbiter = ch_matArbiter<N>>
+template <unsigned N, unsigned P, typename Arbiter = ch_matArbiter<ceildiv(N,P)>>
 struct ch_idxArbiter {
   __io (
-    __in (ch_bit<N*P>)  in,
-    __out (ch_bit<N*P>) grant
+    __in (ch_bit<N>)  in,
+    __out (ch_bit<N>) grant
   );
 
   void describe() {
-    std::array<ch_module<Arbiter>,P> arbiters;
+    std::array<ch_module<Arbiter>, P> arbiters;
     ch_counter<P> ctr;
 
-    for (unsigned i = 0; i < P; ++i) {
-      arbiters.at(i).io.in = ch_aslice<N>(io.in, i);
-      ch_asliceref<N>(io.grant, i) = ch_sel(ctr.value() == i, arbiters.at(i).io.grant, 0);
+    for (unsigned i = 0; i < P; ++i) {      
+      auto active = (i == ctr.value());
+      for (unsigned j = 0, n = ceildiv(N,P); j < n; ++j) {        
+        auto k = i * n + j;
+        if (k < N) {
+          arbiters.at(i).io.in[j] = io.in[k];
+          io.grant[k] = ch_sel(active, arbiters.at(i).io.grant[j], 0);
+        } else {
+          arbiters.at(i).io.in[j] = false;
+        }        
+      }
     }    
   }
 };
