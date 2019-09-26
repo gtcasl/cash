@@ -1,4 +1,4 @@
-#include <htl/pipe.h>
+#include <htl/queue.h>
 #include "common.h"
 
 using namespace ch::htl;
@@ -80,7 +80,7 @@ TEST_CASE("simulation", "[sim]") {
     TESTX([]()->bool {
       ch_device<GenericModule2<ch_int2, ch_int2, ch_int2>> device(
         [](ch_int2 lhs, ch_int2 rhs)->ch_int2 { 
-          ch_module<ch_pipe<ch_int2, 4>> pipe;
+          ch_module<ch_pipequeue<ch_int2, 4>> pipe;
           pipe.io.enq.data = lhs + rhs;
           pipe.io.enq.valid = true;
           pipe.io.deq.ready = true;

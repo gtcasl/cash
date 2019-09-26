@@ -2,7 +2,6 @@
 #include <htl/mux.h>
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
-#include <htl/pipe.h>
 #include <htl/float32.h>
 #include <htl/counter.h>
 #include <htl/enc.h>
@@ -24,7 +23,7 @@ struct PipeTest {
   );
 
   void describe() {
-    ch_module<ch_pipe<T, Delay>> pipe;
+    ch_module<ch_pipequeue<T, Delay>> pipe;
     ch_reg<ch_bool> active(false), done(false);
 
     pipe.io.enq(io.enq);
