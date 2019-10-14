@@ -11,6 +11,7 @@ struct GCD {
     (ch_enq_io<ch_vec<ch_uint<N>,2>>) in,
     (ch_valid_out<ch_uint<N>>) out
   );
+  
   void describe() {
     ch_reg<ch_uint<N>> x, y;
     ch_reg<ch_bool> p(false);

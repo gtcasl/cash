@@ -152,6 +152,8 @@ void compiler::optimize() {
   this->dead_code_elimination();
   dce_total = tracker.deleted();
 
+  ctx_->dump_cfg(std::cout);
+
   // run optimization passes
   bool changed =true;
   if (ctx_->parent()
@@ -161,16 +163,27 @@ void compiler::optimize() {
 
   for (;changed;) {
     changed = this->prune_identity_proxies();
+    ctx_->dump_cfg(std::cout);
     pip_total += tracker.deleted();
+    ctx_->dump_cfg(std::cout);
     changed |= this->proxies_coalescing();
+    ctx_->dump_cfg(std::cout);
     pcx_total += tracker.deleted();
+    ctx_->dump_cfg(std::cout);
     changed |= this->constant_folding();
+    ctx_->dump_cfg(std::cout);
     cfo_total += tracker.deleted();
+    ctx_->dump_cfg(std::cout);
     changed |= this->subexpressions_elimination();
+    ctx_->dump_cfg(std::cout);
     cse_total += tracker.deleted();
+    ctx_->dump_cfg(std::cout);
     changed |= this->branch_coalescing();
+    ctx_->dump_cfg(std::cout);
     bro_total += tracker.deleted();
+    ctx_->dump_cfg(std::cout);
     changed |= this->register_promotion();
+    ctx_->dump_cfg(std::cout);
     rpo_total += tracker.deleted();
   }
 
@@ -1087,10 +1100,12 @@ bool compiler::prune_identity_proxies() {
       continue;
 
     // replace identity proxy's uses with proxy's source
-    proxy->replace_uses(proxy->src(0).impl());
+    auto src = proxy->src(0).impl();
+    proxy->replace_uses(src);    
     deleter.add(proxy);
     changed = true;
   }
+
   deleter.apply();
 
   CH_DBG(3, "End Compiler::PIP\n");
@@ -1443,6 +1458,7 @@ bool compiler::branch_coalescing() {
       changed = true;
     }
   }
+
   deleter.apply();
 
   return changed;
@@ -1476,6 +1492,7 @@ bool compiler::register_promotion() {
       changed = true;
     }
   }
+
   deleter.apply();
 
   CH_DBG(3, "End Compiler::RPO\n");

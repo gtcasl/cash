@@ -31,15 +31,17 @@ void logic_buffer::write(uint32_t dst_offset,
                          uint32_t length) {
   assert(impl_);
   this->ensure_proxy();
-  impl_->write(dst_offset, src.impl(), src_offset, length);
+  reinterpret_cast<proxyimpl*>(impl_)->write(dst_offset, src.impl(), src_offset, length);
 }
 
 lnodeimpl* logic_buffer::clone() const {
   assert(impl_);  
   auto sloc = get_source_location();
-  const_cast<logic_buffer*>(this)->ensure_proxy();
-  auto source = reinterpret_cast<proxyimpl*>(impl_)->source(0, impl_->size(), sloc);
-  return ctx_curr()->create_node<proxyimpl>(source, impl_->name(), sloc);
+  this->ensure_proxy();
+  auto node = reinterpret_cast<proxyimpl*>(impl_)->source(0, impl_->size(), sloc);
+  if (node != impl_->src(0).impl())
+    return node;
+  return ctx_curr()->create_node<proxyimpl>(node, node->name(), sloc);
 }
 
 lnodeimpl* logic_buffer::sliceref(size_t size, size_t start) const {
@@ -53,7 +55,7 @@ lnodeimpl* logic_buffer::sliceref(size_t size, size_t start) const {
                           sloc);
 }
 
-void logic_buffer::ensure_proxy() {
+void logic_buffer::ensure_proxy() const {
   auto impl = impl_;
   if (type_proxy == impl->type())
     return;

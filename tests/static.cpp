@@ -69,6 +69,7 @@ struct TestModule {
     __in (ch_int4)  rhs,
     __out (ch_int4) out
   );
+  
   void describe() {
     io.out = io.lhs + io.rhs;
   }

@@ -38,10 +38,10 @@ lnodeimpl::lnodeimpl(uint32_t id,
 lnodeimpl::~lnodeimpl() {
   for (lnode *curr = users_; curr;) {
     auto user = curr;
-    curr = curr->next_;
+    curr = curr->next_user_;
     assert(user->impl_ == this);
     user->impl_ = nullptr;
-    user->next_ = nullptr;
+    user->next_user_ = nullptr;
   }
   users_ = nullptr;
 }
@@ -99,14 +99,6 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-void lnodeimpl::write(uint32_t dst_offset,
-                      lnodeimpl* src,
-                      uint32_t src_offset,
-                      uint32_t length) {
-  CH_UNUSED(dst_offset, src, src_offset, length);
-  assert(false);
-}
-
 lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
   assert(length <= size_);
   auto self = const_cast<lnodeimpl*>(this);
@@ -115,8 +107,16 @@ lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_locat
   return ctx_->create_node<proxyimpl>(self, offset, length, "slice", sloc);
 }
 
+bool lnodeimpl::has_user(lnode* user) const {
+  for (const lnode *curr = users_; curr; curr = curr->next_user_) {
+    if (curr == user)
+      return true;
+  }
+  return false;
+}
+
 void lnodeimpl::add_user(lnode* user) {
-  user->next_ = users_;
+  user->next_user_ = users_;
   users_ = user;
 }
 
@@ -125,27 +125,29 @@ void lnodeimpl::remove_user(lnode* user) {
     assert(curr->impl_ == this);
     if (curr == user) {
       if (prev) {
-        prev->next_ = curr->next_;
+        prev->next_user_ = curr->next_user_;
       } else {
-        users_ = curr->next_;
+        users_ = curr->next_user_;
       }
       curr->impl_ = nullptr;
       return;
     }
     prev = curr;
-    curr = curr->next_;
+    curr = curr->next_user_;
   }
   assert(false);
 }
 
-void lnodeimpl::replace_uses(lnodeimpl* node) {
+void lnodeimpl::replace_uses(lnodeimpl* node) {  
+  assert(this != node);
   assert(users_);
   for (lnode *curr = users_; curr;) {
+    assert(!node->has_user(curr));
     auto user = curr;
-    curr = curr->next_;
+    curr = curr->next_user_;
     assert(user->impl_ == this);
     user->impl_ = node;
-    user->next_ = nullptr;
+    user->next_user_ = nullptr;
     node->add_user(user);
   }
   users_ = nullptr;

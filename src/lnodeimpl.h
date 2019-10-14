@@ -109,11 +109,11 @@ public:
                            uint32_t length,
                            const source_location& sloc) const;
 
-  virtual void write(uint32_t, lnodeimpl*, uint32_t, uint32_t);
-
   auto users() const {
    return users_;
   }
+
+  bool has_user(lnode* user) const;
 
   void add_user(lnode* user);
 

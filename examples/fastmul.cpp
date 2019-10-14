@@ -9,6 +9,7 @@ struct FastMul {
     __in (ch_uint4)  rhs,
     __out (ch_uint8) out
   );
+  
   void describe() {
     std::array<uint8_t, 256> tbl_mul;
     for (int j = 0; j < 16; ++j) {

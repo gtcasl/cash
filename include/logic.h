@@ -91,7 +91,7 @@ protected:
                uint32_t src_offset,
                const std::string& name);
 
-  void ensure_proxy();
+  void ensure_proxy() const;
 
   template <typename... Args> friend auto make_logic_buffer(Args&&... args);
 };

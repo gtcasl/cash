@@ -199,7 +199,38 @@ TEST_CASE("basics", "[basics]") {
       q = q.clone() + 1;
       return (q == 3+2);
     });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_uint8 a(t);
+      auto b = ch_clone(a);
+      auto c = b;
+      a = c - 1;
+      return (a == 0);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_uint8 a(t);
+      auto b = ch_aslice<4>(ch_clone(a), 0);
+      auto c = ch_aslice<2>(b, 0);
+      auto d = ch_cat(c, b, c);
+      a = d ^ 1;
+      //ch_cout << "a=" << a << std::endl;
+      return (a == 01000100_b);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_uint8 a(t);
+      a[0] = ch_clone(a)[0] ^ 1;
+      return (a[0] == 0);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_uint8 a(t);
+      ch_sliceref<2>(a, 0) = ch_slice<2>(ch_clone(a), 0) - 1;
+      return (ch_slice<2>(a, 0) == 0);
+    });
   }
+
   SECTION("ref", "[ref]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1010_b);

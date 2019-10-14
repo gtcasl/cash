@@ -285,9 +285,10 @@ bool proxyimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* proxyimpl::source(uint32_t offset, uint32_t length, const source_location& sloc) const {
+lnodeimpl* proxyimpl::source(uint32_t offset, 
+                             uint32_t length, 
+                             const source_location& sloc) const {
   assert(length <= this->size());
-
   if (0 == this->num_srcs())
     return nullptr;
 
@@ -306,13 +307,13 @@ lnodeimpl* proxyimpl::source(uint32_t offset, uint32_t length, const source_loca
   for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;
-    if (offset < r_end && src_end > range.dst_offset) {
-      uint32_t sub_start = std::max(offset, range.dst_offset);
-      uint32_t sub_end = std::min(src_end, r_end);
-      uint32_t dst_offset = sub_start - offset;
-      uint32_t src_offset = range.src_offset + (sub_start - range.dst_offset);
-      proxy->add_source(dst_offset, this->src(range.src_idx).impl(), src_offset, sub_end - sub_start);
-    }
+    if (offset >= r_end || src_end <= range.dst_offset)
+      continue;
+    uint32_t sub_start = std::max(offset, range.dst_offset);
+    uint32_t sub_end = std::min(src_end, r_end);
+    uint32_t dst_offset = sub_start - offset;
+    uint32_t src_offset = range.src_offset + (sub_start - range.dst_offset);
+    proxy->add_source(dst_offset, this->src(range.src_idx).impl(), src_offset, sub_end - sub_start);
   }
 
   return proxy;
@@ -351,7 +352,7 @@ refimpl::refimpl(
     uint32_t length,
     const std::string& name,
     const source_location& sloc)
-  : proxyimpl(ctx, src, offset, length, name, sloc)
+  : proxyimpl(ctx, src, offset, length, name, sloc) 
 {}
 
 void refimpl::write(
@@ -359,11 +360,11 @@ void refimpl::write(
     lnodeimpl* src,
     uint32_t src_offset,
     uint32_t length) {
-  assert(1 == this->num_srcs());
-  assert(0 == ranges_[0].dst_offset);
-  assert(this->size() == ranges_[0].length);
+  assert(1 == ranges_.size());
   assert(length <= ranges_[0].length);
-  this->src(0).impl()->write(
+  assert(type_proxy == this->src(0).impl()->type());
+  auto dst = reinterpret_cast<proxyimpl*>(this->src(0).impl());  
+  dst->write(
     ranges_[0].src_offset + dst_offset,
     src,
     src_offset,

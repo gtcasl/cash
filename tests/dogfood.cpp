@@ -72,6 +72,7 @@ struct Adder {
     __in (ch_uint2)  in2,
     __out (ch_uint2) out
   );
+
   void describe() {
     io.out = io.in1 + io.in2;
   }
@@ -83,16 +84,19 @@ struct Foo1 {
     __in (ch_uint2)  in2,
     __out (ch_uint2) out
   );
+
   void describe() {
     adder_.io.in1(io.in1);
     adder_.io.in2(io.in2);
     adder_.io.out(io.out);
   }
+
   ch_module<Adder> adder_;
 };
 
 struct Foo2 {
   ch_out<ch_bool> io;
+
   void describe() {
     ch_module<Adder> adder;
     adder.io.in1 = 1;
@@ -129,11 +133,13 @@ struct QueueWrapper {
     (ch_deq_io<T>) deq,
     __out (ch_uint<ch_queue<T, N>::size_width>) size
   );
+
   void describe() {
     queue_.io.enq(io.enq);
     queue_.io.deq(io.deq);
     queue_.io.size(io.size);
   }
+
   ch_module<ch_queue<T, N, SyncRead>> queue_;
 };
 
@@ -157,6 +163,7 @@ __inout (filter_io, (
 template <typename T>
 struct Filter {
   filter_io<T> io;
+
   void describe() {
     auto tmp = (ch_pad<1>(io.x.data) << 1)
               | ch_pad<1>(io.x.parity);
@@ -171,12 +178,14 @@ struct Filter {
 template <typename T>
 struct FilterBlock {
   filter_io<T> io;
+
   void describe() {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
     f2_.io.y(io.y);
     //ch_println("{0}: clk={1}, rst={2}, y={3}", ch_now(), ch_clock(), ch_reset(), io.y.valid);
   }
+
   ch_module<Filter<T>> f1_, f2_;
 };
 
@@ -190,6 +199,7 @@ struct inverter {
     __in (ch_bit2)  in,
     __out (ch_bit2) out
   );
+
   void describe() {
     auto x = ~io.in;
     __tap(x);
@@ -202,6 +212,7 @@ struct TestAssign {
     __in (ch_bit4) in,
     __out (ch_bool) out
   );
+
   void describe() {
     ch_bit4 w(io.in);
     w = 0xB;
@@ -239,15 +250,18 @@ struct Dogfood {
     __in (ch_uint4) in,
     __out (ch_bool) out
   );
+  
   void describe() {
-    io.out = (io.in != 0);
+    ch_uint4 a(io.in);
+    a[0] = ch_clone(a[0]);
+    io.out = a[0];
   }
 };
 
 }
 
 int main() {
-  /*ch_device<Dogfood> device;
+  ch_device<Dogfood> device;
   //ch_toVerilog("test.v", device);
   ch_simulator sim(device);
   device.io.in = 0xA;
@@ -255,7 +269,7 @@ int main() {
     std::cout << "t" << t << ": out="  << device.io.out << std::endl;
     //assert(!!device.io.out);
     return (t < 2*3);
-  });*/
+  });
 
   /*{
     ch_device<inverter> device;

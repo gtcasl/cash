@@ -69,6 +69,7 @@ __inout (filter_io, (
 template <typename T>
 struct Filter {
   filter_io<T> io;
+
   void describe() {
     auto tmp = (ch_pad<1>(io.x.data) << 1)
               | ch_pad<1>(io.x.parity);
@@ -81,19 +82,23 @@ struct Filter {
 template <typename T>
 struct FilterBlock {
   filter_io<T> io;
+
   void describe() {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
     f2_.io.y(io.y);    
   }
+
   ch_module<Filter<T>> f1_, f2_;
 };
+
 struct Adder {
   __io (
     __in (ch_uint2)  in1,
     __in (ch_uint2)  in2,
     __out (ch_uint2) out
   );
+
   void describe() {
     io.out = io.in1 + io.in2;
   }
@@ -105,16 +110,19 @@ struct Foo1 {
     __in (ch_uint2)  in2,
     __out (ch_uint2) out
   );
+
   void describe() {
     adder_.io.in1(io.in1);
     adder_.io.in2(io.in2);
     adder_.io.out(io.out);
   }
+
   ch_module<Adder> adder_;
 };
 
 struct Foo2 {
   ch_out<ch_bool> io;
+  
   void describe() {
     ch_module<Adder> adder;
     adder.io.in1 = 1;

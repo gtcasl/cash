@@ -10,6 +10,7 @@ struct inverter {
     __in (T)  in,
     __out (T) out
   );
+  
   void describe() {
     auto x = ~io.in;
     __tap(x);

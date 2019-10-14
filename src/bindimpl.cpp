@@ -88,7 +88,8 @@ void bindimpl::bind_output(lnodeimpl* dst,
 
   // create bind port
   auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
-  dst->write(0, output, 0, dst->size());
+  assert(type_proxy == dst->type());
+  reinterpret_cast<proxyimpl*>(dst)->write(0, output, 0, dst->size());
 
   // add to list
   auto p = find_port_index(output, outputs_);

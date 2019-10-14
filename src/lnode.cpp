@@ -20,7 +20,7 @@ std::ostream& ch::internal::operator<<(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode::lnode(lnodeimpl* impl) : impl_(impl), next_(nullptr) {
+lnode::lnode(lnodeimpl* impl) : impl_(impl), next_user_(nullptr) {
   if (impl) {
     impl->add_user(this);
   }

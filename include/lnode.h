@@ -110,7 +110,7 @@ class lnodeimpl;
 class lnode {
 public:
 
-  lnode() : impl_(nullptr), next_(nullptr) {}
+  lnode() : impl_(nullptr), next_user_(nullptr) {}
 
   lnode(lnodeimpl* impl);
 
@@ -138,8 +138,8 @@ public:
 
   const source_location& sloc() const;
 
-  auto next() const {
-    return next_;
+  auto next_user() const {
+    return next_user_;
   }
 
   lnode& operator=(const lnode& other);
@@ -155,7 +155,7 @@ public:
 protected:  
 
   mutable lnodeimpl* impl_;
-  lnode* next_;
+  lnode* next_user_;
 
   friend class lnodeimpl;
 };

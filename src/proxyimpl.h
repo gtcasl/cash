@@ -66,10 +66,10 @@ public:
 
   bool equals(const lnodeimpl& other) const override;
 
-  void write(uint32_t dst_offset,
-             lnodeimpl* src,
-             uint32_t src_offset,
-             uint32_t length) override;
+  virtual void write(uint32_t dst_offset,
+                     lnodeimpl* src,
+                     uint32_t src_offset,
+                     uint32_t length);
 
   lnodeimpl* source(uint32_t offset, uint32_t length, const source_location& sloc) const;
 
