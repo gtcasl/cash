@@ -39,16 +39,21 @@ struct MatMul {
   void describe() {
     // systolic array of MAC units
     std::array<std::array<ch_module<MAC<I, O>>, P>, N> macs;
-    ch_counter<N+P+M> ctr(io.valid_in);
+    ch_counter<N+P+M> ctr(io.valid_in); // valid counter
 
+    // MAC array connections
     for (unsigned r = 0; r < N; ++r) {
+      auto p = ch_delayEn(io.a_in[r], io.valid_in, r, 0);
       for (unsigned c = 0; c < P; ++c) {
+        auto q = ch_delayEn(io.b_in[c], io.valid_in, c, 0);
         macs[r][c].io.enable = io.valid_in;
-        macs[r][c].io.a_in = c ? macs[r][c-1].io.a_out.as_int() : ch_delayEn(io.a_in[r], io.valid_in, r, 0);
-        macs[r][c].io.b_in = r ? macs[r-1][c].io.b_out.as_int() : ch_delayEn(io.b_in[c], io.valid_in, c, 0);
+        macs[r][c].io.a_in = c ? macs[r][c-1].io.a_out.as_int() : p;
+        macs[r][c].io.b_in = r ? macs[r-1][c].io.b_out.as_int() : q;        
         io.c_out[r][c] = macs[r][c].io.c_out;
       }
     }
+
+    // output valid?
     io.valid_out = ch_nextEn(ctr.value() == N+P+M-1, io.valid_in, false);
   }
 };
