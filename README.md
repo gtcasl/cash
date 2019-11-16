@@ -53,13 +53,14 @@ To install Cash you must clone the repository and create a build directory:
     $ git clone https://github.com/gtcasl/cash.git && cd cash
     $ mkdir build && cd build
 
-Then use run cmake to generate the makefile and export the package informations:
+Then use run cmake to generate the makefile:
 
     $ cmake .. -DJIT=LLVM
 
-Optionally, you can also install Cash on your system:
+Build and install Cash on your system:
 
-    $ make install
+    $ make -j`nproc` all
+    $ sudo make install
     
 That's all!
 
@@ -70,7 +71,7 @@ Install LIBJIT dependencies:
   
     $ sudo apt-get install libtool autoconf flex bison texinfo
   
-Building and Installing LIBJIT:
+Build and install LIBJIT:
   
     $ git clone https://git.savannah.gnu.org/git/libjit.git  
     $ pushd libjit
@@ -79,15 +80,17 @@ Building and Installing LIBJIT:
     $ mkdir build
     $ pushd build
     $ ../configure --with-pic
-    $ make -j8 all
+    $ make -j`nproc` all
     $ sudo make install
     $ popd
     $ popd
   
-Build Cash using the JIT=LIBJIT configuration option
+Build and install Cash using 'JIT=LIBJIT' configuration option:
   
     $ mkdir build_lj && cd build_lj
     $ cmake .. -DJIT=LIBJIT
+    $ make -j`nproc` all
+    $ sudo make install
 
 Using the Cash library
 ----------------------
