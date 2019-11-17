@@ -56,6 +56,10 @@ To install Cash you must clone the repository and create a build directory:
 Then use run cmake to generate the makefile:
 
     $ cmake .. -DJIT=LLVM
+    
+When doing development, it is recommended to a debug build for better error diagnostics:
+
+    $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug  
 
 Build and install Cash on your system:
 
