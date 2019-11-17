@@ -57,7 +57,7 @@ Then use run cmake to generate the makefile:
 
     $ cmake .. -DJIT=LLVM
     
-When doing development, it is recommended to a debug build for better error diagnostics:
+When doing development, we recommend using debug builds for better error diagnostics:
 
     $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug  
 
