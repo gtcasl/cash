@@ -62,6 +62,14 @@ Build and install Cash on your system:
     $ make -j`nproc` all
     $ sudo make install
     
+Test your installation
+
+    $ make test
+    
+Warning: You may encounter the following error:"***Exception: SegFault" because of ABI in compatibility between LLVM and GCC. 
+If that is the case, use the following cmake command to create your makefile:
+    $ cmake .. -DJIT=LLVM -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
+    
 That's all!
 
 Alternative build using LIBJIT compiler
