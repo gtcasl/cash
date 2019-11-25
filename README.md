@@ -84,7 +84,6 @@ Build and install LIBJIT:
   
     $ git clone https://git.savannah.gnu.org/git/libjit.git  
     $ pushd libjit
-    $ git apply ${CASH_HOME}/scripts/libjit.patch
     $ ./bootstrap
     $ mkdir build
     $ pushd build
