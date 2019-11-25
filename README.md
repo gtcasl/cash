@@ -55,11 +55,7 @@ To install Cash you must clone the repository and create a build directory:
 
 Then use run cmake to generate the makefile:
 
-    $ cmake .. -DJIT=LLVM
-    
-When doing development, we recommend using debug builds for better error diagnostics:
-
-    $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug  
+    $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug
 
 Build and install Cash on your system:
 
@@ -101,7 +97,7 @@ Build and install LIBJIT:
 Build and install Cash using 'JIT=LIBJIT' configuration option:
   
     $ mkdir build_lj && cd build_lj
-    $ cmake .. -DJIT=LIBJIT
+    $ cmake .. -DJIT=LIBJIT -DCMAKE_BUILD_TYPE=Debug
     $ make -j`nproc` all
     $ sudo make install
 
