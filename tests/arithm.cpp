@@ -1144,5 +1144,15 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_int<4> a(0);
       return (a >> in) == 0;
     });
+    TEST2([](const ch_int8& a, const ch_int8& b)->ch_bool {
+      ch_int16 c = a - b;
+      return (c == -1);
+    });
+    TEST2([](const ch_int8& a, const ch_int8& b)->ch_bool {
+      ch_int32 x = a * 56; 
+      ch_int32 y = b * 57; 
+      ch_int64 c = a - b;
+      return (c == -1);
+    });
   }
 }

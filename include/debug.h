@@ -76,4 +76,4 @@ void ch_tap(const T& value, const std::string& name) {
 
 #define CH_TAP(x) ch_tap(x, #x)
 
-#define CH_ASSERT(x) ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
+#define CH_assert(x) ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
