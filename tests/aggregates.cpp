@@ -260,7 +260,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
 
     TEST([]()->ch_bool {
-      ch_vec<ch_vec<ch_bit2, 2>, 2> a{{11_b, 00_b}, {11_b, 00_b}};
+      ch_vec<ch_vec<ch_bit2, 2>, 2> a{{01_b, 10_b}, {11_b, 00_b}};
       auto x = a[0][1];
       return (x == 11_b);
     });

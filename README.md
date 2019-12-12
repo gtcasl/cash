@@ -69,7 +69,7 @@ Test your installation
 Warning: You may encounter the following error:"***Exception: SegFault" because of ABI in compatibility between LLVM and GCC. 
 If that is the case, use the following cmake command to create your makefile:
     
-    $ cmake .. -DJIT=LLVM -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
+    $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
     
 That's all!
 

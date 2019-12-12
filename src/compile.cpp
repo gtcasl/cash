@@ -210,7 +210,7 @@ bool compiler::dead_code_elimination() {
   ordered_set<lnodeimpl*> live_nodes;
   std::unordered_map<uint32_t, std::unordered_set<proxyimpl*>> proxy_users;
   std::unordered_map<proxyimpl*, std::unordered_map<uint32_t, interval_t>> used_proxy_sources;
-  ordered_set<proxyimpl*> sparse_proxies;
+  std::unordered_set<proxyimpl*> sparse_proxies;
 
   //--
   auto remove_unused_proxy_sources = [&](proxyimpl* proxy, uint32_t src_idx) {
@@ -255,7 +255,7 @@ bool compiler::dead_code_elimination() {
             proxyimpl::range_t nr;
             nr.src_idx = src_idx;
             nr.src_offset = r.start;
-            nr.dst_offset += (r.start - it->src_offset);
+            nr.dst_offset = (r.start - it->src_offset);
             nr.length = r.end - r.start;
             auto ret = use->ranges().insert(it, nr);
             it = std::next(ret);
@@ -275,7 +275,7 @@ bool compiler::dead_code_elimination() {
   };
 
   //--
-  auto fix_sparse_proxies = [&](proxyimpl* proxy) {
+  auto fixup_sparse_proxies = [&](proxyimpl* proxy) {
     uint32_t size = 0;
     for (auto& pr : proxy->ranges()) {
       auto delta = pr.dst_offset - size;
@@ -484,7 +484,7 @@ bool compiler::dead_code_elimination() {
 
   // fix sparse proxies
   for (auto p : sparse_proxies) {
-    fix_sparse_proxies(p);
+    fixup_sparse_proxies(p);
   }
 
   assert(ctx_->nodes().size() == live_nodes.size());

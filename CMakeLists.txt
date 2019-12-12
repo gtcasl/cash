@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.2)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
@@ -33,17 +32,17 @@ include_directories("include")
 #
 
 if (JIT STREQUAL "LLVM")
-  set(PROJECT_SOURCES src/llvmjit.cpp src/simjit.cpp)
+  set(SOURCE_FILES src/llvmjit.cpp src/simjit.cpp)
 elseif (JIT STREQUAL "LIBJIT")
-  set(PROJECT_SOURCES src/libjit.cpp src/simjit.cpp)
+  set(SOURCE_FILES src/libjit.cpp src/simjit.cpp)
 endif()
 
 if (CALLTRACE)
-  set(PROJECT_SOURCES src/slocmgr.cpp ${PROJECT_SOURCES})
+  set(SOURCE_FILES src/slocmgr.cpp ${SOURCE_FILES})
 endif()
 
-set(PROJECT_SOURCES
-  ${PROJECT_SOURCES}
+set(SOURCE_FILES
+  ${SOURCE_FILES}
   src/utils.cpp
   src/platform.cpp
   src/system.cpp
@@ -76,7 +75,7 @@ set(PROJECT_SOURCES
 )
 
 # build library
-add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 target_compile_options(${PROJECT_NAME} PRIVATE -pedantic -Werror -Wall -Wextra)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -157,3 +156,4 @@ export(TARGETS ${PROJECT_NAME} FILE ${PROJECT_CONFIG}.cmake)
 enable_testing()
 add_subdirectory(examples)
 add_subdirectory(tests)
+add_subdirectory(clang)

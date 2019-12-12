@@ -1,6 +1,5 @@
-
 # set source files
-set(TEST_SOURCES
+set(SOURCE_FILES
     common.cpp    
     static.cpp
     basic.cpp
@@ -33,7 +32,7 @@ file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # build executables
 add_executable(dogfood dogfood.cpp common.cpp)
-add_executable(testsuite ${TEST_SOURCES})
+add_executable(testsuite ${SOURCE_FILES})
 
 # Define dependent libraries
 target_link_libraries(dogfood PRIVATE ${PROJECT_NAME})

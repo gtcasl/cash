@@ -1,4 +1,3 @@
-
 # set programs list
 set(EXAMPLES 
     adder 
