@@ -4,20 +4,24 @@
 
 using namespace ch::internal;
 
-logic_buffer::logic_buffer(uint32_t size, const std::string& name)
-  : lnode(size, name)
+logic_buffer::logic_buffer(uint32_t size, 
+                           const std::string& name, 
+                           const source_location& sloc)
+  : lnode(ctx_curr()->create_node<proxyimpl>(size, name, sloc))
 {}
+
 
 logic_buffer::logic_buffer(uint32_t size,
                            const logic_buffer& src,
                            uint32_t src_offset,
-                           const std::string& name)
+                           const std::string& name,
+                           const source_location& sloc)
   : lnode(ctx_curr()->create_node<refimpl>(
       src.impl(),
       src_offset,
       size,
       ((!src.name().empty() && !name.empty()) ? (src.name() + '.' + name) : name),
-      get_source_location()))
+      sloc))
 {}
 
 const logic_buffer& logic_buffer::source() const {
@@ -31,12 +35,11 @@ void logic_buffer::write(uint32_t dst_offset,
                          uint32_t length) {
   assert(impl_);
   this->ensure_proxy();
-  reinterpret_cast<proxyimpl*>(impl_)->write(dst_offset, src.impl(), src_offset, length);
+  reinterpret_cast<proxyimpl*>(impl_)->write(dst_offset, src.impl(), src_offset, length, impl_->sloc());
 }
 
-lnodeimpl* logic_buffer::clone() const {
+lnodeimpl* logic_buffer::clone(const source_location& sloc) const {
   assert(impl_);  
-  auto sloc = get_source_location();
   this->ensure_proxy();
   auto node = reinterpret_cast<proxyimpl*>(impl_)->source(0, impl_->size(), sloc);
   if (node != impl_->src(0).impl())
@@ -44,8 +47,7 @@ lnodeimpl* logic_buffer::clone() const {
   return ctx_curr()->create_node<proxyimpl>(node, node->name(), sloc);
 }
 
-lnodeimpl* logic_buffer::sliceref(size_t size, size_t start) const {
-  auto sloc = get_source_location();
+lnodeimpl* logic_buffer::sliceref(size_t size, size_t start, const source_location& sloc) const {
   const_cast<logic_buffer*>(this)->ensure_proxy();
   return ctx_curr()->create_node<refimpl>(
                           impl_,
@@ -61,5 +63,5 @@ void logic_buffer::ensure_proxy() const {
     return;
   auto proxy = ctx_curr()->create_node<proxyimpl>(impl->size(), impl->name(), impl->sloc());
   impl->replace_uses(proxy);
-  proxy->write(0, impl, 0, impl->size());
+  proxy->write(0, impl, 0, impl->size(), impl->sloc());
 }

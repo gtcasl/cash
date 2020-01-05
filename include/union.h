@@ -33,7 +33,7 @@ using select_constructible_t = typename select_constructible<R, Ts...>::type;
 
 #define CH_UNION_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::make_logic_buffer( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, CH_STRINGIZE(CH_PAIR_R(x))))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, CH_STRINGIZE(CH_PAIR_R(x)), buffer.sloc()))
 
 #define CH_UNION_SYSTEM_FIELD(a, i, x) \
   ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
@@ -57,11 +57,14 @@ using select_constructible_t = typename select_constructible<R, Ts...>::type;
   if (i) { __out << ", "; } \
   __out << CH_STRINGIZE(CH_PAIR_R(x)) << "=" << __in.CH_PAIR_R(x)
 
+///////////////////////////////////////////////////////////////////////////////
+
 #define CH_UNION_SYSTEM_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   type_name(const ch::internal::system_buffer& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
-    : CH_FOR_EACH(CH_UNION_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+    : CH_FOR_EACH(CH_UNION_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
+  } \
   template <typename __U, \
             CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
   type_name(const __U& __other) \
@@ -77,7 +80,8 @@ using select_constructible_t = typename select_constructible<R, Ts...>::type;
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
-   : type_name(ch::internal::system_accessor::move(__other)) {} \
+   : type_name(ch::internal::system_accessor::move(__other)) { \
+  } \
   type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
@@ -99,34 +103,36 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
+///////////////////////////////////////////////////////////////////////////////
+
 #define CH_UNION_LOGIC_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   type_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
-    : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), CH_CUR_SLOC)) \
+    : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
+  } \
   template <typename __U, \
             CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
-  type_name(const __U& __other) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+  type_name(const __U& __other, CH_SLOC) \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), sloc)) { \
     using arg_type = ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>; \
     auto arg = ch_sliceref<arg_type>(*this) = __other; \
     if constexpr (ch_width_v<arg_type> < traits::bitwidth) { \
       ch_sliceref<ch_bit<traits::bitwidth - ch_width_v<arg_type>>>(*this, ch_width_v<arg_type>) = 0; \
     } \
   } \
-  type_name(const type_name& __other) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+  type_name(const type_name& __other, CH_SLOC) \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), sloc)) { \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
-    : type_name(ch::internal::logic_accessor::move(__other)) {} \
+    : type_name(ch::internal::logic_accessor::move(__other)) { \
+  } \
   type_name& operator=(const type_name& __other) { \
-    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   type_name& operator=(type_name&& __other) { \
-    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
@@ -143,6 +149,8 @@ protected: \
   friend class ch::internal::logic_accessor; \
 public:
 
+///////////////////////////////////////////////////////////////////////////////
+
 #define CH_UNION_IMPL(union_name, ...) \
   class union_name { \
   private: \
@@ -157,6 +165,8 @@ public:
     CH_LOGIC_INTERFACE(union_name) \
     CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
   }
+
+///////////////////////////////////////////////////////////////////////////////
 
 #define CH_UNION(name, body) \
   CH_UNION_IMPL(name, CH_REM body)

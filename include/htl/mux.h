@@ -23,7 +23,7 @@ auto ch_mux(const ch_bit<(log2ceil(2+sizeof...(Args)))>& sel,
 }
 
 template <unsigned N, typename T, std::size_t M>
-auto ch_mux(const ch_bit<N>& sel, const std::array<T, M>& args) {
+auto ch_mux(const ch_bit<N>& sel, const ch_vec<T, M>& args) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N == log2ceil(M), "invalid size");
   static_assert(M >= 2, "invalid size");
@@ -62,7 +62,7 @@ auto ch_hmux(const ch_bit<(1+sizeof...(Args))>& sel,
 }
 
 template <unsigned N, typename T, std::size_t M>
-auto ch_hmux(const ch_bit<N>& sel, const std::array<T, M>& args) {
+auto ch_hmux(const ch_bit<N>& sel, const ch_vec<T, M>& args) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N == M, "invalid size");
   static_assert(N >= 2, "invalid size");

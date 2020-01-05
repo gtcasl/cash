@@ -3,7 +3,7 @@
 
 static int g_test_number = 0;
 
-static bool begin_test() {
+static bool begin_test(const ch::internal::source_location& sloc) {
   ++g_test_number;
   auto testid = std::getenv("CASH_TESTID");
   if (testid) {
@@ -11,13 +11,13 @@ static bool begin_test() {
     if (id != 0 && g_test_number != id)
       return false;
   }
-  std::cout << "running test #" << g_test_number << " ..." << std::endl;
+  std::cout << "running test #" << g_test_number << " (" << sloc << ") ..." << std::endl;
   return true;
 }
 
-static bool end_test(bool passed, const ch::internal::source_location& sloc) {
+static bool end_test(bool passed) {
   if (!passed) {
-    std::cout << "error: test #" << g_test_number << " failed! (" << sloc << ")" << std::endl;
+    std::cout << "error: test #" << g_test_number << " failed!" << std::endl;
     std::abort();
   }
   return passed;
@@ -75,18 +75,18 @@ struct TestRunner2 {
 };
 
 RetCheck& RetCheck::operator&=(const sloc_proxy<bool>& value) {
-  if (!value.value) {
+  if (!value.data) {
     std::cout << "error: test #" << g_test_number << " failed! (" << value.sloc << ")" << std::endl;
     std::abort();
   }
-  count_ = value.value ? (count_ + 1) : std::numeric_limits<int>::min();
+  count_ = value.data ? (count_ + 1) : std::numeric_limits<int>::min();
   return *this;
 }
 
 bool TEST(const std::function<ch_bool ()>& test,
           ch_tick cycles,
           const ch::internal::source_location& sloc) {
-  if (!begin_test())
+  if (!begin_test(sloc))
     return true;
 
   ch_device<TestRunner> device(test);
@@ -106,13 +106,13 @@ bool TEST(const std::function<ch_bool ()>& test,
     return (t < ticks);
   }, steps);
 
-  return end_test(ret, sloc);
+  return end_test(ret);
 }
 
 bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
            ch_tick cycles,
            const ch::internal::source_location& sloc) {
-  if (!begin_test())
+  if (!begin_test(sloc))
     return true;
 
   ch_device<TestRunner1> device(test);
@@ -134,13 +134,13 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
     return (t < ticks);
   }, steps);
 
-  return end_test(ret, sloc);
+  return end_test(ret);
 }
 
 bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
            ch_tick cycles,
            const ch::internal::source_location& sloc) {
-  if (!begin_test())
+  if (!begin_test(sloc))
     return true;
 
   ch_device<TestRunner2> device(test);
@@ -163,14 +163,17 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
     return (t < ticks);
   }, steps);
 
-  return end_test(ret, sloc);
+  return end_test(ret);
 }
 
 bool TESTX(const std::function<bool()>& test,
            const ch::internal::source_location& sloc) {
-  if (!begin_test())
+  if (!begin_test(sloc))
     return true;
-  return end_test(test(), sloc);
+  
+  auto ret = test();
+
+  return end_test(ret);
 }
 
 bool checkVerilog(const std::string& file) {

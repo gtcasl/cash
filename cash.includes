@@ -1,0 +1,11 @@
+build/examples
+build/tests
+clang
+examples
+include
+include/eda/altera
+include/eda/verilator
+include/htl
+src
+tests
+/usr/lib/llvm-8/include

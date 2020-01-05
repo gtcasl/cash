@@ -132,14 +132,13 @@ lnodeimpl* udfportimpl::clone(context* ctx, const clone_map& cloned_nodes) const
 
 void ch::internal::createUDFNode(const std::string& name,
                                  bool is_seq,
-                                 udf_iface* udf) {
-  auto sloc = get_source_location();
+                                 udf_iface* udf,
+                                 const source_location& sloc) {
   ctx_curr()->create_udf_node(udf, is_seq, name, sloc);
 }
 
-lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input) {
-  CH_API_ENTRY(2);
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input, 
+                                       const source_location& sloc) {
   auto ctx  = ctx_curr();
   auto udf  = ctx->current_udf();
   auto value = smart_ptr<sdata_type>::make(input->size());
@@ -149,9 +148,8 @@ lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input) {
   return src;
 }
 
-lnodeimpl* ch::internal::bindOutputNode(system_io_buffer* output) {
-  CH_API_ENTRY(2);
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::bindOutputNode(system_io_buffer* output, 
+                                        const source_location& sloc) {
   auto ctx  = ctx_curr();
   auto udf  = ctx->current_udf();
   auto value = smart_ptr<sdata_type>::make(output->size());

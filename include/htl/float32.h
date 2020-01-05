@@ -21,7 +21,7 @@ public:
   using base = ch_snumbase<ch_sfloat32>;
 
   ch_sfloat32(const system_buffer& buffer
-              = make_system_buffer(32, idname<ch_sfloat32>()))
+      = make_system_buffer(32, idname<ch_sfloat32>()))
     : buffer_(buffer)
   {}
 
@@ -132,55 +132,53 @@ public:
   using traits = logic_traits<32, true, ch_float32, ch_sfloat32>;
   using base = ch_numbase<ch_float32>;
 
-  ch_float32(const logic_buffer& buffer = make_logic_buffer(32, idname<ch_float32>()))
+  ch_float32(const logic_buffer& buffer 
+      = make_logic_buffer(32, idname<ch_float32>(), CH_CUR_SLOC))
     : buffer_(buffer)
   {}
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= 32)>
-  explicit ch_float32(const ch_sbitbase<U>& other)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
+  explicit ch_float32(const ch_sbitbase<U>& other, CH_SLOC)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= 32)>
-  explicit ch_float32(const ch_bitbase<U>& other)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
+  explicit ch_float32(const ch_bitbase<U>& other, CH_SLOC)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
-  ch_float32(float other)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
+  ch_float32(float other, CH_SLOC)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
     this->operator=(other);
   }
 
-  ch_float32(const ch_sfloat32& other)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
+  ch_float32(const ch_sfloat32& other, CH_SLOC)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
     base::operator=(other);
   }
 
-  ch_float32(const ch_float32& other)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
+  ch_float32(const ch_float32& other, CH_SLOC)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
     this->operator=(other);
   }
 
   ch_float32(ch_float32&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_float32& operator=(float other) {
-    __api_entry(1);
     base::operator=(bit_cast<int32_t>(other));
     return *this;
   }
 
   ch_float32& operator=(const ch_float32& other) {
-    __api_entry(1);
     logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_float32& operator=(ch_float32&& other) {
-    __api_entry(1);
     logic_accessor::move(*this, std::move(other));
     return *this;
   }
@@ -516,9 +514,8 @@ auto ch_float32::do_mod(const U& other) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned Delay>
-auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __api_entry(1);
-  ch_udf_seq<sfAdd> udf(Delay);
+auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
+  ch_udf_seq<sfAdd> udf(Delay, sloc);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;
@@ -526,9 +523,8 @@ auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __api_entry(1);
-  ch_udf_seq<sfSub> udf(Delay);
+auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
+  ch_udf_seq<sfSub> udf(Delay, sloc);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;
@@ -536,9 +532,8 @@ auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __api_entry(1);
-  ch_udf_seq<sfMul> udf(Delay);
+auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
+  ch_udf_seq<sfMul> udf(Delay, sloc);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;
@@ -546,9 +541,8 @@ auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __api_entry(1);
-  ch_udf_seq<sfDiv> udf(Delay);
+auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
+  ch_udf_seq<sfDiv> udf(Delay, sloc);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;

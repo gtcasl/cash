@@ -11,7 +11,6 @@ deviceimpl::deviceimpl(const std::type_index& signature,
                        bool is_pod,
                        const std::string& name)
   : old_ctx_(nullptr)
-  , sloc_ctx_(nullptr)
   , is_opened_(false) {
   auto ret = ctx_create(signature, is_pod, name);
   ctx_ = ret.first;
@@ -21,21 +20,21 @@ deviceimpl::deviceimpl(const std::type_index& signature,
 
 deviceimpl::~deviceimpl() {
   if (is_opened_) {
-    this->end();
+    this->end(source_location());
   }
   ctx_->release();  
 }
 
 std::string deviceimpl::name() const {
-  if (ctx_)
+  if (ctx_) {
     return ctx_->name();
+  }
   return "";
 }
 
 bool deviceimpl::begin() {
   is_opened_ = true;
   old_ctx_ = ctx_swap(ctx_);
-  sloc_ctx_ = sloc_begin_module();
   return (instance_ != 0);
 }
 
@@ -48,11 +47,9 @@ void deviceimpl::end_build() {
  compiler.optimize();
 }
 
-void deviceimpl::end() {
-  sloc_end_module(sloc_ctx_);
+void deviceimpl::end(const source_location& sloc) {
   ctx_swap(old_ctx_);
   if (old_ctx_) {
-    auto sloc = get_source_location();
     old_ctx_->create_binding(ctx_, sloc);
   }
   is_opened_ = false;
@@ -123,8 +120,8 @@ void device_base::end_build() {
   impl_->end_build();
 }
 
-void device_base::end() {
-  impl_->end();
+void device_base::end(const source_location& sloc) {
+  impl_->end(sloc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

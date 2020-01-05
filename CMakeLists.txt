@@ -7,7 +7,6 @@ set(JITs "LLVM;LIBJIT;OFF")
 set_property(CACHE JIT PROPERTY STRINGS ${JITs})
 
 option(CODECOV "Enable code coverage." OFF)
-option(CALLTRACE "Enable call trace." ON)
 
 set(DEFAULT_BUILD_TYPE "Release")
 
@@ -35,10 +34,6 @@ if (JIT STREQUAL "LLVM")
   set(SOURCE_FILES src/llvmjit.cpp src/simjit.cpp)
 elseif (JIT STREQUAL "LIBJIT")
   set(SOURCE_FILES src/libjit.cpp src/simjit.cpp)
-endif()
-
-if (CALLTRACE)
-  set(SOURCE_FILES src/slocmgr.cpp ${SOURCE_FILES})
 endif()
 
 set(SOURCE_FILES
@@ -118,24 +113,6 @@ if (CODECOV)
   target_link_libraries(${PROJECT_NAME} PRIVATE --coverage)
 else()
   message(STATUS "Code coverage disabled.")
-endif()
-
-# setup call trace
-if (CALLTRACE)
-  find_path(LIBBFD_INCLUDE_DIR NAMES "bfd.h")
-  find_library(LIBBFD_LIBRARY bfd)
-  set(LIBBFD_INCLUDE_DIRS ${LIBBFD_INCLUDE_DIR} ${LIBDL_INCLUDE_DIR})
-  find_package_handle_standard_args(LIBBFD DEFAULT_MSG LIBBFD_LIBRARY LIBBFD_INCLUDE_DIR)
-  mark_as_advanced(LIBBFD_INCLUDE_DIR LIBBFD_LIBRARY)
-  if (LIBBFD_FOUND)
-    message(STATUS "Binutils-dev found.")
-    target_link_libraries(${PROJECT_NAME} PRIVATE bfd dl)
-    add_definitions(-DCALLTRACE)
-  else()
-    message(FATAL_ERROR "Binutils-dev missing!")
-  endif()
-else()
-  message(STATUS "Calltrace disabled.")
 endif()
 
 include(GNUInstallDirs)

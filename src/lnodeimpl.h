@@ -51,17 +51,25 @@ public:
   uint32_t id() const {
     return id_;
   }
+  
+  lnodetype type() const {
+    return type_;
+  }
 
   const std::string& name() const {
     return name_;
   }
 
-  void rename(const std::string& name) {
+  void set_name(const std::string& name) {
     name_ = name;
   }
-  
-  lnodetype type() const {
-    return type_;
+
+  const source_location& sloc() const {
+    return sloc_;
+  }
+
+  void set_sloc(const source_location& sloc) {
+    sloc_ = sloc;
   }
 
   context* ctx() const {
@@ -81,16 +89,6 @@ public:
     return srcs_[index];
   }
 
-  uint32_t size() const {
-    return size_;
-  }
-
-  size_t hash() const;
-
-  const source_location& sloc() const {
-    return sloc_;
-  }
-
   void set_src(uint32_t index, lnodeimpl* src);
 
   uint32_t add_src(lnodeimpl* src);
@@ -98,6 +96,12 @@ public:
   void insert_src(uint32_t index, lnodeimpl* src);
 
   lnodeimpl* remove_src(uint32_t index);
+
+  uint32_t size() const {
+    return size_;
+  }
+
+  size_t hash() const;
 
   void resize(uint32_t size);
 
@@ -165,12 +169,6 @@ private:
 const char* to_string(lnodetype type);
 
 std::ostream& operator<<(std::ostream& out, lnodetype type);
-
-sloc_ctx_t* sloc_begin_module();
-
-void sloc_end_module(sloc_ctx_t* ctx);
-
-source_location get_source_location();
 
 }
 }

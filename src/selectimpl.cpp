@@ -10,13 +10,11 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch(const lnode& key) {
-  auto sloc = get_source_location();
+void ch::internal::begin_branch(const lnode& key, const source_location& sloc) {
   ctx_curr()->begin_branch(key.impl(), sloc);
 }
 
-void ch::internal::begin_branch() {
-  auto sloc = get_source_location();
+void ch::internal::begin_branch(const source_location& sloc) {
   ctx_curr()->begin_branch(nullptr, sloc);
 }
 
@@ -96,8 +94,7 @@ void selectimpl::print(std::ostream& out) const {
 lnode select_impl::emit(const lnode& def_value) {
   auto& stmts = stmts_;
   auto key  = key_.empty() ? nullptr : key_.impl();
-  auto sloc = get_source_location();
-  auto sel  = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc);
+  auto sel  = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc_);
   if (key) {
     // insert switch cases in ascending order
     for (auto& stmt : stmts) {

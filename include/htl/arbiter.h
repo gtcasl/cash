@@ -19,8 +19,7 @@ struct ch_matArbiter {
   );
 
   void describe() {
-    ch_vec<ch_vec<ch_bool, N>, N> fill_ones(ch_vec<ch_bool, N>(true));
-    ch_reg<ch_vec<ch_vec<ch_bool, N>, N>> priority(fill_ones);
+    ch_reg<ch_vec<ch_vec<ch_bool, N>, N>> priority(true);
 
     for (unsigned i = 0; i < N; ++i) {
       ch_bit<N> dis;

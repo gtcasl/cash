@@ -592,6 +592,11 @@ void foo() {
   }
 
   {
+    s2_4_t a{0101_b, 01_b};
+    ch_reg<s2_4_t> b{0101_b, 01_b};
+  }
+
+  {
     ch_vec<ch_bit2, 2> a{11_b, 00_b};
     ch_reg<ch_vec<ch_bit2, 2>> b{11_b, 00_b};
     ch_vec<ch_vec<ch_bit2, 2>, 2> c{{11_b, 00_b}, {11_b, 00_b}};

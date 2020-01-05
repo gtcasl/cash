@@ -89,7 +89,7 @@ void bindimpl::bind_output(lnodeimpl* dst,
   // create bind port
   auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
   assert(type_proxy == dst->type());
-  reinterpret_cast<proxyimpl*>(dst)->write(0, output, 0, dst->size());
+  reinterpret_cast<proxyimpl*>(dst)->write(0, output, 0, dst->size(), sloc);
 
   // add to list
   auto p = find_port_index(output, outputs_);
@@ -159,9 +159,7 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::bindInputNode(const lnode& input) {
-  CH_API_ENTRY(2);
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::bindInputNode(const lnode& input, const source_location& sloc) {
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto name = stringf("%s.%s", binding->module()->name().c_str(), input.name().c_str());
@@ -170,9 +168,7 @@ lnodeimpl* ch::internal::bindInputNode(const lnode& input) {
   return node;
 }
 
-lnodeimpl* ch::internal::bindOutputNode(const lnode& output) {
-  CH_API_ENTRY(2);
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const source_location& sloc) {
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto name = stringf("%s.%s", binding->module()->name().c_str(), output.name().c_str());

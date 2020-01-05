@@ -99,20 +99,18 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::getCurrentClockNode() {
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::getCurrentClockNode(const source_location& sloc) {
   return ctx_curr()->current_clock(sloc);
 }
 
-lnodeimpl* ch::internal::getCurrentResetNode() {
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::getCurrentResetNode(const source_location& sloc) {
   return ctx_curr()->current_reset(sloc);
 }
 
 void ch::internal::pushClockDomain(const lnode& clock,
                                    const lnode& reset,
-                                   bool pos_edge) {
-  auto sloc = get_source_location();
+                                   bool pos_edge,
+                                   const source_location& sloc) {
   ctx_curr()->push_cd(clock, reset, pos_edge, sloc);
 }
 

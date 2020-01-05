@@ -104,99 +104,98 @@ public:
   using base = ch_numbase<ch_uint<N>>;
   using base::operator=;
 
-  ch_uint(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_uint>()))
+  ch_uint(const logic_buffer& buffer 
+    = make_logic_buffer(N, idname<ch_uint>(), CH_CUR_SLOC))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
-  ch_uint(const U& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const U& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_uint(const ch_sbitbase<U>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  explicit ch_uint(const ch_sbitbase<U>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
-  ch_uint(const ch_sbool& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_sbool& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
-  ch_uint(const ch_sbit<M>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_sbit<M>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
-  ch_uint(const ch_sint<M>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_sint<M>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
-  ch_uint(const ch_suint<M>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_suint<M>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_uint(const ch_bitbase<U>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  explicit ch_uint(const ch_bitbase<U>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
-  ch_uint(const ch_bool& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_bool& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
-  ch_uint(const ch_bit<M>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_bit<M>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
-  ch_uint(const ch_int<M>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_int<M>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M < N)>
-  ch_uint(const ch_uint<M>& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_uint<M>& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
-  ch_uint(const ch_uint& other)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
+  ch_uint(const ch_uint& other, CH_SLOC)
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), sloc)) {
     this->operator=(other);
   }
 
   ch_uint(ch_uint&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_uint& operator=(const ch_uint& other) {
-    CH_API_ENTRY(1);
     logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_uint& operator=(ch_uint&& other) {
-    CH_API_ENTRY(1);
     logic_accessor::move(*this, std::move(other));
     return *this;
   }

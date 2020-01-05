@@ -9,7 +9,10 @@ class udf_iface;
 
 enum class udf_verilog { header, declaration, body };
 
-void createUDFNode(const std::string& name, bool is_seq, udf_iface* udf);
+void createUDFNode(const std::string& name, 
+                   bool is_seq, 
+                   udf_iface* udf,
+                   const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -40,6 +43,7 @@ class udf_iface: public refcounted {
 public:
 
   udf_iface();
+
   virtual ~udf_iface();
 
   virtual void eval() = 0;
@@ -69,7 +73,9 @@ template <typename T>
 class udf_wrapper : public udf_iface {
 public:
   template <typename... Args>
-  udf_wrapper(Args&&... args) : udf_(std::forward<Args>(args)...) {}
+  udf_wrapper(Args&&... args) 
+    : udf_(std::forward<Args>(args)...) 
+  {}
 
   void eval() override {
     udf_.eval();
@@ -109,10 +115,27 @@ public:
 
   io_type io;
 
-  template <typename... Args>
-  ch_udf_comb(Args&&... args)
-    : io(this->create(std::forward<Args>(args)...)->io())
+  ch_udf_comb(CH_SLOC)
+    : io(create(new udf_wrapper<T>(), sloc)->io(), sloc)
   {}
+
+#define CH_UDF_GEN_TMPL(a, i, x) typename Arg##i
+#define CH_UDF_GEN_TYPE(a, i, x) Arg##i
+#define CH_UDF_GEN_DECL(a, i, x) Arg##i&& arg##i
+#define CH_UDF_GEN_ARG(a, i, x)  std::forward<Arg##i>(arg##i)
+#define CH_UDF_GEN(...) \
+  template <CH_FOR_EACH(CH_UDF_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
+            CH_REQUIRE(std::is_constructible_v<T, CH_FOR_EACH(CH_UDF_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)> \
+                    && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_udf_comb>)> \
+  ch_udf_comb(CH_FOR_EACH(CH_UDF_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
+    : io(create(new udf_wrapper<T>(CH_FOR_EACH(CH_UDF_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)), sloc)->io(), sloc) \
+  {}
+CH_VA_ARGS_MAP(CH_UDF_GEN)
+#undef CH_UDF_GEN_TMPL
+#undef CH_UDF_GEN_TYPE
+#undef CH_UDF_GEN_DECL
+#undef CH_UDF_GEN_ARG
+#undef CH_UDF_GEN
 
   ch_udf_comb(ch_udf_comb&& other)
     : io(std::move(other.io))
@@ -120,11 +143,8 @@ public:
 
 protected:
 
-  template <typename... Args>
-  auto create(Args&&... args) {
-    CH_API_ENTRY(2);
-    auto obj = new udf_wrapper<T>(std::forward<Args>(args)...);
-    createUDFNode(idname<T>(), false, obj);
+  static auto create(udf_wrapper<T>* obj, const source_location& sloc) {
+    createUDFNode(idname<T>(), false, obj, sloc);
     return obj;
   }
 
@@ -146,10 +166,27 @@ public:
 
   io_type io;
 
-  template <typename... Args>
-  ch_udf_seq(Args&&... args)
-    : io(this->create(std::forward<Args>(args)...)->io())
+  ch_udf_seq(CH_SLOC)
+    : io(create(new udf_wrapper<T>(), sloc)->io(), sloc)
   {}
+
+#define CH_UDF_GEN_TMPL(a, i, x) typename Arg##i
+#define CH_UDF_GEN_TYPE(a, i, x) Arg##i
+#define CH_UDF_GEN_DECL(a, i, x) Arg##i&& arg##i
+#define CH_UDF_GEN_ARG(a, i, x)  std::forward<Arg##i>(arg##i)
+#define CH_UDF_GEN(...) \
+  template <CH_FOR_EACH(CH_UDF_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
+            CH_REQUIRE(std::is_constructible_v<T, CH_FOR_EACH(CH_UDF_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)> \
+                    && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_udf_seq>)> \
+  ch_udf_seq(CH_FOR_EACH(CH_UDF_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
+    : io(create(new udf_wrapper<T>(CH_FOR_EACH(CH_UDF_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)), sloc)->io(), sloc) \
+  {}
+CH_VA_ARGS_MAP(CH_UDF_GEN)
+#undef CH_UDF_GEN_TMPL
+#undef CH_UDF_GEN_TYPE
+#undef CH_UDF_GEN_DECL
+#undef CH_UDF_GEN_ARG
+#undef CH_UDF_GEN
 
   ch_udf_seq(ch_udf_seq&& other)
     : io(std::move(other.io))
@@ -157,11 +194,8 @@ public:
 
 protected:
 
-  template <typename... Args>
-  auto create(Args&&... args) {
-    CH_API_ENTRY(2);
-    auto obj = new udf_wrapper<T>(std::forward<Args>(args)...);
-    createUDFNode(idname<T>(), true, obj);
+  static auto create(udf_wrapper<T>* obj, const source_location& sloc) {
+    createUDFNode(idname<T>(), true, obj, sloc);
     return obj;
   }
 

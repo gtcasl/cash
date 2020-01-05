@@ -720,8 +720,9 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::registerTap(const lnode& node, const std::string& name) {
-  auto sloc = get_source_location();
+void ch::internal::registerTap(const lnode& node, 
+                               const std::string& name,
+                              const source_location& sloc) {
   ctx_curr()->register_tap(node, name, sloc);
 }
 

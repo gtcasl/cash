@@ -86,7 +86,7 @@ private:
   }
 
   auto update_state(const ch_bit<Cfg::num_ways>& h_select, const data_t& state) {
-    std::array<data_t, Cfg::num_ways> next_states;
+    ch_vec<data_t, Cfg::num_ways> next_states;
     for (unsigned w = 0; w < Cfg::num_ways; ++w) {
       next_states[w] = state;
       int i = 1;
@@ -179,8 +179,8 @@ struct Cache {
     std::array<ch_module<CacheWay<Cfg>>, Cfg::num_ways> ways;
     ch_module<ReplacePLRU<Cfg>> plru;
     ch_reg<State> state(State::idle);
-    std::array<ch_bit<Cfg::block_bits>, Cfg::num_ways> rd_data_set;
-    std::array<ch_bit<Cfg::maddr_bits>, Cfg::num_ways> wb_addr_set;
+    ch_vec<ch_bit<Cfg::block_bits>, Cfg::num_ways> rd_data_set;
+    ch_vec<ch_bit<Cfg::maddr_bits>, Cfg::num_ways> wb_addr_set;
     ch_bit<Cfg::num_ways> hit_set, valid_set, dirty_set;
     ch_reg<ch_bit<Cfg::addr_bits>> r_cpu_address;
     ch_reg<ch_bit<Cfg::data_bits>> r_cpu_writedata;

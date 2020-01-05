@@ -9,8 +9,21 @@ TEST_CASE("hof", "[hof]") {
     });
 
     TEST([]()->ch_bool {
-      std::array<ch_uint<4>, 4> a{3, 2, 1, 0}, e{4, 3, 2, 1};
+      ch_suint<8> a(10101010_b), e(01010101_b);
+      auto r = ch_map(a, [](const auto& x)->ch_sbool { return ~x; });
+      return (r.as_uint() == e);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_uint<4>, 4> a{3, 2, 1, 0};
+      std::array<ch_uint<4>, 4> e{4, 3, 2, 1};
       auto r = ch_map(a, [](const auto& x)->ch_uint<4> { return x + 1; });
+      return (r == e);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_suint<4>, 4> a{3, 2, 1, 0}, e{4, 3, 2, 1};
+      auto r = ch_map(a, [](const auto& x)->ch_suint<4> { return x + 1; });
       return (r == e);
     });
   }
@@ -22,9 +35,21 @@ TEST_CASE("hof", "[hof]") {
       return (r == true);
     });
 
+     TEST([]()->ch_bool {
+      ch_suint<8> a(10101010_b);
+      auto r = ch_fold(a, [](const auto& x, const auto& y)->ch_sbool { return x || y; }, 0);
+      return (r == true);
+    });
+
     TEST([]()->ch_bool {
-      std::array<ch_uint<4>, 4> a{3, 2, 1, 0};
+      ch_vec<ch_uint<4>, 4> a{3, 2, 1, 0};
       auto r = ch_fold(a, [](const auto& x, const auto& y)->ch_uint<4> { return x + y; }, 0);
+      return (r == 6);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_suint<4>, 4> a{3, 2, 1, 0};
+      auto r = ch_fold(a, [](const auto& x, const auto& y)->ch_suint<4> { return x + y; }, 0);
       return (r == 6);
     });
   }
@@ -37,8 +62,20 @@ TEST_CASE("hof", "[hof]") {
     });
 
     TEST([]()->ch_bool {
-      std::array<ch_uint<4>, 4> a{3, 2, 1, 0}, e{3, 5, 6, 6};
+      ch_suint<8> a(10101000_b);
+      auto r = ch_scan(a, [](const auto& x, const auto& y)->ch_sbool { return x || y; }, 0);
+      return (r.as_uint() == 11111000_b);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_uint<4>, 4> a{3, 2, 1, 0}, e{6, 3, 1, 0};
       auto r = ch_scan(a, [](const auto& x, const auto& y)->ch_uint<4> { return x + y; }, 0);
+      return (r == e);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_suint<4>, 4> a{3, 2, 1, 0}, e{6, 3, 1, 0};
+      auto r = ch_scan(a, [](const auto& x, const auto& y)->ch_suint<4> { return x + y; }, 0);
       return (r == e);
     });
   }
@@ -51,8 +88,20 @@ TEST_CASE("hof", "[hof]") {
     });
 
     TEST([]()->ch_bool {
-      std::array<ch_uint<4>, 4> a{3, 2, 1, 0}, b{4, 3, 2, 1}, e{7, 5, 3, 1};
+      ch_suint<8> a(10101010_b), b(01000100_b);
+      auto r = ch_zip(a, b, [](const auto& x, const auto& y)->ch_sbool { return x || y; });
+      return (r.as_uint() == 11101110_b);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_uint<4>, 4> a{3, 2, 1, 0}, b{4, 3, 2, 1}, e{7, 5, 3, 1};
       auto r = ch_zip(a, b, [](const auto& x, const auto& y)->ch_uint<4> { return x + y; });
+      return (r == e);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_suint<4>, 4> a{3, 2, 1, 0}, b{4, 3, 2, 1}, e{7, 5, 3, 1};
+      auto r = ch_zip(a, b, [](const auto& x, const auto& y)->ch_suint<4> { return x + y; });
       return (r == e);
     });
   }

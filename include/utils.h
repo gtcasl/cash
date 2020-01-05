@@ -9,12 +9,14 @@
 namespace ch {
 namespace internal {
 
+namespace detail {
 template <unsigned N>
-struct requires_enum {
+struct requires_t {
   enum class type {};
 };
+}
 
-#define CH_REQUIRE(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<0>::type>* = nullptr
+#define CH_REQUIRE(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::detail::requires_t<0>::type>* = nullptr
 
 std::string stringf(const char* format, ...);
 
@@ -400,6 +402,11 @@ constexpr bool is_detected_v = detail::detector<detail::nonesuch, void, Op, Args
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename... Args>
+constexpr bool is_common_type_v = is_detected_v<std::common_type_t, Args...>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename From, typename To>
 struct reference_cast {
   using type = To;
@@ -732,9 +739,20 @@ private:
 
 template <typename T>
 struct sloc_proxy {
-    sloc_proxy(const T& value, CH_SLOC) : value(value), sloc(sloc) {}
-    const T& value;
-    source_location sloc;
+  sloc_proxy(const T& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
+    : data(p_data)
+    , sloc(p_sloc) 
+  {}  
+  
+  template <typename U,
+            CH_REQUIRE(std::is_convertible_v<U, T>)>
+  sloc_proxy(const sloc_proxy<U>& other) 
+    : data(other.data)
+    , sloc(other.sloc) 
+  {}
+
+  const T& data;
+  source_location sloc;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

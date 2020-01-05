@@ -25,17 +25,21 @@ using ch_out = std::conditional_t<is_logic_type_v<T>,
 
 using io_value_t = smart_ptr<sdata_type>;
 
-lnodeimpl* createInputNode(const std::string& name, uint32_t size);
+lnodeimpl* createInputNode(const std::string& name, 
+                           uint32_t size,
+                           const source_location& sloc);
 
-lnodeimpl* createOutputNode(const std::string& name, uint32_t size);
+lnodeimpl* createOutputNode(const std::string& name, 
+                            uint32_t size,
+                            const source_location& sloc);
 
-lnodeimpl* bindInputNode(const lnode& input);
+lnodeimpl* bindInputNode(const lnode& input, const source_location& sloc);
 
-lnodeimpl* bindOutputNode(const lnode& ouptut);
+lnodeimpl* bindOutputNode(const lnode& ouptut, const source_location& sloc);
 
-lnodeimpl* bindInputNode(system_io_buffer* input);
+lnodeimpl* bindInputNode(system_io_buffer* input, const source_location& sloc);
 
-lnodeimpl* bindOutputNode(system_io_buffer* output);
+lnodeimpl* bindOutputNode(system_io_buffer* output, const source_location& sloc);
 
 lnodeimpl* getOutputNode(const std::string& name);
 
@@ -87,7 +91,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_logic_in : public T {
+class ch_logic_in final : public T {
 public:
   static_assert(is_logic_type_v<T>, "invalid type");
   using traits = base_logic_io_traits<ch_direction::in,
@@ -97,21 +101,21 @@ public:
                                       T>;
   using base = T;
 
-  ch_logic_in(const std::string& name = "io")
-     : base(make_logic_buffer(createInputNode(name, ch_width_v<T>))) {
+  ch_logic_in(const std::string& name = "io", CH_SLOC)
+     : base(make_logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
     input_ = get_lnode(*this);
   }
 
   template <typename U>
-  explicit ch_logic_in(const ch_logic_out<U>& other)
-    : base(make_logic_buffer(bindOutputNode(other.output_))) {
+  explicit ch_logic_in(const ch_logic_out<U>& other, CH_SLOC)
+    : base(make_logic_buffer(bindOutputNode(other.output_, sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
-  explicit ch_logic_in(const ch_system_out<U>& other)
-     : base(make_logic_buffer(bindOutputNode(reinterpret_cast<system_io_buffer*>(
-                            system_accessor::buffer(other).get())))) {
+  explicit ch_logic_in(const ch_system_out<U>& other, CH_SLOC)
+     : base(make_logic_buffer(bindOutputNode(
+        reinterpret_cast<system_io_buffer*>(system_accessor::buffer(other).get()), sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
@@ -127,7 +131,6 @@ public:
 
   template <typename U>
   void operator()(ch_logic_out<U>& out) const {
-    CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     out = *this;
   }
@@ -147,7 +150,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_logic_out : public T {
+class ch_logic_out final : public T {
 public:
   static_assert(is_logic_type_v<T>, "invalid type");
   using traits = base_logic_io_traits<ch_direction::out,
@@ -158,21 +161,21 @@ public:
   using base = T;
   using base::operator=;
 
-  ch_logic_out(const std::string& name = "io")
-    : base(make_logic_buffer(createOutputNode(name, ch_width_v<T>))) {
+  ch_logic_out(const std::string& name = "io", CH_SLOC)
+    : base(make_logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
     output_ = getOutputNode(name);
   }
 
   template <typename U>
-  explicit ch_logic_out(const ch_logic_in<U>& other)
-    : base(make_logic_buffer(bindInputNode(other.input_))) {
+  explicit ch_logic_out(const ch_logic_in<U>& other, CH_SLOC)
+    : base(make_logic_buffer(bindInputNode(other.input_, sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
-  explicit ch_logic_out(const ch_system_in<U>& other)
-     : base(make_logic_buffer(bindInputNode(reinterpret_cast<system_io_buffer*>(
-                            system_accessor::buffer(other).get())))) {
+  explicit ch_logic_out(const ch_system_in<U>& other, CH_SLOC)
+     : base(make_logic_buffer(bindInputNode(
+        reinterpret_cast<system_io_buffer*>(system_accessor::buffer(other).get()), sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
@@ -187,13 +190,11 @@ public:
   {}
 
   ch_logic_out& operator=(const ch_logic_out& other) {
-    CH_API_ENTRY(1);
     base::operator=(other);
     return *this;
   }
 
   ch_logic_out& operator=(ch_logic_out&& other) {
-    CH_API_ENTRY(1);
     base::operator=(std::move(other));
     output_ = std::move(other.output_);
     return *this;
@@ -201,7 +202,6 @@ public:
 
   template <typename U>
   void operator()(const ch_logic_in<U>& in) {
-    CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     *this = in;
   }
@@ -217,7 +217,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_system_in : public T {
+class ch_system_in final : public T {
 public:
   static_assert(is_system_type_v<T>, "invalid type");
   using traits = base_system_io_traits<ch_direction::out,
@@ -264,7 +264,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_system_out : public T {
+class ch_system_out final : public T {
 public:
   static_assert(is_system_type_v<T>, "invalid type");
   using traits = base_system_io_traits<ch_direction::in,

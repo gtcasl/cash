@@ -48,7 +48,8 @@ lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::createAssertNode(const lnode& cond, const std::string& msg) {
-  auto sloc = get_source_location();
+void ch::internal::createAssertNode(const lnode& cond, 
+                                    const std::string& msg,
+                                    const source_location& sloc) {
   ctx_curr()->create_node<assertimpl>(cond.impl(), msg, sloc);
 }

@@ -2,10 +2,6 @@
 #include "proxyimpl.h"
 #include "context.h"
 
-#ifdef CALLTRACE
-#include "slocmgr.h"
-#endif
-
 using namespace ch::internal;
 
 const char* ch::internal::to_string(lnodetype type) {
@@ -210,47 +206,3 @@ node_list::iterator node_list::erase(const node_list::iterator& it) {
   --size_;
   return iterator(next);
 }
-
-/////////////////////////////////////////////////////////////////////////////
-
-sloc_api_entry::sloc_api_entry(uint32_t stack_level) {
-#ifdef CALLTRACE
-  owned_ = sloc_manager::instance().register_source_location(stack_level);
-#else
-  CH_UNUSED(stack_level);
-  owned_ = false;
-#endif
-}
-
-sloc_api_entry::~sloc_api_entry() {
-#ifdef CALLTRACE
-  if (owned_) {
-    sloc_manager::instance().release_source_location();
-  }
-#endif
-}
-
-sloc_ctx_t* ch::internal::sloc_begin_module() {
-#ifdef CALLTRACE
-  return sloc_manager::instance().begin_module();
-#else
-  return nullptr;
-#endif
-}
-
-void ch::internal::sloc_end_module(sloc_ctx_t* ctx) {
-#ifdef CALLTRACE
-  sloc_manager::instance().end_module(ctx);
-#else
-  CH_UNUSED(ctx);
-#endif
-}
-
-source_location ch::internal::get_source_location() {
-#ifdef CALLTRACE
-  return sloc_manager::instance().get_source_location();
-#else
-  return source_location();
-#endif
-}
-

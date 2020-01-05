@@ -20,18 +20,16 @@ std::ostream& ch::internal::operator<<(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode::lnode(lnodeimpl* impl) : impl_(impl), next_user_(nullptr) {
+lnode::lnode(lnodeimpl* impl) 
+  : impl_(impl)
+  , next_user_(nullptr) {
   if (impl) {
     impl->add_user(this);
   }
 }
 
-lnode::lnode(const sdata_type& value)
-  : lnode(ctx_curr()->create_literal(value))
-{}
-
-lnode::lnode(uint32_t size, const std::string& name)
-  : lnode(ctx_curr()->create_node<proxyimpl>(size, name, get_source_location()))
+lnode::lnode(const sdata_type& value) 
+  : lnode(ctx_curr()->create_literal(value)) 
 {}
 
 lnode::~lnode() {
@@ -68,6 +66,16 @@ const source_location& lnode::sloc() const {
 
 uint32_t lnode::size() const {
   return impl_ ? impl_->size() : 0;
+}
+
+void lnode::set_name(const std::string& name) {
+  assert(impl_);
+  impl_->set_name(name);
+}
+
+void lnode::set_sloc(const source_location& sloc) {
+  assert(impl_);
+  impl_->set_sloc(sloc);
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {

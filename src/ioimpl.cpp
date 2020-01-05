@@ -127,15 +127,15 @@ void bypassimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size) {
-  CH_API_ENTRY(2);
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::createInputNode(const std::string& name, 
+                                         uint32_t size,
+                                         const source_location& sloc) {
   return ctx_curr()->create_input(size, name, sloc);
 }
 
-lnodeimpl* ch::internal::createOutputNode(const std::string& name, uint32_t size) {
-  CH_API_ENTRY(2);
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::createOutputNode(const std::string& name, 
+                                          uint32_t size,
+                                         const source_location& sloc) {
   auto output = ctx_curr()->create_output(size, name, sloc);
   return output->src(0).impl();
 }

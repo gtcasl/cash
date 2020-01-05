@@ -29,17 +29,6 @@ using system_buffer = std::shared_ptr<system_buffer_impl>;
 
 class system_buffer_impl {
 public:
-  explicit system_buffer_impl(const sdata_type& data);
-
-  system_buffer_impl(sdata_type&& data);
-
-  system_buffer_impl(uint32_t size, const std::string& name);
-
-  system_buffer_impl(uint32_t size,
-                const system_buffer& buffer,
-                uint32_t offset,
-                const std::string& name);
-
   system_buffer_impl(const system_buffer_impl& other);
 
   system_buffer_impl(system_buffer_impl&& other);
@@ -103,16 +92,29 @@ public:
 
 protected:
 
+  system_buffer_impl(const sdata_type& data);
+  
+  system_buffer_impl(sdata_type&& data);
+
+  system_buffer_impl(uint32_t size, const std::string& name);
+
+  system_buffer_impl(uint32_t size,
+                     const system_buffer& buffer,
+                     uint32_t offset,
+                     const std::string& name);
+
   system_buffer source_;
   mutable sdata_type value_;
   uint32_t offset_;
   uint32_t size_;
   std::string name_;
+
+  template <typename... Args> friend auto make_system_buffer(Args&&... args);
 };
 
 template <typename... Args>
 auto make_system_buffer(Args&&... args) {
-  return std::make_shared<system_buffer_impl>(std::forward<Args>(args)...);
+  return std::shared_ptr<system_buffer_impl>(new system_buffer_impl(std::forward<Args>(args)...));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,6 +145,12 @@ public:
     return make_system_buffer(*obj.__buffer());
   }
 
+  template <typename T>
+  static auto move(T&& obj) {
+    assert(ch_width_v<T> == obj.__buffer()->size());
+    return make_system_buffer(std::move(*obj.__buffer()));
+  }
+
   template <unsigned N, typename T>
   static auto resize(const T& obj) {
     assert(obj.__buffer()->size() == ch_width_v<T>);
@@ -154,12 +162,6 @@ public:
     } else {
       return make_system_buffer(*obj.__buffer());
     }
-  }
-
-  template <typename T>
-  static auto move(T&& obj) {
-    assert(ch_width_v<T> == obj.__buffer()->size());
-    return make_system_buffer(std::move(*obj.__buffer()));
   }
 
   template <typename T>
@@ -626,7 +628,6 @@ auto make_system_op(const A& lhs, const B& rhs) {
 
  #define CH_SYSTEM_OPERATOR2Z_IMPL(base, op, method) \
  T& op(const base& rhs) { \
-    CH_API_ENTRY(1); \
     auto& self = reinterpret_cast<T&>(*this); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     self = system_accessor::method<T>(self, _rhs); \
@@ -635,7 +636,6 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   T& op(const U& rhs) { \
-    CH_API_ENTRY(1); \
     auto& self = reinterpret_cast<T&>(*this); \
     auto _rhs = system_op_cast<T>(rhs); \
     self = system_accessor::method<T>(self, _rhs); \

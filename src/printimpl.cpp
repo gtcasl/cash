@@ -205,7 +205,8 @@ void printimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::createPrintNode(const std::string& format,
-                                   const std::vector<lnode>& args) {
+                                   const std::vector<lnode>& args,
+                                   const source_location& sloc) {
   // check format
   auto max_index = findMaxSourceIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
@@ -216,7 +217,6 @@ void ch::internal::createPrintNode(const std::string& format,
     auto cb = arg.impl()->ctx()->enum_to_string(arg.id());
     enum_strings.emplace_back(cb);
   }
-  auto sloc = get_source_location();
   ctx_curr()->create_node<printimpl>(format, args, enum_strings, sloc);
 }
 
@@ -224,10 +224,11 @@ void ch::internal::createPrintNode(const std::string& format,
 
 ch_ostream ch::internal::ch_cout;
 
-void ch_streambuf::write(const lnode& node, char format) {
+void ch_streambuf::write(const lnode& node, char format, const source_location& sloc) {
+  char tmp[64];
   auto size = nodes_.size();
   nodes_.push_back(node);
-  char tmp[64];
+  sloc_ = sloc;
   auto len = snprintf(tmp, sizeof(tmp), "{%ld:%c}", size, format);
   this->sputn(tmp, len);
 }
@@ -236,7 +237,7 @@ int ch_streambuf::sync() {
   if (base::pptr() == base::pbase())
     return 0;
   auto format = base::str();
-  createPrintNode(format, nodes_);
+  createPrintNode(format, nodes_, sloc_);
   base::str("");
   nodes_.clear();
   return 0;

@@ -24,13 +24,30 @@ public:
 
   io_type io;
 
-  template <typename... Args,
-            CH_REQUIRE(std::is_constructible_v<T, Args...>)>
-  ch_module(Args&&... args)
-    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, idname<T>())
-    , obj_(this->load<T>(std::forward<Args>(args)...))
-    , io(obj_->io)
+  ch_module(CH_SLOC)
+    : base(std::type_index(typeid(T)), is_pod_module_v<T>, idname<T>())
+    , obj_(this->load<T>(sloc))
+    , io(obj_->io, sloc)
   {}
+
+#define CH_MODULE_GEN_TMPL(a, i, x) typename Arg##i
+#define CH_MODULE_GEN_TYPE(a, i, x) Arg##i
+#define CH_MODULE_GEN_DECL(a, i, x) Arg##i&& arg##i
+#define CH_MODULE_GEN_ARG(a, i, x)  std::forward<Arg##i>(arg##i)
+#define CH_MODULE_GEN(...) \
+  template <CH_FOR_EACH(CH_MODULE_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
+            CH_REQUIRE(std::is_constructible_v<T, CH_FOR_EACH(CH_MODULE_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>)> \
+  ch_module(CH_FOR_EACH(CH_MODULE_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
+    : base(std::type_index(typeid(T)), is_pod_module_v<T, CH_FOR_EACH(CH_MODULE_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>, idname<T>()) \
+    , obj_(this->load<T>(sloc, CH_FOR_EACH(CH_MODULE_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__))) \
+    , io(obj_->io, sloc) \
+  {}
+CH_VA_ARGS_MAP(CH_MODULE_GEN)
+#undef CH_MODULE_GEN_TMPL
+#undef CH_MODULE_GEN_TYPE
+#undef CH_MODULE_GEN_DECL
+#undef CH_MODULE_GEN_ARG
+#undef CH_MODULE_GEN
 
   ch_module(const ch_module& other) 
     : base(other)

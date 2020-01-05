@@ -14,7 +14,6 @@ lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::getCurrentTimeNode() {
-  auto sloc = get_source_location();
+lnodeimpl* ch::internal::getCurrentTimeNode(const source_location& sloc) {
   return ctx_curr()->create_time(sloc);
 }

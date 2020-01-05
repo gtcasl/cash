@@ -31,7 +31,8 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_SYSTEM_IMPL(enum_name) \
   enum_name(const ch::internal::system_buffer& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
-    : buffer_(buffer) {} \
+    : buffer_(buffer) { \
+  } \
   enum_name(type __other) \
     : enum_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
     this->operator=(__other); \
@@ -40,7 +41,8 @@ void registerEnumString(const lnode& node, void* callback);
     : enum_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
     this->operator=(__other); \
   } \
-  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) {} \
+  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) { \
+  } \
   enum_name& operator=(const enum_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
@@ -59,31 +61,29 @@ void registerEnumString(const lnode& node, void* callback);
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), CH_CUR_SLOC)) \
     : buffer_(buffer) { \
     ch::internal::registerEnumString(ch::internal::get_lnode(*this), reinterpret_cast<void*>(to_string)); \
   } \
-  enum_name(type __other) \
-    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+  enum_name(type __other, CH_SLOC) \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), sloc)) { \
     this->operator=(__other); \
   } \
-  enum_name(const enum_name& __other) \
-    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+  enum_name(const enum_name& __other, CH_SLOC) \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), sloc)) { \
     this->operator=(__other); \
   } \
-  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) {} \
+  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) { \
+  } \
   enum_name& operator=(const enum_name& __other) { \
-    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   enum_name& operator=(enum_name&& __other) { \
-    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
   enum_name& operator=(type __other) { \
-    CH_API_ENTRY(1); \
     base::operator=(static_cast<unsigned>(__other)); \
     return *this; \
   }

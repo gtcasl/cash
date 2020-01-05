@@ -6,12 +6,19 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* getCurrentTimeNode();
-void createAssertNode(const lnode& cond, const std::string& msg);
+lnodeimpl* getCurrentTimeNode(const source_location& sloc);
 
-void createPrintNode(const std::string& format, const std::vector<lnode>& args);
+void createAssertNode(const lnode& cond, 
+                      const std::string&,
+                      const source_location& sloc);
 
-void registerTap(const lnode& node, const std::string& name);
+void createPrintNode(const std::string& format, 
+                     const std::vector<lnode>& args, 
+                     const source_location& sloc);
+
+void registerTap(const lnode& node, 
+                 const std::string& name,
+                 const source_location& sloc);
 
 lnodeimpl* getTap(const std::string& name, unsigned instance);
 
@@ -19,55 +26,118 @@ lnodeimpl* getTap(const std::string& name, unsigned instance);
 
 // time function
 
-inline auto ch_now() {
-  CH_API_ENTRY(1);
-  return make_logic_type<ch_uint<64>>(getCurrentTimeNode());
+inline auto ch_now(CH_SLOC) {
+  return make_logic_type<ch_uint<64>>(getCurrentTimeNode(sloc));
 }
 
 // print function
 
-template <typename... Args>
-void ch_print(const std::string& format, const Args&... args) {
-#ifndef NDEBUG
-  CH_API_ENTRY(1);
-  static_assert((is_logic_type_v<Args> && ...), "invalid argument type");
+namespace detail {
+struct token_ {};
+
+inline
+void createPrintNode_(const std::string& format, 
+                      const source_location& sloc,
+                      std::vector<lnode>& nodes,
+                      token_) {
+  createPrintNode(format, nodes, sloc);
+}
+
+template <class Arg0, class... Args>
+void createPrintNode_(const std::string& format, 
+                      const source_location& sloc,
+                      std::vector<lnode>& nodes,
+                      token_, 
+                      Arg0&& arg0,
+                      Args&&... args) {
+  auto len = snprintf(nullptr, 0, format.c_str(), std::forward<Arg0>(arg0), std::forward<Args>(args)...);
+  std::string tmp(len + 1, '\0');
+  snprintf(tmp.data(), len + 1, format.c_str(), std::forward<Arg0>(arg0), std::forward<Args>(args)...);
+  createPrintNode(tmp, nodes, sloc);
+}
+
+template <class Arg0, class... Args>
+void createPrintNode_(const std::string& format, 
+                      const source_location& sloc,
+                      std::vector<lnode>& nodes,
+                      Arg0&& arg0, 
+                      Args&&... args) {
+  if constexpr (is_data_type_v<Arg0>) {
+    nodes.push_back(get_lnode<Arg0>(std::forward<Arg0>(arg0)));
+    createPrintNode_(format, sloc, nodes, std::forward<Args>(args)...);
+  } else {
+    createPrintNode_(format, sloc, nodes, std::forward<Args>(args)..., std::forward<Arg0>(arg0));    
+  }
+}
+
+template <class... Args>
+void createPrintNode(const std::string& format, 
+                     const source_location& sloc,
+                     Args&&... args) {  
   if (format.empty())
     return;
-  ch_cout.flush();
-  createPrintNode(format, {get_lnode(args)...});
-#else
-  CH_UNUSED(format);
-#endif
+  ch_cout.flush();  
+  std::vector<lnode> nodes;
+  createPrintNode_(format, sloc, nodes, std::forward<Args>(args)..., token_{});
+}
 
 }
 
 template <typename... Args>
-void ch_println(const std::string& format, const Args&... args) {
-  CH_API_ENTRY(1);
-  ch_print(format + '\n', args...);
+void ch_print(const sloc_proxy<std::string>& format, Args&&... args) {
+#ifndef NDEBUG  
+  detail::createPrintNode(format.data, format.sloc, std::forward<Args>(args)...);
+#else
+  CH_UNUSED(format, args...);
+#endif
+}
+
+template <typename... Args>
+void ch_print(const sloc_proxy<const char*>& format, Args&&... args) {
+#ifndef NDEBUG  
+  detail::createPrintNode(format.data, format.sloc, std::forward<Args>(args)...);
+#else
+  CH_UNUSED(format, args...);
+#endif
+}
+
+template <typename... Args>
+void ch_println(const sloc_proxy<std::string>& format, Args&&... args) {
+#ifndef NDEBUG
+  detail::createPrintNode(format.data + "\n", format.sloc, std::forward<Args>(args)...);
+#else
+  CH_UNUSED(format, args...);
+#endif
+}
+
+template <typename... Args>
+void ch_println(const sloc_proxy<const char*>& format, Args&&... args) {
+#ifndef NDEBUG
+  detail::createPrintNode(std::string(format.data) + "\n", format.sloc, std::forward<Args>(args)...);
+#else
+  CH_UNUSED(format, args...);
+#endif
 }
 
 // assert function
 
-inline void ch_assert(const ch_bool& cond, const std::string& msg) {
+inline void ch_assert(const ch_bool& cond, const std::string& msg, CH_SLOC) {
 #ifndef NDEBUG
-  CH_API_ENTRY(1);
-  createAssertNode(get_lnode(cond), msg);
+  createAssertNode(get_lnode(cond), msg, sloc);
 #else
-  CH_UNUSED(cond, msg);
+  CH_UNUSED(cond, msg, sloc);
 #endif
 }
 
 // tap function
 
 template <typename T>
-void ch_tap(const T& value, const std::string& name) {
+void ch_tap(const T& value, const std::string& name, CH_SLOC) {
 #ifndef NDEBUG
-  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<T>, "invalid type");
-  registerTap(get_lnode(value), name);
+  registerTap(get_lnode(value), name, sloc);
 #else
-  CH_UNUSED(value, name);
+  CH_UNUSED(value, name, sloc);
 #endif
 }
 

@@ -263,10 +263,10 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
 void proxyimpl::write(uint32_t dst_offset,
                       lnodeimpl* src,
                       uint32_t src_offset,
-                      uint32_t length) {
+                      uint32_t length,
+                      const source_location& sloc) {
   assert(size() > dst_offset);
   assert(size() >= dst_offset + length);
-  auto sloc = get_source_location();
   if (ctx_->conditional_enabled(this)) {
     if (src_offset != 0 || src->size() != length) {
       src = ctx_->create_node<proxyimpl>(src, src_offset, length, src->name(), sloc);
@@ -359,7 +359,8 @@ void refimpl::write(
     uint32_t dst_offset,
     lnodeimpl* src,
     uint32_t src_offset,
-    uint32_t length) {
+    uint32_t length,
+    const source_location& sloc) {
   assert(1 == ranges_.size());
   assert(length <= ranges_[0].length);
   assert(type_proxy == this->src(0).impl()->type());
@@ -368,5 +369,6 @@ void refimpl::write(
     ranges_[0].src_offset + dst_offset,
     src,
     src_offset,
-    length);
+    length,
+    sloc);
 }

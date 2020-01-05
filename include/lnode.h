@@ -92,19 +92,6 @@ using ch_tick = uint64_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class sloc_api_entry {
-public:
-  sloc_api_entry(uint32_t stack_level);
-  ~sloc_api_entry();
-
-private:
-  bool owned_;
-};
-
-#define CH_API_ENTRY(stack_level) ch::internal::sloc_api_entry __sloc_api_entry__(stack_level)
-
-///////////////////////////////////////////////////////////////////////////////
-
 class lnodeimpl;
 
 class lnode {
@@ -115,8 +102,6 @@ public:
   lnode(lnodeimpl* impl);
 
   lnode(const sdata_type& value);
-
-  lnode(uint32_t size, const std::string& name);
 
   lnode(const lnode& other) : lnode(other.impl_) {}
 
@@ -153,6 +138,10 @@ public:
   }
 
 protected:  
+
+  void set_name(const std::string&);
+
+  void set_sloc(const source_location&);
 
   mutable lnodeimpl* impl_;
   lnode* next_user_;

@@ -31,9 +31,10 @@ private:
 
   int sync() override;
 
-  void write(const lnode& node, char format);
+  void write(const lnode& node, char format, const source_location& sloc);
 
   std::vector<lnode> nodes_;
+  source_location sloc_;
 
   ch_streambuf(const ch_streambuf&) = delete;
 
@@ -73,7 +74,6 @@ public:
 
   ch_ostream& operator<<(bool value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -83,7 +83,6 @@ public:
 
   ch_ostream& operator<<(char value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -93,7 +92,6 @@ public:
 
   ch_ostream& operator<<(unsigned char value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -103,7 +101,6 @@ public:
 
   ch_ostream& operator<<(short value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -113,7 +110,6 @@ public:
 
   ch_ostream& operator<<(unsigned short value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -123,7 +119,6 @@ public:
 
   ch_ostream& operator<<(int value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -133,7 +128,6 @@ public:
 
   ch_ostream& operator<<(unsigned int value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -143,7 +137,6 @@ public:
 
   ch_ostream& operator<<(long value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -153,7 +146,6 @@ public:
 
   ch_ostream& operator<<(unsigned long value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -163,7 +155,6 @@ public:
 
   ch_ostream& operator<<(long long value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -173,8 +164,7 @@ public:
 
   ch_ostream& operator<<(unsigned long long value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
-    reinterpret_cast<base&>(*this) << value;    
+    reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
   #endif
@@ -183,8 +173,7 @@ public:
 
   ch_ostream& operator<<(float value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
-    reinterpret_cast<base&>(*this) << value;    
+    reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
   #endif
@@ -193,7 +182,6 @@ public:
 
   ch_ostream& operator<<(double value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -203,7 +191,6 @@ public:
 
   ch_ostream& operator<<(long double value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     reinterpret_cast<base&>(*this) << value;
   #else
     CH_UNUSED(value);
@@ -213,7 +200,6 @@ public:
 
   ch_ostream& operator<<(const char* value) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     auto tok = strpbrk(value, "{}");
     if (tok) {
       // escape special characters
@@ -235,7 +221,6 @@ public:
 
   ch_ostream& operator<<(std::basic_streambuf<char>* sb) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     base::operator<<(sb);
   #else
     CH_UNUSED(sb);
@@ -243,9 +228,8 @@ public:
     return *this;
   }
 
-  ch_ostream& operator<<(std::ios_base& (*func)(std::ios_base&)) {
+  ch_ostream& operator<<(std::ios_base&(*func)(std::ios_base&)) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     base::operator<<(func);
   #else
     CH_UNUSED(func);
@@ -253,9 +237,8 @@ public:
     return *this;
   }
 
-  ch_ostream& operator<<(std::basic_ios<char>& (*func)(std::basic_ios<char>&)) {
+  ch_ostream& operator<<(std::basic_ios<char>&(*func)(std::basic_ios<char>&)) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     base::operator<<(func);
   #else
     CH_UNUSED(func);
@@ -263,9 +246,8 @@ public:
     return *this;
   }
 
-  ch_ostream& operator<<(std::basic_ostream<char>& (*func)(std::basic_ostream<char>&)) {
+  ch_ostream& operator<<(std::basic_ostream<char>&(*func)(std::basic_ostream<char>&)) {
   #ifndef NDEBUG
-    CH_API_ENTRY(1);
     base::operator<<(func);
   #else
     CH_UNUSED(func);
@@ -273,12 +255,11 @@ public:
     return *this;
   }
 
-  ch_ostream& write(const lnode& value, char format) {
-  #ifndef NDEBUG
-    CH_API_ENTRY(1);
-    buf_.write(value, format);
+  ch_ostream& write(const lnode& node, char format, CH_SLOC) {
+  #ifndef NDEBUG    
+    buf_.write(node, format, sloc);    
   #else
-    CH_UNUSED(value, format);
+    CH_UNUSED(node, format, sloc);
   #endif
     return *this;
   }

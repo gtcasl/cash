@@ -249,7 +249,6 @@ public:
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   T& operator=(const U& other) {
-    CH_API_ENTRY(1);
     auto self = reinterpret_cast<T*>(this);
     logic_accessor::assign(*self, sdata_type(ch_width_v<T>, other));
     return *self;
@@ -257,30 +256,29 @@ public:
 
   template <typename U>
   T& operator=(const ch_sbitbase<U>& other) {
-    CH_API_ENTRY(1);
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       ch_sbit<ch_width_v<T>> tmp(reinterpret_cast<const U&>(other));
       logic_accessor::assign(*self, system_accessor::data(tmp));
     } else {
-      logic_accessor::assign(*self,
-                             system_accessor::data(reinterpret_cast<const U&>(other)));
+      logic_accessor::assign(*self, system_accessor::data(reinterpret_cast<const U&>(other)));
     }
     return *self;
   }
 
   template <typename U>
   T& operator=(const ch_bitbase<U>& other) {
-    CH_API_ENTRY(1);
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
+      auto sloc = logic_accessor::sloc(*self);
       ch_bit<ch_width_v<T>> tmp(make_logic_buffer(
           createOpNode(ch_op::pad,
                        ch_width_v<T>,
                        is_signed_v<U>,
-                       get_lnode(reinterpret_cast<const U&>(other)))));
+                       get_lnode(reinterpret_cast<const U&>(other)),
+                       sloc)));
       logic_accessor::assign(*self, tmp);
     } else {
       logic_accessor::assign(*self, reinterpret_cast<const U&>(other));
@@ -290,27 +288,23 @@ public:
 
   // subscript operators
 
-  auto at(std::size_t index) const {
-    CH_API_ENTRY(1);
-    assert(index < ch_width_v<T>);
+  auto at(const sloc_proxy<std::size_t>& index) const {
+    assert(index.data < ch_width_v<T>);
     auto self = reinterpret_cast<const T*>(this);
-    return logic_accessor::slice<ch_bool>(*self, index);
+    return logic_accessor::slice<ch_bool>(*self, index.data, index.sloc);
   }
 
-  auto at(std::size_t index) {
-    CH_API_ENTRY(1);
-    assert(index < ch_width_v<T>);
+  auto at(const sloc_proxy<std::size_t>& index) {
+    assert(index.data < ch_width_v<T>);
     auto self = reinterpret_cast<T*>(this);
-    return logic_accessor::sliceref<ch_bool>(*self, index);
+    return logic_accessor::sliceref<ch_bool>(*self, index.data, index.sloc);
   }
 
-  auto operator[](std::size_t index) const {
-    CH_API_ENTRY(1);
+  auto operator[](const sloc_proxy<std::size_t>& index) const {
     return this->at(index);
   }
 
-  auto operator[](std::size_t index) {
-    CH_API_ENTRY(1);
+  auto operator[](const sloc_proxy<std::size_t>& index) {
     return this->at(index);
   }
 
@@ -360,91 +354,90 @@ public:
 protected:
 
   friend ch_ostream& operator<<(ch_ostream& out, const T& in) {
-    CH_API_ENTRY(1);
     logic_accessor::do_print(in, out);
     return out;
   }
 
   template <typename U>
-  auto do_eq(const U& other) const {
+  auto do_eq(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::eq>(*self, other);
+    return make_logic_op<ch_op::eq>(*self, other, sloc);
   }
 
   template <typename U>
-  auto do_ne(const U& other) const {
+  auto do_ne(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ne>(*self, other);
+    return make_logic_op<ch_op::ne>(*self, other, sloc);
   }
 
-  auto do_not() const {
+  auto do_not(const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::notl>(*self);
-  }
-
-  template <typename U>
-  auto do_andl(const U& other) const {
-    auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andl>(*self, other);
+    return make_logic_op<ch_op::notl>(*self, sloc);
   }
 
   template <typename U>
-  auto do_orl(const U& other) const {
+  auto do_andl(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orl>(*self, other);
+    return make_logic_op<ch_op::andl>(*self, other, sloc);
+  }
+
+  template <typename U>
+  auto do_orl(const U& other, const source_location& sloc) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::orl>(*self, other, sloc);
   }
 
   template <typename R>
-  auto do_inv() const {
+  auto do_inv(const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::inv>(*self);
+    return make_logic_op<R, ch_op::inv>(*self, sloc);
   }
 
   template <typename R, typename U>
-  auto do_and(const U& other) const {
+  auto do_and(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::andb>(*self, other);
+    return make_logic_op<R, ch_op::andb>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_or(const U& other) const {
+  auto do_or(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::orb>(*self, other);
+    return make_logic_op<R, ch_op::orb>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_xor(const U& other) const {
+  auto do_xor(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::xorb>(*self, other);
+    return make_logic_op<R, ch_op::xorb>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_shl(const U& other) const {
+  auto do_shl(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 64, "invalid size");
-    return make_logic_op<R, ch_op::shl>(*self, other);
+    return make_logic_op<R, ch_op::shl>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_shr(const U& other) const {
+  auto do_shr(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 64, "invalid size");
-    return make_logic_op<R, ch_op::shr>(*self, other);
+    return make_logic_op<R, ch_op::shr>(*self, other, sloc);
   }
 
-  auto do_andr() const {
+  auto do_andr(const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andr>(*self);
+    return make_logic_op<ch_op::andr>(*self, sloc);
   }
 
-  auto do_orr() const {
+  auto do_orr(const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orr>(*self);
+    return make_logic_op<ch_op::orr>(*self, sloc);
   }
 
-  auto do_xorr() const {
+  auto do_xorr(const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::xorr>(*self);
+    return make_logic_op<ch_op::xorr>(*self, sloc);
   }
 
   void do_print(ch_ostream& out) const {

@@ -53,13 +53,14 @@ public:
          uint32_t num_items,
          const sdata_type& init_data,
          bool force_logic_ram,
-         const std::string& name);
+         const std::string& name,
+         const source_location& sloc);
 
-  lnode aread(const lnode& addr) const;
+  lnode aread(const lnode& addr, const source_location& sloc) const;
 
-  lnode sread(const lnode& addr, const lnode& enable) const;
+  lnode sread(const lnode& addr, const lnode& enable, const source_location& sloc) const;
 
-  void write(const lnode& addr, const lnode& value, const lnode& enable);
+  void write(const lnode& addr, const lnode& value, const lnode& enable, const source_location& sloc);
 
 protected:
   memimpl* impl_;
@@ -75,41 +76,42 @@ public:
   static constexpr unsigned addr_width = log2up(N);
   using value_type = T;
 
-  explicit ch_rom(const std::string& init_file)
-    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), ForceLogicRAM, idname<T>())
+  explicit ch_rom(const std::string& init_file, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), ForceLogicRAM, idname<T>(), sloc)
   {}
 
-  explicit ch_rom(const std::initializer_list<uint32_t>& init_data)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>())
+  explicit ch_rom(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>(), sloc)
   {}
 
   template <typename U, std::size_t M>
-  explicit ch_rom(const std::array<U, M>& init_data)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>()) {
+  explicit ch_rom(const std::array<U, M>& init_data, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>(), sloc) {
     static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U>
-  explicit ch_rom(const std::vector<U>& init_data)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>()) {
+  explicit ch_rom(const std::vector<U>& init_data, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>(), sloc) {
     static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
-  explicit ch_rom(const U& value)
-    : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), ForceLogicRAM, idname<T>())
+  explicit ch_rom(const U& value, CH_SLOC)
+    : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), ForceLogicRAM, idname<T>(), sloc)
   {}
 
-  auto read(const ch_uint<addr_width>& addr) const {
-    CH_API_ENTRY(1);
-    auto laddr = to_lnode<addr_width>(addr);
-    return make_logic_type<T>(mem_.aread(laddr));
+  auto read(const ch_uint<addr_width>& addr, CH_SLOC) const {
+    auto laddr = to_lnode<addr_width>(addr, sloc);
+    return make_logic_type<T>(mem_.aread(laddr, sloc));
   }
 
 protected:
   memory mem_;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N, bool SyncRead = false>
 class ch_mem {
@@ -119,71 +121,67 @@ public:
   static constexpr unsigned addr_width = log2up(N);
   using value_type = T;
 
-  ch_mem() : mem_(ch_width_v<T>, N, {}, false, idname<T>()) {}
+  ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, {}, false, idname<T>(), sloc) {}
 
-  explicit ch_mem(const std::string& init_file)
-    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), false, idname<T>())
+  explicit ch_mem(const std::string& init_file, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), false, idname<T>(), sloc)
   {}
 
-  explicit ch_mem(const std::initializer_list<uint32_t>& init_data)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>())
+  explicit ch_mem(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>(), sloc)
   {}
 
   template <typename U, std::size_t M>
-  explicit ch_mem(const std::array<U, M>& init_data)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>()) {
+  explicit ch_mem(const std::array<U, M>& init_data, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>(), sloc) {
     static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U>
-  explicit ch_mem(const std::vector<U>& init_data)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>()) {
+  explicit ch_mem(const std::vector<U>& init_data, CH_SLOC)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>(), sloc) {
     static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
-  explicit ch_mem(const U& value)
-    : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), false, idname<T>())
+  explicit ch_mem(const U& value, CH_SLOC)
+    : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), false, idname<T>(), sloc)
   {}
 
-  auto read(const ch_uint<addr_width>& addr) const {
-    CH_API_ENTRY(1);
-    auto laddr = to_lnode<addr_width>(addr);
+  auto read(const ch_uint<addr_width>& addr, CH_SLOC) const {
+    auto laddr = to_lnode<addr_width>(addr, sloc);
     if constexpr (SyncRead) {
-      return make_logic_type<T>(mem_.sread(laddr, sdata_type(1,1)));
+      return make_logic_type<T>(mem_.sread(laddr, sdata_type(1,1), sloc));
     } else {
-      return make_logic_type<T>(mem_.aread(laddr));
+      return make_logic_type<T>(mem_.aread(laddr, sloc));
     }
   }
 
-  auto read(const ch_uint<addr_width>& addr, const ch_bool& enable) const {
-    CH_API_ENTRY(1);
+  auto read(const ch_uint<addr_width>& addr, const ch_bool& enable, CH_SLOC) const {
     static_assert(SyncRead, "invalid memory type");
-    auto laddr = to_lnode<addr_width>(addr);
+    auto laddr = to_lnode<addr_width>(addr, sloc);
     auto l_enable = get_lnode(enable);
-    return make_logic_type<T>(mem_.sread(laddr, l_enable));
+    return make_logic_type<T>(mem_.sread(laddr, l_enable, sloc));
   }
 
   template <typename U>
-  void write(const ch_uint<addr_width>& addr, const U& value) {
-    CH_API_ENTRY(1);
+  void write(const ch_uint<addr_width>& addr, const U& value, CH_SLOC) {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
-    auto l_addr  = to_lnode<addr_width>(addr);
-    auto l_value = to_lnode<T>(value);
-    mem_.write(l_addr, l_value, sdata_type(1,1));
+    auto l_addr  = to_lnode<addr_width>(addr, sloc);
+    auto l_value = to_lnode<T>(value, sloc);
+    mem_.write(l_addr, l_value, sdata_type(1,1), sloc);
   }
 
   template <typename U, typename E>
-  void write(const ch_uint<addr_width>& addr, const U& value, const E& enable) {
-    CH_API_ENTRY(1);
+  void write(const ch_uint<addr_width>& addr, const U& value, const E& enable, CH_SLOC) {
     static_assert(std::is_constructible_v<T, U>, "invalidvalue  type");
     static_assert(is_bitbase_v<E>, "invalid enable type");
     static_assert(ch_width_v<E> * (ch_width_v<T> / ch_width_v<E>) == ch_width_v<T>, "invalid enable size");
-    auto l_addr   = to_lnode<addr_width>(addr);
-    auto l_value  = to_lnode<T>(value);
+    auto l_addr   = to_lnode<addr_width>(addr, sloc);
+    auto l_value  = to_lnode<T>(value, sloc);
     auto l_enable = get_lnode(enable);
-    mem_.write(l_addr, l_value, l_enable);
+    mem_.write(l_addr, l_value, l_enable, sloc);
   }
     
 protected:

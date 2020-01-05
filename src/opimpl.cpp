@@ -96,8 +96,8 @@ lnodeimpl* ch::internal::createOpNode(
     ch_op op,
     uint32_t size,
     bool is_signed,
-    const lnode& in) {
-  auto sloc = get_source_location();
+    const lnode& in,
+    const source_location& sloc) {
   is_signed &= CH_OP_IS_SIGNED(op);
   return ctx_curr()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
 }
@@ -107,7 +107,7 @@ lnodeimpl* ch::internal::createOpNode(
     uint32_t size,
     bool is_signed,
     const lnode& lhs,
-    const lnode& rhs) {
-  auto sloc = get_source_location();
+    const lnode& rhs,
+    const source_location& sloc) {
   return ctx_curr()->create_node<opimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
 }

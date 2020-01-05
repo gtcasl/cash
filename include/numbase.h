@@ -223,100 +223,100 @@ public:
 protected:
 
   template <typename U>
-  auto do_lt(const U& other) const {
+  auto do_lt(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::lt>(*self, other);
+    return make_logic_op<ch_op::lt>(*self, other, sloc);
   }
 
   template <typename U>
-  auto do_le(const U& other) const {
+  auto do_le(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::le>(*self, other);
+    return make_logic_op<ch_op::le>(*self, other, sloc);
   }
 
   template <typename U>
-  auto do_gt(const U& other) const {
+  auto do_gt(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::gt>(*self, other);
+    return make_logic_op<ch_op::gt>(*self, other, sloc);
   }
 
   template <typename U>
-  auto do_ge(const U& other) const {
+  auto do_ge(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ge>(*self, other);
+    return make_logic_op<ch_op::ge>(*self, other, sloc);
   }
 
   template <typename R>
-  auto do_neg() const {
+  auto do_neg(const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::neg>(*self);
+    return make_logic_op<R, ch_op::neg>(*self, sloc);
   }
 
   template <typename R, typename U>
-  auto do_add(const U& other) const {
+  auto do_add(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::add>(*self, other);
+    return make_logic_op<R, ch_op::add>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_sub(const U& other) const {
+  auto do_sub(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::sub>(*self, other);
+    return make_logic_op<R, ch_op::sub>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_mul(const U& other) const {
+  auto do_mul(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::mul>(*self, other);
+    return make_logic_op<R, ch_op::mul>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_div(const U& other) const {
+  auto do_div(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::div>(*self, other);
+    return make_logic_op<R, ch_op::div>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_mod(const U& other) const {
+  auto do_mod(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::mod>(*self, other);
+    return make_logic_op<R, ch_op::mod>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_min(const U& other) const {
+  auto do_min(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    auto res = ch_sel(*self < other, *self, other);
+    auto res = ch_sel(*self < other, *self, other, sloc);
     if constexpr (ch_width_v<T> == ch_width_v<R>) {
       return res.template as<R>();
     } else {
-      return R(res);
+      return R(res, sloc);
     }
   }
 
   template <typename R, typename U>
-  auto do_max(const U& other) const {
+  auto do_max(const U& other, const source_location& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
-    auto res = ch_sel(*self > other, *self, other);
+    auto res = ch_sel(*self > other, *self, other, sloc);
     if constexpr (ch_width_v<T> == ch_width_v<R>) {
       return res.template as<R>();
     } else {
-      return R(res);
+      return R(res, sloc);
     }
   }
 
   template <typename R>
-  auto do_abs() const {
+  auto do_abs(const source_location& sloc) const {
     auto& self = *reinterpret_cast<const T*>(this);
     T res;
     if constexpr (is_signed_v<T>) {
-      res = ch_sel(self[ch_width_v<T>-1], -self, self);
+      res = ch_sel(self[ch_width_v<T>-1], -self, self, sloc);
     } else {
       res = self;
     }
     if constexpr (ch_width_v<T> == ch_width_v<R>) {
       return res.template as<R>();
     } else {
-      return R(res);
+      return R(res, sloc);
     }
   }
 

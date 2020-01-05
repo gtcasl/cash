@@ -459,6 +459,4 @@ namespace extension {
 
 #define __require  CH_REQUIRE
 
-#define __api_entry CH_API_ENTRY
-
 #define __unused   CH_UNUSED

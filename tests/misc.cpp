@@ -214,10 +214,27 @@ TEST_CASE("misc", "[misc]") {
       ch_println("hello world");
       return ch_true;
     });
+
+    TEST([]()->ch_bool {
+      ch_println("a=%d, b=%f", 1, 2.0f);
+      return ch_true;
+    });
     
     TEST([]()->ch_bool {
       ch_bit128 a(0x5555);
       ch_println("a={0}", a);
+      return ch_true;
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit128 a(0x5555);
+      ch_println("a=%d, b=%f", 1, 2.0f, a);
+      return ch_true;
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit8 a(255), b(0);
+      ch_println("x=%f, y=%d, z=%f, a={}, b={}", a, 0.0f, b, 1, 2.0f);
       return ch_true;
     });
     

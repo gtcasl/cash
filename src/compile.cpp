@@ -153,7 +153,7 @@ void compiler::optimize() {
   dce_total = tracker.deleted();
 
   // run optimization passes
-  bool changed =true;
+  bool changed = true;
   if (ctx_->parent()
    && (platform::self().cflags() & cflags::merged_only_opt) != 0) {
     changed = false;
@@ -1622,7 +1622,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
             eval_node = ctx_->current_reset(input->sloc());
           } else {
             eval_node = input->clone(ctx_, map);
-            eval_node->rename(full_name(eval_node));
+            eval_node->set_name(full_name(eval_node));
           }
           update_map(input->id(), eval_node);
         }
@@ -1641,7 +1641,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
           }
         } else {
           auto eval_node = output->clone(ctx_, map);
-          eval_node->rename(full_name(eval_node));
+          eval_node->set_name(full_name(eval_node));
           update_map(output->id(), eval_node);
         }
       } break;
@@ -1655,7 +1655,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
         auto tap = reinterpret_cast<tapimpl*>(node);
         ensure_placeholder(tap, 0);
         auto eval_node = tap->clone(ctx_, map);
-        eval_node->rename(full_name(eval_node));
+        eval_node->set_name(full_name(eval_node));
         update_map(tap->id(), eval_node);
       } break;
       case type_bypass: {
