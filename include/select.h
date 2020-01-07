@@ -15,7 +15,18 @@ public:
     , sloc_(sloc)  
   {}
 
-  ~select_impl() {}
+  select_impl(select_impl& other) 
+    : stmts_(std::move(other.stmts_))
+    , key_(std::move(other.key_))
+    , sloc_(std::move(other.sloc_)) 
+  {}
+
+  auto operator=(select_impl&& other) {
+    stmts_ = std::move(other.stmts_);
+    key_   = std::move(other.key_);
+    sloc_  = std::move(other.sloc_);
+    return *this;
+  }
   
   void push(const lnode& pred, const lnode& value) {
     stmts_.emplace_back(pred, value);
@@ -29,9 +40,13 @@ public:
 
 protected:
 
+  select_impl(const select_impl& other);
+
+  auto operator=(const select_impl& other);
+
   std::vector<std::pair<lnode, lnode>> stmts_;
   lnode key_;
-  const source_location& sloc_;
+  source_location sloc_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,6 +57,15 @@ public:
   select_t(const lnode& pred, const lnode& value, const source_location& sloc) 
     : impl_(sloc) {
     impl_.push(pred, value);
+  }
+
+  select_t(select_t& other) 
+    : impl_(std::move(other.impl_)) 
+  {}
+
+  auto operator=(select_t&& other) {
+    impl_ = std::move(other.impl_);
+    return *this;
   }
 
   template <typename V, typename P>
@@ -60,7 +84,11 @@ public:
   }
   
 protected:
-  
+
+  select_t(const select_t& other);
+
+  auto operator=(const select_t& other);
+
   select_impl impl_;
 };
 
@@ -73,6 +101,15 @@ public:
          const source_location& sloc)
     : impl_(key, sloc) {
     impl_.push(pred, value);
+  }
+
+  case_t(case_t& other) 
+    : impl_(std::move(other.impl_)) 
+  {}
+
+  auto operator=(case_t&& other) {
+    impl_ = std::move(other.impl_);
+    return *this;
   }
 
   template <typename T, typename P>
@@ -90,6 +127,10 @@ public:
   }
   
 protected:
+
+  case_t(const case_t& other);
+
+  auto operator=(const case_t& other);
   
   select_impl impl_;
 };
