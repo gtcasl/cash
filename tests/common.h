@@ -2,7 +2,7 @@
 
 #include <string.h>
 #include <cash.h>
-#include "../src/platform.h"
+#include "platform.h"
 #include "catch.h"
 
 using namespace ch::internal;

@@ -24,50 +24,55 @@ set(PROJECT_CONFIG ${PROJECT_NAME}Config)
 find_package(IVERILOG REQUIRED)
 
 # set include path
-include_directories("include")
+include_directories("include" "src/core" "src/ast" "src/compiler" "src/hdl")
 
 #
 # set source files
 #
 
-if (JIT STREQUAL "LLVM")
-  set(SOURCE_FILES src/llvmjit.cpp src/simjit.cpp)
-elseif (JIT STREQUAL "LIBJIT")
-  set(SOURCE_FILES src/libjit.cpp src/simjit.cpp)
-endif()
-
-set(SOURCE_FILES
-  ${SOURCE_FILES}
-  src/utils.cpp
-  src/platform.cpp
-  src/system.cpp
-  src/logic.cpp
-  src/lnode.cpp
-  src/lnodeimpl.cpp
-  src/ioimpl.cpp
-  src/proxyimpl.cpp
-  src/cdimpl.cpp
-  src/litimpl.cpp
-  src/regimpl.cpp
-  src/memimpl.cpp
-  src/selectimpl.cpp
-  src/opimpl.cpp
-  src/bindimpl.cpp
-  src/timeimpl.cpp
-  src/assertimpl.cpp
-  src/printimpl.cpp
-  src/udfimpl.cpp
-  src/deviceimpl.cpp
-  src/context.cpp
-  src/brconv.cpp
-  src/compile.cpp
-  src/simref.cpp
-  src/simulatorimpl.cpp
-  src/tracerimpl.cpp
-  src/verilogwriter.cpp
-  src/firrtlwriter.cpp
+set(SOURCE_FILES  
+  src/core/utils.cpp
+  src/core/platform.cpp  
+  src/core/context.cpp
+  src/core/brconv.cpp  
+  src/core/lnode.cpp
+  src/core/lnodeimpl.cpp
+  src/core/logic.cpp
+  src/core/system.cpp
+  src/core/deviceimpl.cpp
+  src/core/simulatorimpl.cpp
+  src/core/tracerimpl.cpp
+  src/ast/ioimpl.cpp
+  src/ast/proxyimpl.cpp
+  src/ast/cdimpl.cpp
+  src/ast/litimpl.cpp
+  src/ast/regimpl.cpp
+  src/ast/memimpl.cpp
+  src/ast/selectimpl.cpp
+  src/ast/opimpl.cpp
+  src/ast/bindimpl.cpp
+  src/ast/timeimpl.cpp
+  src/ast/assertimpl.cpp
+  src/ast/printimpl.cpp
+  src/ast/udfimpl.cpp  
+  src/hdl/verilogwriter.cpp
+  src/hdl/firrtlwriter.cpp      
   src/eda/altera/avalon_sim.cpp
+  src/compiler/compile.cpp 
+  src/compiler/simref.cpp
 )
+
+if (JIT STREQUAL "LLVM")
+  set(SOURCE_FILES ${SOURCE_FILES} 
+      src/compiler/simjit.cpp 
+      src/compiler/llvmjit.cpp
+  )
+elseif (JIT STREQUAL "LIBJIT")
+  set(SOURCE_FILES ${SOURCE_FILES} 
+      src/compiler/simjit.cpp 
+      src/compiler/libjit.cpp
+  )      
+endif()
 
 # build library
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
