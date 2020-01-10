@@ -12,40 +12,22 @@ Dependencies
 ------------
 Cash requires C++17 compiler to build with support for inline variables.
 
-It has been tested with GCC 7 and Clang 5.
-
 Other dependencies include:
 
   - [LLVM] (https://www.llvm.org)
   - [LIJIT] (https://www.gnu.org/software/libjit/)
-  - [Catch] (https://github.com/catchorg/Catch2)
   - [iVerilog] (http://iverilog.icarus.com/)
-  - [lcov] (http://ltp.sourceforge.net/coverage/lcov.php)
-  - [binutils-dev] (https://www.gnu.org/software/binutils/)
+  - [Catch] (https://github.com/catchorg/Catch2)
 
-Default Build Instructions (Ubuntu Trusty)
+Default Build Instructions (Ubuntu Bionic)
 ------------------------------------------
 
 IVerilog Install:
 
     $ sudo apt-get install iverilog
     
-Binutils Install:
-
-    $ sudo apt-get install binutils-dev
-
-GCC 7.1 Install:
-
-    $ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-    $ sudo apt-get update
-    $ sudo apt-get install gcc-7 g++-7
-    $ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-    
 LLVM 8.0 Install:
 
-    $ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-    $ sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
-    $ sudo apt-get update
     $ sudo apt-get install llvm-8-dev
 
 To install Cash you must clone the repository and create a build directory:
@@ -55,7 +37,7 @@ To install Cash you must clone the repository and create a build directory:
 
 Then use run cmake to generate the makefile:
 
-    $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug
+    $ cmake -DJIT=LLVM ..
 
 Build and install Cash on your system:
 
@@ -65,12 +47,7 @@ Build and install Cash on your system:
 Test your installation
 
     $ make test
-    
-Warning: You may encounter the following error:"***Exception: SegFault" because of ABI in compatibility between LLVM and GCC. 
-If that is the case, use the following cmake command to create your makefile:
-    
-    $ cmake .. -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
-    
+        
 That's all!
 
 Alternative build using LIBJIT compiler
@@ -96,7 +73,7 @@ Build and install LIBJIT:
 Build and install Cash using 'JIT=LIBJIT' configuration option:
   
     $ mkdir build_lj && cd build_lj
-    $ cmake .. -DJIT=LIBJIT -DCMAKE_BUILD_TYPE=Debug
+    $ cmake .. -DJIT=LIBJIT
     $ make -j`nproc` all
     $ sudo make install
 
