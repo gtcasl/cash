@@ -676,6 +676,10 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+const char* __builtin_VARNAME() {
+  return "";
+}
+
 class source_location {
 public:
 
