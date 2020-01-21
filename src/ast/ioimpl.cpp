@@ -10,7 +10,7 @@ ioimpl::ioimpl(context* ctx,
                lnodetype type,
                uint32_t size,
                const std::string& name,
-               const source_location& sloc)
+               const source_info& sloc)
   : lnodeimpl(ctx->node_id(), type, size, ctx, name, sloc)
 {}
 
@@ -21,7 +21,7 @@ ioportimpl::ioportimpl(context* ctx,
                        uint32_t size,
                        const io_value_t& value,
                        const std::string& name,
-                       const source_location& sloc)
+                       const source_info& sloc)
   : ioimpl(ctx, type, size, name, sloc)
   , value_(value)
 {}
@@ -32,7 +32,7 @@ inputimpl::inputimpl(context* ctx,
                      uint32_t size,
                      const io_value_t& value,
                      const std::string& name,
-                     const source_location& sloc)
+                     const source_info& sloc)
   : ioportimpl(ctx, type_input, size, value, name, sloc)
 {}
 
@@ -58,7 +58,7 @@ outputimpl::outputimpl(context* ctx,
                        lnodeimpl* src,
                        const io_value_t& value,
                        const std::string& name,
-                       const source_location& sloc)
+                       const source_info& sloc)
   : ioportimpl(ctx, type_output, size, value, name, sloc) {
   this->add_src(src);
 }
@@ -80,7 +80,7 @@ void outputimpl::print(std::ostream& out) const {
 tapimpl::tapimpl(context* ctx,
                  lnodeimpl* target,
                  const std::string& name,
-                 const source_location& sloc)
+                 const source_info& sloc)
   : ioportimpl(ctx,
                type_tap,
                target->size(),
@@ -129,13 +129,13 @@ void bypassimpl::print(std::ostream& out) const {
 
 lnodeimpl* ch::internal::createInputNode(const std::string& name, 
                                          uint32_t size,
-                                         const source_location& sloc) {
+                                         const source_info& sloc) {
   return ctx_curr()->create_input(size, name, sloc);
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name, 
                                           uint32_t size,
-                                         const source_location& sloc) {
+                                         const source_info& sloc) {
   auto output = ctx_curr()->create_output(size, name, sloc);
   return output->src(0).impl();
 }

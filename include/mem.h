@@ -54,13 +54,13 @@ public:
          const sdata_type& init_data,
          bool force_logic_ram,
          const std::string& name,
-         const source_location& sloc);
+         const source_info& sloc);
 
-  lnode aread(const lnode& addr, const source_location& sloc) const;
+  lnode aread(const lnode& addr, const source_info& sloc) const;
 
-  lnode sread(const lnode& addr, const lnode& enable, const source_location& sloc) const;
+  lnode sread(const lnode& addr, const lnode& enable, const source_info& sloc) const;
 
-  void write(const lnode& addr, const lnode& value, const lnode& enable, const source_location& sloc);
+  void write(const lnode& addr, const lnode& value, const lnode& enable, const source_info& sloc);
 
 protected:
   memimpl* impl_;

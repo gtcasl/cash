@@ -426,7 +426,7 @@ namespace extension {
   using ch::internal::logic_accessor;
   using ch::internal::udf_verilog;
   using ch::internal::udf_vostream;
-  using ch::internal::source_location;
+  using ch::internal::source_info;
 }
 
 }

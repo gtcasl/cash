@@ -676,38 +676,60 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const char* __builtin_VARNAME() {
-  return "";
-}
-
-class source_location {
+class source_info {
 public:
-
-  explicit source_location(const std::string& file = "", int line = 0)
+  explicit source_info(const char* varinfo = nullptr)   
+    : line_(0)
+    , column_(0) {
+    if (varinfo && *varinfo) {
+      std::istringstream iss(varinfo);
+      std::vector<std::string> tokens;
+      std::string token;
+      while (std::getline(iss, token, ':')) {
+        tokens.push_back(token);
+      }
+      assert(4 == tokens.size());
+      name_   = tokens[0];
+      file_   = tokens[1];
+      line_   = std::stoi(tokens[2]);
+      column_ = std::stoi(tokens[3]);
+    }   
+     
+  }
+  explicit source_info(const char* file, int line, int column)
     : file_(file)
     , line_(line)
+    , column_(column)
   {}
 
-  source_location(const source_location& other)
-    : file_(other.file_)
+  source_info(const source_info& other)
+    : name_(other.name_)
+    , file_(other.file_)
     , line_(other.line_)
   {}
 
-  source_location(source_location&& other)
-    : file_(std::move(other.file_))
+  source_info(source_info&& other)
+    : name_(std::move(other.name_))
+    , file_(std::move(other.file_))
     , line_(std::move(other.line_))
   {}
 
-  source_location& operator=(const source_location& other) {
+  source_info& operator=(const source_info& other) {
+    name_ = other.name_;
     file_ = other.file_;
     line_ = other.line_;
     return *this;
   }
 
-  source_location& operator=(source_location&& other) {
+  source_info& operator=(source_info&& other) {
+    name_ = std::move(other.name_);
     file_ = std::move(other.file_);
     line_ = std::move(other.line_);
     return *this;
+  }
+
+  const std::string& name() const {
+    return name_;
   }
 
   const std::string& file() const {
@@ -718,32 +740,42 @@ public:
     return line_;
   }
 
+  int column() const {
+    return column_;
+  }
+
   bool empty() const {
     return file_.empty();
   }
 
 private:
 
-  friend std::ostream& operator<<(std::ostream& out, const source_location& sloc) {
+  friend std::ostream& operator<<(std::ostream& out, const source_info& sloc) {
     out << sloc.file() << ":" << sloc.line();
     return out;
   }
 
+  std::string name_;
   std::string file_;
   int line_;
+  int column_;
 };
 
-#if !defined(__clang__)
-  #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
+#if defined(__builtin_VARINFO)
+  #define CH_CUR_SLOC ch::internal::source_info(__builtin_VARINFO())
+#elif defined(__builtin_FILE) && defined(__builtin_FILE) && defined(__builtin_COLUMN)
+  #define CH_CUR_SLOC ch::internal::source_info(__builtin_FILE(), __builtin_LINE(), __builtin_COLUMN())
+#elif defined(__builtin_FILE) && defined(__builtin_FILE)
+  #define CH_CUR_SLOC ch::internal::source_info(__builtin_FILE(), __builtin_LINE(), 0)
 #else
-  #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__)
+  #define CH_CUR_SLOC ch::internal::source_info(__FILE__, __LINE__, 0)
 #endif
 
-#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
+#define CH_SLOC const ch::internal::source_info& sloc = CH_CUR_SLOC
 
 template <typename T>
 struct sloc_proxy {
-  sloc_proxy(const T& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
+  sloc_proxy(const T& p_data, const source_info& p_sloc = CH_CUR_SLOC) 
     : data(p_data)
     , sloc(p_sloc) 
   {}  
@@ -756,7 +788,7 @@ struct sloc_proxy {
   {}
 
   const T& data;
-  source_location sloc;
+  source_info sloc;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

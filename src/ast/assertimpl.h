@@ -35,13 +35,13 @@ protected:
   assertimpl(context* ctx,
              lnodeimpl* cond,
              const std::string& msg,
-             const source_location& sloc);
+             const source_info& sloc);
 
   assertimpl(context* ctx,
              lnodeimpl* cond,
              lnodeimpl* pred,
              const std::string& msg,
-             const source_location& sloc);
+             const source_info& sloc);
 
   std::string msg_;
   int pred_idx_;

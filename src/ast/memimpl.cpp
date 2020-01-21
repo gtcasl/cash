@@ -104,7 +104,7 @@ memimpl::memimpl(context* ctx,
                  const sdata_type& init_data,
                  bool force_logic_ram,
                  const std::string& name,
-                 const source_location& sloc)
+                 const source_info& sloc)
   : ioimpl(ctx, type_mem, data_width * num_items, name, sloc)
   , init_data_(init_data)
   , data_width_(data_width)
@@ -121,7 +121,7 @@ lnodeimpl* memimpl::clone(context* ctx, const clone_map&) const {
                                    sloc_);
 }
 
-memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_location& sloc) {
+memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_info& sloc) {
   for (auto port : rdports_) {
     if (port->addr().id() == addr->id())
       return port;
@@ -133,7 +133,7 @@ memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_location& sloc
 memportimpl* memimpl::create_srport(lnodeimpl* cd,
                                     lnodeimpl* addr,
                                     lnodeimpl* enable,
-                                    const source_location& sloc) {
+                                    const source_info& sloc) {
   for (auto port : rdports_) {
     if (port->addr().id() == addr->id()) {
       CH_CHECK(port->cd().id() == cd->id(),
@@ -152,7 +152,7 @@ mwportimpl* memimpl::create_wport(lnodeimpl* cd,
                                   lnodeimpl* addr,
                                   lnodeimpl* wdata,
                                   lnodeimpl* enable,
-                                  const source_location& sloc) {
+                                  const source_info& sloc) {
   for (auto port : wrports_) {
     if (port->addr().id() == addr->id())
       throw std::domain_error("duplicate memory write to the same address not allowed");
@@ -254,7 +254,7 @@ memportimpl::memportimpl(context* ctx,
                          lnodeimpl* cd,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
-                         const source_location& sloc)
+                         const source_info& sloc)
   : ioimpl(ctx, type, size, mem->name(), sloc)
   , mem_(mem)
   , cd_idx_(-1)
@@ -294,7 +294,7 @@ lnodeimpl* memportimpl::remove_enable() {
 marportimpl::marportimpl(context* ctx,
                          memimpl* mem,
                          lnodeimpl* addr,
-                         const source_location& sloc)
+                         const source_info& sloc)
   : memportimpl(ctx, type_marport, mem->data_width(), mem, nullptr, addr, nullptr, sloc) {
   // add memory as source
   this->add_src(mem);
@@ -318,7 +318,7 @@ msrportimpl::msrportimpl(context* ctx,
                          lnodeimpl* cd,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
-                         const source_location& sloc)
+                         const source_info& sloc)
   : memportimpl(ctx, type_msrport, mem->data_width(), mem, cd, addr, enable, sloc) {
   // add memory as source
   this->add_src(mem);
@@ -348,7 +348,7 @@ mwportimpl::mwportimpl(context* ctx,
                        lnodeimpl* addr,
                        lnodeimpl* wdata,
                        lnodeimpl* enable,
-                       const source_location& sloc)
+                       const source_info& sloc)
   : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, sloc) {
   assert(wdata->size() == mem->data_width());
   // add as memory source
@@ -382,18 +382,18 @@ memory::memory(uint32_t data_width,
                const sdata_type& init_data,
                bool is_logic_rom,
                const std::string& name,
-               const source_location& sloc) {
+               const source_info& sloc) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");  
   impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, name, sloc);
 }
 
-lnode memory::aread(const lnode& addr, const source_location& sloc) const {
+lnode memory::aread(const lnode& addr, const source_info& sloc) const {
   return impl_->create_arport(addr.impl(), sloc);
 }
 
 lnode memory::sread(const lnode& addr, 
                     const lnode& enable, 
-                    const source_location& sloc) const {
+                    const source_info& sloc) const {
   auto cd = ctx_curr()->current_cd(sloc);
   auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
   return impl_->create_srport(cd, addr.impl(), enable_impl, sloc);
@@ -402,7 +402,7 @@ lnode memory::sread(const lnode& addr,
 void memory::write(const lnode& addr, 
                    const lnode& value,
                    const lnode& enable, 
-                   const source_location& sloc) {
+                   const source_info& sloc) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory access disallowed inside conditional blocks");
   auto cd = ctx_curr()->current_cd(sloc);
   auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();

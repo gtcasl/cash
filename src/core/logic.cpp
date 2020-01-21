@@ -6,7 +6,7 @@ using namespace ch::internal;
 
 logic_buffer::logic_buffer(uint32_t size, 
                            const std::string& name, 
-                           const source_location& sloc)
+                           const source_info& sloc)
   : lnode(ctx_curr()->create_node<proxyimpl>(size, name, sloc))
 {}
 
@@ -15,7 +15,7 @@ logic_buffer::logic_buffer(uint32_t size,
                            const logic_buffer& src,
                            uint32_t src_offset,
                            const std::string& name,
-                           const source_location& sloc)
+                           const source_info& sloc)
   : lnode(ctx_curr()->create_node<refimpl>(
       src.impl(),
       src_offset,
@@ -38,7 +38,7 @@ void logic_buffer::write(uint32_t dst_offset,
   reinterpret_cast<proxyimpl*>(impl_)->write(dst_offset, src.impl(), src_offset, length, impl_->sloc());
 }
 
-lnodeimpl* logic_buffer::clone(const source_location& sloc) const {
+lnodeimpl* logic_buffer::clone(const source_info& sloc) const {
   assert(impl_);  
   this->ensure_proxy();
   auto node = reinterpret_cast<proxyimpl*>(impl_)->source(0, impl_->size(), sloc);
@@ -47,7 +47,7 @@ lnodeimpl* logic_buffer::clone(const source_location& sloc) const {
   return ctx_curr()->create_node<proxyimpl>(node, node->name(), sloc);
 }
 
-lnodeimpl* logic_buffer::sliceref(size_t size, size_t start, const source_location& sloc) const {
+lnodeimpl* logic_buffer::sliceref(size_t size, size_t start, const source_info& sloc) const {
   const_cast<logic_buffer*>(this)->ensure_proxy();
   return ctx_curr()->create_node<refimpl>(
                           impl_,

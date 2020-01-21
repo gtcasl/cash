@@ -121,7 +121,7 @@ public:
 
   const std::string& name() const;
 
-  const source_location& sloc() const;
+  const source_info& sloc() const;
 
   auto next_user() const {
     return next_user_;
@@ -141,7 +141,7 @@ protected:
 
   void set_name(const std::string&);
 
-  void set_sloc(const source_location&);
+  void set_sloc(const source_info&);
 
   mutable lnodeimpl* impl_;
   lnode* next_user_;

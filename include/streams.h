@@ -31,10 +31,10 @@ private:
 
   int sync() override;
 
-  void write(const lnode& node, char format, const source_location& sloc);
+  void write(const lnode& node, char format, const source_info& sloc);
 
   std::vector<lnode> nodes_;
-  source_location sloc_;
+  source_info sloc_;
 
   ch_streambuf(const ch_streambuf&) = delete;
 

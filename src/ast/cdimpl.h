@@ -27,7 +27,7 @@ protected:
   cdimpl(context* ctx,
          lnodeimpl* clk,
          bool pos_edge,
-         const source_location& sloc);
+         const source_info& sloc);
 
   bool pos_edge_;
 

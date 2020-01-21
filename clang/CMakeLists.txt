@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-find_package(LLVM REQUIRED)
-find_package(Clang REQUIRED)
+find_package(LLVM 9 REQUIRED)
+find_package(Clang REQUIRED CONFIG)
 
 add_definitions(${CLANG_DEFINITIONS})
 include_directories(${CLANG_INCLUDE_DIRS})

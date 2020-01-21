@@ -40,7 +40,7 @@ public:
                    uint32_t size,
                    context* ctx,
                    const std::string& name,
-                   const source_location& sloc)
+                   const source_info& sloc)
     : lnodeimpl(id, type_none, size, ctx, name, sloc)
   {}
 

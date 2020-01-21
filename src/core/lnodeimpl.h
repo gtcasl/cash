@@ -64,11 +64,11 @@ public:
     name_ = name;
   }
 
-  const source_location& sloc() const {
+  const source_info& sloc() const {
     return sloc_;
   }
 
-  void set_sloc(const source_location& sloc) {
+  void set_sloc(const source_info& sloc) {
     sloc_ = sloc;
   }
 
@@ -111,7 +111,7 @@ public:
 
   virtual lnodeimpl* slice(uint32_t offset,
                            uint32_t length,
-                           const source_location& sloc) const;
+                           const source_info& sloc) const;
 
   auto users() const {
    return users_;
@@ -136,7 +136,7 @@ protected:
             uint32_t size,
             context* ctx,
             const std::string& name,
-            const source_location& sloc);
+            const source_info& sloc);
 
   virtual ~lnodeimpl();
 
@@ -151,7 +151,7 @@ protected:
 
   context* ctx_;
   std::string name_;
-  source_location sloc_;
+  source_info sloc_;
   mutable size_t hash_;
 
 private:

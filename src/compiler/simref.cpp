@@ -1439,7 +1439,7 @@ private:
   const block_type* time_;
   const block_type* pred_;
   std::string msg_;
-  source_location sloc_;
+  source_info sloc_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -9,14 +9,14 @@ lnodeimpl* createOpNode(ch_op op,
                         uint32_t size, 
                         bool is_signed, 
                         const lnode& in,
-                        const source_location& sloc);
+                        const source_info& sloc);
 
 lnodeimpl* createOpNode(ch_op op,
                         uint32_t size,
                         bool is_signed,
                         const lnode& lhs,
                         const lnode& rhs,
-                        const source_location& sloc);
+                        const source_info& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,9 +74,9 @@ public:
              uint32_t src_offset,
              uint32_t length);
 
-  lnodeimpl* clone(const source_location& sloc) const;
+  lnodeimpl* clone(const source_info& sloc) const;
 
-  lnodeimpl* sliceref(size_t size, size_t start, const source_location& sloc) const;  
+  lnodeimpl* sliceref(size_t size, size_t start, const source_info& sloc) const;  
 
 protected:
 
@@ -88,13 +88,13 @@ protected:
 
   logic_buffer(uint32_t size, 
                const std::string& name, 
-               const source_location& sloc);
+               const source_info& sloc);
 
   logic_buffer(uint32_t size,
                const logic_buffer& src,
                uint32_t src_offset,
                const std::string& name, 
-               const source_location& sloc);  
+               const source_info& sloc);  
   
   void ensure_proxy() const;
 
@@ -103,16 +103,16 @@ protected:
   friend auto make_logic_buffer(const sdata_type& value);
 
   template <typename A0> 
-  friend auto make_logic_buffer(A0&& arg0, const source_location& sloc);
+  friend auto make_logic_buffer(A0&& arg0, const source_info& sloc);
   
   template <typename A0, typename A1> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_location& sloc); 
+  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& sloc); 
 
   template <typename A0, typename A1, typename A2> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_location& sloc);
+  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& sloc);
 
   template <typename A0, typename A1, typename A2, typename A3> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_location& sloc);
+  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& sloc);
 };
 
 inline auto make_logic_buffer(lnodeimpl* impl) {
@@ -124,22 +124,22 @@ inline auto make_logic_buffer(const sdata_type& value) {
 }
 
 template <typename A0>
-auto make_logic_buffer(A0&& arg0, const source_location& sloc) {
+auto make_logic_buffer(A0&& arg0, const source_info& sloc) {
   return logic_buffer(std::forward<A0>(arg0), sloc);
 }
 
 template <typename A0, typename A1>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_location& sloc) {
+auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& sloc) {
   return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), sloc);
 }
 
 template <typename A0, typename A1, typename A2>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_location& sloc) {
+auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& sloc) {
   return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), sloc);
 }
 
 template <typename A0, typename A1, typename A2, typename A3>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_location& sloc) {
+auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& sloc) {
   return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), std::forward<A3>(arg3), sloc);
 }
 
@@ -204,14 +204,14 @@ public:
   }
 
   template <typename T>
-  static auto clone(const T& obj, const source_location& sloc) {
+  static auto clone(const T& obj, const source_info& sloc) {
     assert(ch_width_v<T> == obj.__buffer().size());
     auto data = obj.__buffer().clone(sloc);
     return T(make_logic_buffer(data));
   }
 
   template <typename R, typename T>
-  static auto slice(const T& obj, size_t start, const source_location& sloc) {
+  static auto slice(const T& obj, size_t start, const source_info& sloc) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
@@ -221,7 +221,7 @@ public:
   }
 
   template <typename R, typename T>
-  static auto sliceref(const T& obj, size_t start, const source_location& sloc) {
+  static auto sliceref(const T& obj, size_t start, const source_info& sloc) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
@@ -247,137 +247,137 @@ public:
   }
 
   template <typename T, typename U>
-  static auto do_eq(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_eq(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_eq(other, sloc);
   }
 
   template <typename T, typename U>
-  static auto do_ne(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_ne(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_ne(other, sloc);
   }
 
   template <typename T>
-  static auto do_not(const T& obj, const source_location& sloc) {
+  static auto do_not(const T& obj, const source_info& sloc) {
     return obj.do_not(sloc);
   }
 
   template <typename T, typename U>
-  static auto do_andl(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_andl(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_andl(other, sloc);
   }
 
   template <typename T, typename U>
-  static auto do_orl(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_orl(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_orl(other, sloc);
   }
 
   template <typename R, typename T>
-  static auto do_inv(const T& obj, const source_location& sloc) {
+  static auto do_inv(const T& obj, const source_info& sloc) {
     return obj.template do_inv<R>(sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_and(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_and(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_and<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_or(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_or(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_or<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_xor(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_xor(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_xor<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_shl(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_shl(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_shl<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_shr(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_shr(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_shr<R>(other, sloc);
   }
 
   template <typename T>
-  static auto do_andr(const T& obj, const source_location& sloc) {
+  static auto do_andr(const T& obj, const source_info& sloc) {
     return obj.do_andr(sloc);
   }
 
   template <typename T>
-  static auto do_orr(const T& obj, const source_location& sloc) {
+  static auto do_orr(const T& obj, const source_info& sloc) {
     return obj.do_orr(sloc);
   }
 
   template <typename T>
-  static auto do_xorr(const T& obj, const source_location& sloc) {
+  static auto do_xorr(const T& obj, const source_info& sloc) {
     return obj.do_xorr(sloc);
   }
 
   template <typename T, typename U>
-  static auto do_lt(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_lt(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_lt(other, sloc);
   }
 
   template <typename T, typename U>
-  static auto do_le(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_le(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_le(other, sloc);
   }
 
   template <typename T, typename U>
-  static auto do_gt(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_gt(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_gt(other, sloc);
   }
 
   template <typename T, typename U>
-  static auto do_ge(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_ge(const T& obj, const U& other, const source_info& sloc) {
     return obj.do_ge(other, sloc);
   }
 
   template <typename R, typename T>
-  static auto do_neg(const T& obj, const source_location& sloc) {
+  static auto do_neg(const T& obj, const source_info& sloc) {
     return obj.template do_neg<R>(sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_add(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_add(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_add<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_sub(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_sub(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_sub<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_mul(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_mul(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_mul<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_div(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_div(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_div<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_mod(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_mod(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_mod<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_min(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_min(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_min<R>(other, sloc);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_max(const T& obj, const U& other, const source_location& sloc) {
+  static auto do_max(const T& obj, const U& other, const source_info& sloc) {
     return obj.template do_max<R>(other, sloc);
   }
 
   template <typename R, typename T>
-  static auto do_abs(const T& obj, const source_location& sloc) {
+  static auto do_abs(const T& obj, const source_info& sloc) {
     return obj.template do_abs<R>(sloc);
   }
 
@@ -395,7 +395,7 @@ auto get_lnode(const T& obj) {
 }
 
 template <typename R, typename T>
-auto to_lnode(const T& obj, const source_location& sloc) {
+auto to_lnode(const T& obj, const source_info& sloc) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
   if constexpr (is_logic_type_v<T>
              && (ch_width_v<T> == ch_width_v<R>)) {
@@ -418,12 +418,12 @@ auto to_lnode(const T& obj, const source_location& sloc) {
 }
 
 template <unsigned N, typename T>
-auto to_lnode(const T& obj, const source_location& sloc) {
+auto to_lnode(const T& obj, const source_info& sloc) {
   return to_lnode<ch_bit<N>>(obj, sloc);
 }
 
 template <typename R, typename T>
-auto logic_op_cast(const T& obj, const source_location& sloc) {
+auto logic_op_cast(const T& obj, const source_info& sloc) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
   if constexpr ((is_signed_v<T> != is_signed_v<R> || !is_resizable_v<R>)) {
     return R(obj, sloc);
@@ -449,25 +449,25 @@ auto make_logic_type(const lnode& node) {
 }
 
 template <ch_op op, typename A>
-auto make_logic_op(const A& a, const source_location& sloc) {
+auto make_logic_op(const A& a, const source_info& sloc) {
   auto node = createOpNode(op, 1, false, get_lnode(a), sloc);
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A>
-auto make_logic_op(const A& a, const source_location& sloc) {
+auto make_logic_op(const A& a, const source_info& sloc) {
   auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), sloc);
   return make_logic_type<R>(node);
 }
 
 template <ch_op op, typename A, typename B>
-auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
+auto make_logic_op(const A& a, const B& b, const source_info& sloc) {
   auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b), sloc);
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A, typename B>
-auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
+auto make_logic_op(const A& a, const B& b, const source_info& sloc) {
   auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b), sloc);
   return make_logic_type<R>(node);
 }

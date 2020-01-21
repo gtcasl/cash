@@ -14,7 +14,9 @@ struct Adder {
   );
 
   void describe() {
-    auto sum = ch_pad<1>(io.lhs) + io.rhs + io.cin;
+    ch_uint<N+1> dodo(0), dadi(1);
+    auto y = dodo + dadi;
+    auto sum = (ch_pad<1>(io.lhs) + io.rhs) + io.cin;
     io.out  = ch_slice<N>(sum);
     io.cout = sum[N];
   }

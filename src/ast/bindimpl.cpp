@@ -16,7 +16,7 @@ static uint32_t find_port_index(bindportimpl* bindport, const std::vector<lnode>
   return -1;
 }
 
-bindimpl::bindimpl(context* ctx, context* module, const source_location& sloc)
+bindimpl::bindimpl(context* ctx, context* module, const source_info& sloc)
   : ioimpl(ctx, type_bind, 0, module->name(), sloc)
   , module_(module) {
   // acquire module instance
@@ -63,7 +63,7 @@ void bindimpl::remove_port(lnodeimpl* port) {
 
 void bindimpl::bind_input(lnodeimpl* src,
                           inputimpl* ioport,
-                          const source_location& sloc) {
+                          const source_info& sloc) {
   assert(src->ctx() == ctx_);
   assert(ioport->ctx() != ctx_);
 
@@ -82,7 +82,7 @@ void bindimpl::bind_input(lnodeimpl* src,
 
 void bindimpl::bind_output(lnodeimpl* dst,
                            outputimpl* ioport,
-                           const source_location& sloc) {
+                           const source_info& sloc) {
   assert(dst->ctx() == ctx_);
   assert(ioport->ctx() != ctx_);
 
@@ -115,7 +115,7 @@ bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            lnodeimpl* src,
                            inputimpl* ioport,
-                           const source_location& sloc)
+                           const source_info& sloc)
   : ioimpl(ctx, type_bindin, ioport->size(), ioport->name(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
@@ -126,7 +126,7 @@ bindportimpl::bindportimpl(context* ctx,
 bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            outputimpl* ioport,
-                           const source_location& sloc)
+                           const source_info& sloc)
   : ioimpl(ctx, type_bindout, ioport->size(), ioport->name(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
@@ -159,7 +159,7 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::bindInputNode(const lnode& input, const source_location& sloc) {
+lnodeimpl* ch::internal::bindInputNode(const lnode& input, const source_info& sloc) {
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto name = stringf("%s.%s", binding->module()->name().c_str(), input.name().c_str());
@@ -168,7 +168,7 @@ lnodeimpl* ch::internal::bindInputNode(const lnode& input, const source_location
   return node;
 }
 
-lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const source_location& sloc) {
+lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const source_info& sloc) {
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto name = stringf("%s.%s", binding->module()->name().c_str(), output.name().c_str());

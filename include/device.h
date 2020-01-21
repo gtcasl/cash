@@ -35,7 +35,7 @@ protected:
   device_base(const std::type_index& signature, bool is_pod, const std::string& name);
 
   template <typename T, typename... Args>
-  auto load(const source_location& sloc, Args&&... args) {
+  auto load(const source_info& sloc, Args&&... args) {
     auto is_dup = this->begin();
     auto obj = new T(std::forward<Args>(args)...);
     if (!is_dup) {
@@ -54,7 +54,7 @@ protected:
 
   void end_build();
 
-  void end(const source_location& sloc);
+  void end(const source_info& sloc);
 
   deviceimpl* impl_;
 
@@ -97,7 +97,7 @@ public:
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(const std::string& name, Args&&... args)
     : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, name)
-    , obj_(this->load<T>(source_location(), std::forward<Args>(args)...))
+    , obj_(this->load<T>(source_info(), std::forward<Args>(args)...))
     , io(obj_->io)
   {}
 
@@ -105,7 +105,7 @@ public:
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(Args&&... args)
     : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, idname<T>(true))
-    , obj_(this->load<T>(source_location(), std::forward<Args>(args)...))
+    , obj_(this->load<T>(source_info(), std::forward<Args>(args)...))
     , io(obj_->io)
   {}
 

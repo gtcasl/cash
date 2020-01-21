@@ -4,7 +4,7 @@
 using namespace ch::internal;
 
 litimpl::litimpl(context* ctx, const sdata_type& value)
-  : lnodeimpl(ctx->node_id(), type_lit, value.size(), ctx, "", source_location())
+  : lnodeimpl(ctx->node_id(), type_lit, value.size(), ctx, "", source_info())
   , value_(value)
   , is_zero_(!bv_orr(value.words(), value.size()))
 {}

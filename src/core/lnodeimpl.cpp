@@ -18,7 +18,7 @@ lnodeimpl::lnodeimpl(uint32_t id,
                      uint32_t size,                     
                      context* ctx,
                      const std::string& name,
-                     const source_location& sloc)
+                     const source_info& sloc)
   : id_(id)
   , type_(type)
   , size_(size)
@@ -95,7 +95,7 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
+lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_info& sloc) const {
   assert(length <= size_);
   auto self = const_cast<lnodeimpl*>(this);
   if (size_ == length)
@@ -161,12 +161,17 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {
-  std::string desc(to_string(type_));
-  if (!name_.empty()) {
-    desc += "-" + name_;
+  std::string name;
+  if (!sloc_.name().empty())  {
+    name = sloc_.name();
+  } else {
+    name = to_string(type_);
+    if (!name_.empty()) {
+      name += "-" + name_;
+    }
   }
   return stringf("'%s (%d)' in module '%s (%d)' (%s:%d)",
-                 desc.c_str(),
+                 name.c_str(),
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),

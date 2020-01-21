@@ -12,7 +12,7 @@ opimpl::opimpl(context* ctx,
                uint32_t size,
                bool is_signed,
                lnodeimpl* in,
-               const source_location& sloc)
+               const source_info& sloc)
   : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), sloc) {
   this->init(op, is_signed, in);
 }
@@ -23,7 +23,7 @@ opimpl::opimpl(context* ctx,
                bool is_signed,
                lnodeimpl* lhs,
                lnodeimpl* rhs,
-               const source_location& sloc)
+               const source_info& sloc)
   : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), sloc) {
   this->init(op, is_signed, lhs, rhs);
 }
@@ -97,7 +97,7 @@ lnodeimpl* ch::internal::createOpNode(
     uint32_t size,
     bool is_signed,
     const lnode& in,
-    const source_location& sloc) {
+    const source_info& sloc) {
   is_signed &= CH_OP_IS_SIGNED(op);
   return ctx_curr()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
 }
@@ -108,6 +108,6 @@ lnodeimpl* ch::internal::createOpNode(
     bool is_signed,
     const lnode& lhs,
     const lnode& rhs,
-    const source_location& sloc) {
+    const source_info& sloc) {
   return ctx_curr()->create_node<opimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
 }

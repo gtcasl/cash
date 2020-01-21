@@ -12,7 +12,7 @@ enum class udf_verilog { header, declaration, body };
 void createUDFNode(const std::string& name, 
                    bool is_seq, 
                    udf_iface* udf,
-                   const source_location& sloc);
+                   const source_info& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -143,7 +143,7 @@ CH_VA_ARGS_MAP(CH_UDF_GEN)
 
 protected:
 
-  static auto create(udf_wrapper<T>* obj, const source_location& sloc) {
+  static auto create(udf_wrapper<T>* obj, const source_info& sloc) {
     createUDFNode(idname<T>(), false, obj, sloc);
     return obj;
   }
@@ -194,7 +194,7 @@ CH_VA_ARGS_MAP(CH_UDF_GEN)
 
 protected:
 
-  static auto create(udf_wrapper<T>* obj, const source_location& sloc) {
+  static auto create(udf_wrapper<T>* obj, const source_info& sloc) {
     createUDFNode(idname<T>(), true, obj, sloc);
     return obj;
   }

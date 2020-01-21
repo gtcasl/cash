@@ -1003,9 +1003,13 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
-    out << node->type();
-    if (!node->name().empty()) {
-      out << "_" << identifier_from_string(node->name());
+    if (!node->sloc().name().empty()) {
+      out << node->sloc().name();
+    } else {
+      out << node->type();
+      if (!node->name().empty()) {
+        out << "_" << identifier_from_string(node->name());
+      }
     }
     out << "_" << node->id();
   };

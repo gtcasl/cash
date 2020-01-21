@@ -141,7 +141,7 @@ protected:
 
   template <typename... Us,
             CH_REQUIRE(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
-  vec_base(const source_location& sloc, Us&&... values) 
+  vec_base(const source_info& sloc, Us&&... values) 
     : storage_{T(std::forward<Us>(values), sloc)...} 
   {}
 
@@ -535,12 +535,12 @@ protected:
   ch_vec& operator=(ch_vec&& other) = delete;
 
   template <std::size_t... Is>
-  ch_vec(const source_location& sloc, const std::string& name, std::index_sequence<Is...>)
+  ch_vec(const source_info& sloc, const std::string& name, std::index_sequence<Is...>)
     : base(sloc, stringf("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t... Is>
-  ch_vec(const source_location& sloc, const vec_base<U, N>& other, std::index_sequence<Is...>)
+  ch_vec(const source_info& sloc, const vec_base<U, N>& other, std::index_sequence<Is...>)
     : base(sloc, other.at(Is)...)
   {}
 

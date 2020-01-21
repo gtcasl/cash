@@ -17,7 +17,7 @@ udfimpl::udfimpl(context* ctx,
                  lnodetype type,
                  udf_iface* udf,
                  const std::string& name,
-                 const source_location& sloc)
+                 const source_info& sloc)
   : ioimpl(ctx, type, 0, name, sloc)
   , udf_(udf) {
   udf_->acquire();
@@ -53,7 +53,7 @@ void udfimpl::remove_port(lnodeimpl* port) {
 udfcimpl::udfcimpl(context* ctx,
                    udf_iface* udf,
                    const std::string& name,
-                   const source_location& sloc)
+                   const source_info& sloc)
   : udfimpl(ctx, type_udfc, udf, name, sloc)
 {}
 
@@ -70,7 +70,7 @@ udfsimpl::udfsimpl(context* ctx,
                    lnodeimpl* cd,
                    lnodeimpl* reset,
                    const std::string& name,
-                   const source_location& sloc)
+                   const source_info& sloc)
   : udfimpl(ctx, type_udfs, udf, name, sloc) {
   cd_idx_ = this->add_src(cd);
   reset_idx_ = this->add_src(reset);
@@ -92,7 +92,7 @@ udfportimpl::udfportimpl(context* ctx,
                          udfimpl* udf,
                          const io_value_t& value,
                          const std::string& name,
-                         const source_location& sloc)
+                         const source_info& sloc)
   : ioportimpl(ctx, type_udfin, size, value, name, sloc)
   , udf_(udf) {
   this->add_src(src);
@@ -105,7 +105,7 @@ udfportimpl::udfportimpl(context* ctx,
                          udfimpl* udf,
                          const io_value_t& value,
                          const std::string& name,
-                         const source_location& sloc)
+                         const source_info& sloc)
   : ioportimpl(ctx, type_udfout, size, value, name, sloc)
   , udf_(udf) {
   this->add_src(udf);
@@ -133,12 +133,12 @@ lnodeimpl* udfportimpl::clone(context* ctx, const clone_map& cloned_nodes) const
 void ch::internal::createUDFNode(const std::string& name,
                                  bool is_seq,
                                  udf_iface* udf,
-                                 const source_location& sloc) {
+                                 const source_info& sloc) {
   ctx_curr()->create_udf_node(udf, is_seq, name, sloc);
 }
 
 lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input, 
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx  = ctx_curr();
   auto udf  = ctx->current_udf();
   auto value = smart_ptr<sdata_type>::make(input->size());
@@ -149,7 +149,7 @@ lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input,
 }
 
 lnodeimpl* ch::internal::bindOutputNode(system_io_buffer* output, 
-                                        const source_location& sloc) {
+                                        const source_info& sloc) {
   auto ctx  = ctx_curr();
   auto udf  = ctx->current_udf();
   auto value = smart_ptr<sdata_type>::make(output->size());

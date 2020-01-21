@@ -17,7 +17,7 @@ void branchconverter::add_definition(lnodeimpl *node) {
   cond_inits_[node->id()] = curr_block;
 }
 
-void branchconverter::begin_branch(lnodeimpl* key, const source_location& sloc) {
+void branchconverter::begin_branch(lnodeimpl* key, const source_info& sloc) {
   // create new conditional branch
   // add to current block and push on the stack
   cond_br_t* new_branch;
@@ -98,7 +98,7 @@ void branchconverter::write(
     uint32_t offset,
     uint32_t length,
     lnodeimpl* src,
-    const source_location& sloc) {
+    const source_info& sloc) {
   assert(this->is_local(dst));
   auto& defs       = cond_vars_[dst];
   auto curr_branch = cond_branches_.top();
@@ -371,7 +371,7 @@ branchconverter::emit(proxyimpl* dst,
   return current;
 }
 
-lnodeimpl* branchconverter::get_predicate(const source_location& sloc) {
+lnodeimpl* branchconverter::get_predicate(const source_info& sloc) {
   if (cond_branches_.empty())
     return nullptr;
 

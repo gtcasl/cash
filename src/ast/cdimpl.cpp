@@ -12,7 +12,7 @@ using namespace ch::internal;
 cdimpl::cdimpl(context* ctx,
                lnodeimpl* clk,
                bool pos_edge,
-               const source_location& sloc)
+               const source_info& sloc)
   : ioimpl(ctx, type_cd, 1, "", sloc)
   , pos_edge_(pos_edge) {
   this->add_src(clk);
@@ -99,18 +99,18 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::getCurrentClockNode(const source_location& sloc) {
+lnodeimpl* ch::internal::getCurrentClockNode(const source_info& sloc) {
   return ctx_curr()->current_clock(sloc);
 }
 
-lnodeimpl* ch::internal::getCurrentResetNode(const source_location& sloc) {
+lnodeimpl* ch::internal::getCurrentResetNode(const source_info& sloc) {
   return ctx_curr()->current_reset(sloc);
 }
 
 void ch::internal::pushClockDomain(const lnode& clock,
                                    const lnode& reset,
                                    bool pos_edge,
-                                   const source_location& sloc) {
+                                   const source_info& sloc) {
   ctx_curr()->push_cd(clock, reset, pos_edge, sloc);
 }
 

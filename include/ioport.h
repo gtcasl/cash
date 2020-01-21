@@ -27,19 +27,19 @@ using io_value_t = smart_ptr<sdata_type>;
 
 lnodeimpl* createInputNode(const std::string& name, 
                            uint32_t size,
-                           const source_location& sloc);
+                           const source_info& sloc);
 
 lnodeimpl* createOutputNode(const std::string& name, 
                             uint32_t size,
-                            const source_location& sloc);
+                            const source_info& sloc);
 
-lnodeimpl* bindInputNode(const lnode& input, const source_location& sloc);
+lnodeimpl* bindInputNode(const lnode& input, const source_info& sloc);
 
-lnodeimpl* bindOutputNode(const lnode& ouptut, const source_location& sloc);
+lnodeimpl* bindOutputNode(const lnode& ouptut, const source_info& sloc);
 
-lnodeimpl* bindInputNode(system_io_buffer* input, const source_location& sloc);
+lnodeimpl* bindInputNode(system_io_buffer* input, const source_info& sloc);
 
-lnodeimpl* bindOutputNode(system_io_buffer* output, const source_location& sloc);
+lnodeimpl* bindOutputNode(system_io_buffer* output, const source_info& sloc);
 
 lnodeimpl* getOutputNode(const std::string& name);
 

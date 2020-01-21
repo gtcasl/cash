@@ -8,9 +8,9 @@ namespace internal {
 class select_impl {
 public:
   
-  select_impl(const source_location& sloc) : sloc_(sloc) {}
+  select_impl(const source_info& sloc) : sloc_(sloc) {}
 
-  select_impl(const lnode& key, const source_location& sloc) 
+  select_impl(const lnode& key, const source_info& sloc) 
     : key_(key)
     , sloc_(sloc)  
   {}
@@ -46,7 +46,7 @@ protected:
 
   std::vector<std::pair<lnode, lnode>> stmts_;
   lnode key_;
-  source_location sloc_;
+  source_info sloc_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ protected:
 template <typename T>
 class select_t {
 public:    
-  select_t(const lnode& pred, const lnode& value, const source_location& sloc) 
+  select_t(const lnode& pred, const lnode& value, const source_info& sloc) 
     : impl_(sloc) {
     impl_.push(pred, value);
   }
@@ -98,7 +98,7 @@ public:
   case_t(const lnode& key, 
          const lnode& pred, 
          const lnode& value, 
-         const source_location& sloc)
+         const source_info& sloc)
     : impl_(key, sloc) {
     impl_.push(pred, value);
   }

@@ -8,7 +8,7 @@ using namespace ch::internal;
 assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
                        const std::string& msg,
-                       const source_location& sloc)
+                       const source_info& sloc)
   : ioimpl(ctx, type_assert, 0, "", sloc)
   , msg_(msg)
   , pred_idx_(-1) {
@@ -25,7 +25,7 @@ assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
                        lnodeimpl* pred,
                        const std::string& msg,
-                       const source_location& sloc)
+                       const source_info& sloc)
   : ioimpl(ctx, type_assert, 0, "", sloc)
   , msg_(msg)
   , pred_idx_(-1) {
@@ -50,6 +50,6 @@ lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
 
 void ch::internal::createAssertNode(const lnode& cond, 
                                     const std::string& msg,
-                                    const source_location& sloc) {
+                                    const source_info& sloc) {
   ctx_curr()->create_node<assertimpl>(cond.impl(), msg, sloc);
 }

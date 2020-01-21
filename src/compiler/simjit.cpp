@@ -3273,7 +3273,7 @@ public:
 SrcMarker::SrcMarker(Compiler* cp,
                      const char* fname,
                      const char* node,
-                     const source_location& sloc)
+                     const source_info& sloc)
   : cp_(cp) {
   if (node) {
     auto str = stringf("%s @var=%s @file=%s @line=%d", fname, node, sloc.file().c_str(), sloc.line());

@@ -137,7 +137,7 @@ printimpl::printimpl(context* ctx,
                      const std::string& format,
                      const std::vector<lnode>& args,
                      const std::vector<enum_string_cb>& enum_strings,
-                     const source_location& sloc)
+                     const source_info& sloc)
   : ioimpl(ctx, type_print, 0, "", sloc)
   , enum_strings_(enum_strings)
   , format_(format)
@@ -157,7 +157,7 @@ printimpl::printimpl(context* ctx,
                      const std::vector<lnode>& args,
                      const std::vector<enum_string_cb>& enum_strings,
                      lnodeimpl* pred,
-                     const source_location& sloc)
+                     const source_info& sloc)
   : ioimpl(ctx, type_print, 0, "", sloc)
   , enum_strings_(enum_strings)
   , format_(format)
@@ -206,7 +206,7 @@ void printimpl::print(std::ostream& out) const {
 
 void ch::internal::createPrintNode(const std::string& format,
                                    const std::vector<lnode>& args,
-                                   const source_location& sloc) {
+                                   const source_info& sloc) {
   // check format
   auto max_index = findMaxSourceIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
@@ -224,7 +224,7 @@ void ch::internal::createPrintNode(const std::string& format,
 
 ch_ostream ch::internal::ch_cout;
 
-void ch_streambuf::write(const lnode& node, char format, const source_location& sloc) {
+void ch_streambuf::write(const lnode& node, char format, const source_info& sloc) {
   char tmp[64];
   auto size = nodes_.size();
   nodes_.push_back(node);

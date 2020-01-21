@@ -59,7 +59,7 @@ const std::string& lnode::name() const {
   return impl_->name();
 }
 
-const source_location& lnode::sloc() const {
+const source_info& lnode::sloc() const {
   assert(impl_);
   return impl_->sloc();
 }
@@ -73,7 +73,7 @@ void lnode::set_name(const std::string& name) {
   impl_->set_name(name);
 }
 
-void lnode::set_sloc(const source_location& sloc) {
+void lnode::set_sloc(const source_info& sloc) {
   assert(impl_);
   impl_->set_sloc(sloc);
 }

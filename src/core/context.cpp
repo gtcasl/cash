@@ -368,13 +368,13 @@ void context::reset_system_node(lnodeimpl* node) {
   }
 }
 
-void context::create_binding(context* ctx, const source_location& sloc) {
+void context::create_binding(context* ctx, const source_info& sloc) {
   this->create_node<bindimpl>(ctx, sloc);
 }
 
 inputimpl* context::create_input(uint32_t size,
                                  const std::string& name,
-                                 const source_location& sloc) {
+                                 const source_info& sloc) {
   for (auto node : inputs_) {
     auto input = reinterpret_cast<inputimpl*>(node);
     if (input->name() == name) {
@@ -397,7 +397,7 @@ outputimpl* context::get_output(const std::string& name) {
 
 outputimpl* context::create_output(uint32_t size,
                                    const std::string& name,
-                                   const source_location& sloc) {
+                                   const source_info& sloc) {
   auto output = this->get_output(name);
   if (output)
     return output;
@@ -417,7 +417,7 @@ litimpl* context::create_literal(const sdata_type& value) {
   return this->create_node<litimpl>(value);
 }
 
-timeimpl* context::create_time(const source_location& sloc) {
+timeimpl* context::create_time(const source_info& sloc) {
   if (nullptr == sys_time_) {
     sys_time_ = this->create_node<timeimpl>(sloc);
   }
@@ -426,7 +426,7 @@ timeimpl* context::create_time(const source_location& sloc) {
 
 cdimpl* context::create_cd(const lnode& clk,
                            bool pos_edge,
-                           const source_location& sloc) {
+                           const source_info& sloc) {
   // return existing match
   for (auto node : cdomains_) {
     auto cd = reinterpret_cast<cdimpl*>(node);
@@ -440,7 +440,7 @@ cdimpl* context::create_cd(const lnode& clk,
 void context::push_cd(const lnode& clk,
                       const lnode& reset,
                       bool pos_edge,
-                      const source_location& sloc) {
+                      const source_info& sloc) {
   auto cd = this->create_cd(clk, pos_edge, sloc);
   cd_stack_.emplace(cd, reset.impl());
 }
@@ -449,7 +449,7 @@ void context::pop_cd() {
   cd_stack_.pop();
 }
 
-cdimpl* context::current_cd(const source_location& sloc) {
+cdimpl* context::current_cd(const source_info& sloc) {
   if (!cd_stack_.empty())
     return cd_stack_.top().first;
 
@@ -460,11 +460,11 @@ cdimpl* context::current_cd(const source_location& sloc) {
   return this->create_cd(sys_clk_, true, sloc);
 }
 
-lnodeimpl* context::current_clock(const source_location& sloc) {
+lnodeimpl* context::current_clock(const source_info& sloc) {
   return this->current_cd(sloc)->clk().impl();
 }
 
-lnodeimpl* context::current_reset(const source_location& sloc) {
+lnodeimpl* context::current_reset(const source_info& sloc) {
   if (!cd_stack_.empty())
     return cd_stack_.top().second;
 
@@ -475,7 +475,7 @@ lnodeimpl* context::current_reset(const source_location& sloc) {
   return sys_reset_;
 }
 
-void context::begin_branch(lnodeimpl* key, const source_location& sloc) {
+void context::begin_branch(lnodeimpl* key, const source_info& sloc) {
   branchconv_->begin_branch(key, sloc);
 }
 
@@ -505,11 +505,11 @@ void context::conditional_write(
     uint32_t offset,
     uint32_t length,
     lnodeimpl* src,
-    const source_location& sloc) {
+    const source_info& sloc) {
   return branchconv_->write(dst, offset, length, src, sloc);
 }
 
-lnodeimpl* context::get_predicate(const source_location& sloc) {
+lnodeimpl* context::get_predicate(const source_info& sloc) {
   return branchconv_->get_predicate(sloc);
 }
 
@@ -519,7 +519,7 @@ bindimpl* context::current_binding() {
 
 void context::register_tap(const lnode& target,
                            const std::string& name,
-                           const source_location& sloc) {
+                           const source_info& sloc) {
   auto sid = identifier_from_string(name);
   auto num_dups = dup_tap_names_.insert(sid);
   if (num_dups) {
@@ -543,7 +543,7 @@ lnodeimpl* context::create_bypass(lnodeimpl* target) {
 void context::create_udf_node(udf_iface* udf,
                               bool is_seq,
                               const std::string& name,
-                              const source_location& sloc) {
+                              const source_info& sloc) {
   if (is_seq) {
     auto cd = this->current_cd(sloc);
     auto reset = this->current_reset(sloc);
@@ -722,7 +722,7 @@ void context::dump_stats(std::ostream& out) {
 
 void ch::internal::registerTap(const lnode& node, 
                                const std::string& name,
-                              const source_location& sloc) {
+                              const source_info& sloc) {
   ctx_curr()->register_tap(node, name, sloc);
 }
 

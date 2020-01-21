@@ -36,7 +36,7 @@ protected:
   selectimpl(context* ctx,
              uint32_t size,
              lnodeimpl* key,
-             const source_location& sloc);
+             const source_info& sloc);
 
   bool has_key_;
 

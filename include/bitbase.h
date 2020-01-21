@@ -359,83 +359,83 @@ protected:
   }
 
   template <typename U>
-  auto do_eq(const U& other, const source_location& sloc) const {
+  auto do_eq(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::eq>(*self, other, sloc);
   }
 
   template <typename U>
-  auto do_ne(const U& other, const source_location& sloc) const {
+  auto do_ne(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::ne>(*self, other, sloc);
   }
 
-  auto do_not(const source_location& sloc) const {
+  auto do_not(const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::notl>(*self, sloc);
   }
 
   template <typename U>
-  auto do_andl(const U& other, const source_location& sloc) const {
+  auto do_andl(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::andl>(*self, other, sloc);
   }
 
   template <typename U>
-  auto do_orl(const U& other, const source_location& sloc) const {
+  auto do_orl(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::orl>(*self, other, sloc);
   }
 
   template <typename R>
-  auto do_inv(const source_location& sloc) const {
+  auto do_inv(const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<R, ch_op::inv>(*self, sloc);
   }
 
   template <typename R, typename U>
-  auto do_and(const U& other, const source_location& sloc) const {
+  auto do_and(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<R, ch_op::andb>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_or(const U& other, const source_location& sloc) const {
+  auto do_or(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<R, ch_op::orb>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_xor(const U& other, const source_location& sloc) const {
+  auto do_xor(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<R, ch_op::xorb>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_shl(const U& other, const source_location& sloc) const {
+  auto do_shl(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 64, "invalid size");
     return make_logic_op<R, ch_op::shl>(*self, other, sloc);
   }
 
   template <typename R, typename U>
-  auto do_shr(const U& other, const source_location& sloc) const {
+  auto do_shr(const U& other, const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 64, "invalid size");
     return make_logic_op<R, ch_op::shr>(*self, other, sloc);
   }
 
-  auto do_andr(const source_location& sloc) const {
+  auto do_andr(const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::andr>(*self, sloc);
   }
 
-  auto do_orr(const source_location& sloc) const {
+  auto do_orr(const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::orr>(*self, sloc);
   }
 
-  auto do_xorr(const source_location& sloc) const {
+  auto do_xorr(const source_info& sloc) const {
     auto self = reinterpret_cast<const T*>(this);
     return make_logic_op<ch_op::xorr>(*self, sloc);
   }

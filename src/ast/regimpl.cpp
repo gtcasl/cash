@@ -17,7 +17,7 @@ regimpl::regimpl(context* ctx,
                  lnodeimpl* next,                 
                  lnodeimpl* init_data,
                  const std::string& name,
-                 const source_location& sloc)
+                 const source_info& sloc)
   : lnodeimpl(ctx->node_id(), type_reg, size, ctx, name, sloc)
   , length_(length)
   , reset_idx_(-1)  
@@ -108,7 +108,7 @@ void regimpl::print(std::ostream& out) const {
 
 lnodeimpl* ch::internal::createRegNode(unsigned size, 
                                        const std::string& name, 
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
   auto next = ctx->create_node<proxyimpl>(size, name, sloc);
@@ -120,7 +120,7 @@ lnodeimpl* ch::internal::createRegNode(unsigned size,
 
 lnodeimpl* ch::internal::createRegNode(const lnode& init_data, 
                                        const std::string& name,
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
@@ -133,7 +133,7 @@ lnodeimpl* ch::internal::createRegNode(const lnode& init_data,
 
 lnodeimpl* ch::internal::copyRegNode(const lnode& node, 
                                      const std::string& name,
-                                     const source_location& sloc) {
+                                     const source_info& sloc) {
   auto reg    = reinterpret_cast<regimpl*>(node.impl());
   auto ctx    = ctx_curr();
   auto cd     = ctx->current_cd(sloc);
@@ -153,7 +153,7 @@ lnodeimpl* ch::internal::getRegNextNode(const lnode& node) {
 lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                        unsigned length,
                                        const std::string& name,
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx = ctx_curr();
   auto cd  = ctx->current_cd(sloc);
   auto reg = ctx->create_node<regimpl>(
@@ -165,7 +165,7 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                        unsigned length,
                                        const lnode& enable,
                                        const std::string& name,
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx = ctx_curr();
   auto cd  = ctx->current_cd(sloc);
   auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
@@ -178,7 +178,7 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                        const lnode& init_data,
                                        unsigned length,
                                        const std::string& name,
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx = ctx_curr();
   auto cd  = ctx->current_cd(sloc);
   auto rst = ctx->current_reset(sloc);
@@ -206,7 +206,7 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                        unsigned length,
                                        const lnode& enable,
                                        const std::string& name,
-                                       const source_location& sloc) {
+                                       const source_info& sloc) {
   auto ctx = ctx_curr();
   auto cd  = ctx->current_cd(sloc);
   auto rst = ctx->current_reset(sloc);

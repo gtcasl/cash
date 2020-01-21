@@ -20,7 +20,7 @@ deviceimpl::deviceimpl(const std::type_index& signature,
 
 deviceimpl::~deviceimpl() {
   if (is_opened_) {
-    this->end(source_location());
+    this->end(source_info());
   }
   ctx_->release();  
 }
@@ -47,7 +47,7 @@ void deviceimpl::end_build() {
  compiler.optimize();
 }
 
-void deviceimpl::end(const source_location& sloc) {
+void deviceimpl::end(const source_info& sloc) {
   ctx_swap(old_ctx_);
   if (old_ctx_) {
     old_ctx_->create_binding(ctx_, sloc);
@@ -120,7 +120,7 @@ void device_base::end_build() {
   impl_->end_build();
 }
 
-void device_base::end(const source_location& sloc) {
+void device_base::end(const source_info& sloc) {
   impl_->end(sloc);
 }
 

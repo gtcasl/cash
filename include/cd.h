@@ -5,14 +5,14 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* getCurrentClockNode(const source_location& sloc);
+lnodeimpl* getCurrentClockNode(const source_info& sloc);
 
-lnodeimpl* getCurrentResetNode(const source_location& sloc);
+lnodeimpl* getCurrentResetNode(const source_info& sloc);
 
 void pushClockDomain(const lnode& clock, 
                      const lnode& reset, 
                      bool pos_edge,
-                     const source_location& sloc);
+                     const source_info& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 

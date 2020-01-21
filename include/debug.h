@@ -6,19 +6,19 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* getCurrentTimeNode(const source_location& sloc);
+lnodeimpl* getCurrentTimeNode(const source_info& sloc);
 
 void createAssertNode(const lnode& cond, 
                       const std::string&,
-                      const source_location& sloc);
+                      const source_info& sloc);
 
 void createPrintNode(const std::string& format, 
                      const std::vector<lnode>& args, 
-                     const source_location& sloc);
+                     const source_info& sloc);
 
 void registerTap(const lnode& node, 
                  const std::string& name,
-                 const source_location& sloc);
+                 const source_info& sloc);
 
 lnodeimpl* getTap(const std::string& name, unsigned instance);
 
@@ -37,7 +37,7 @@ struct token_ {};
 
 inline
 void createPrintNode_(const std::string& format, 
-                      const source_location& sloc,
+                      const source_info& sloc,
                       std::vector<lnode>& nodes,
                       token_) {
   createPrintNode(format, nodes, sloc);
@@ -45,7 +45,7 @@ void createPrintNode_(const std::string& format,
 
 template <class Arg0, class... Args>
 void createPrintNode_(const std::string& format, 
-                      const source_location& sloc,
+                      const source_info& sloc,
                       std::vector<lnode>& nodes,
                       token_, 
                       Arg0&& arg0,
@@ -58,7 +58,7 @@ void createPrintNode_(const std::string& format,
 
 template <class Arg0, class... Args>
 void createPrintNode_(const std::string& format, 
-                      const source_location& sloc,
+                      const source_info& sloc,
                       std::vector<lnode>& nodes,
                       Arg0&& arg0, 
                       Args&&... args) {
@@ -72,7 +72,7 @@ void createPrintNode_(const std::string& format,
 
 template <class... Args>
 void createPrintNode(const std::string& format, 
-                     const source_location& sloc,
+                     const source_info& sloc,
                      Args&&... args) {  
   if (format.empty())
     return;

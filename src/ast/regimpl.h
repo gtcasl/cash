@@ -71,7 +71,7 @@ protected:
           lnodeimpl* next,
           lnodeimpl* init_data,
           const std::string& name,
-          const source_location& sloc);
+          const source_info& sloc);
 
   uint32_t length_;
   int reset_idx_;

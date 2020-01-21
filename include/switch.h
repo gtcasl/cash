@@ -8,7 +8,7 @@ namespace internal {
 class switch_t {
 public:
 
-  switch_t(const lnode& key, const source_location& sloc) {
+  switch_t(const lnode& key, const source_info& sloc) {
     begin_branch(key.impl(), sloc);
   }
 

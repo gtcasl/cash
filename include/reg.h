@@ -8,41 +8,41 @@ namespace internal {
 
 lnodeimpl* createRegNode(unsigned size, 
                          const std::string& name, 
-                         const source_location& sloc);
+                         const source_info& sloc);
 
 lnodeimpl* createRegNode(const lnode& init, 
                          const std::string& name, 
-                         const source_location& sloc);
+                         const source_info& sloc);
 
 lnodeimpl* copyRegNode(const lnode& node, 
                        const std::string& name, 
-                       const source_location& sloc);
+                       const source_info& sloc);
 
 lnodeimpl* getRegNextNode(const lnode& node);
 
 lnodeimpl* createRegNext(const lnode& next,
                          unsigned length,
                          const std::string& name,
-                         const source_location& sloc);
+                         const source_info& sloc);
 
 lnodeimpl* createRegNext(const lnode& next,
                          unsigned length,
                          const lnode& enable,
                          const std::string& name,
-                         const source_location& sloc);
+                         const source_info& sloc);
 
 lnodeimpl* createRegNext(const lnode& next,
                          const lnode& init,
                          unsigned length,
                          const std::string& name,
-                         const source_location& sloc);
+                         const source_info& sloc);
 
 lnodeimpl* createRegNext(const lnode& next,
                          const lnode& init,
                          unsigned length,
                          const lnode& enable,
                          const std::string& name,
-                         const source_location& sloc);
+                         const source_info& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 

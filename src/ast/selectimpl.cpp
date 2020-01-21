@@ -10,11 +10,11 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch(const lnode& key, const source_location& sloc) {
+void ch::internal::begin_branch(const lnode& key, const source_info& sloc) {
   ctx_curr()->begin_branch(key.impl(), sloc);
 }
 
-void ch::internal::begin_branch(const source_location& sloc) {
+void ch::internal::begin_branch(const source_info& sloc) {
   ctx_curr()->begin_branch(nullptr, sloc);
 }
 
@@ -43,7 +43,7 @@ void ch::internal::cond_block(fvoid_t func) {
 selectimpl::selectimpl(context* ctx,
                        uint32_t size,
                        lnodeimpl* key,
-                       const source_location& sloc)
+                       const source_info& sloc)
   : lnodeimpl(ctx->node_id(), type_sel, size, ctx, "", sloc)
   , has_key_(false) {
   if (key) {

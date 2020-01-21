@@ -22,7 +22,7 @@ class udfimpl;
 class udfportimpl;
 class tapimpl;
 class bypassimpl;
-class source_location;
+class source_info;
 enum class ch_op;
 enum class udf_verilog;
 
@@ -95,7 +95,7 @@ public:
 
   void print_operator(std::ostream& out, ch_op op);
 
-  void print_sloc(std::ostream& out, const source_location& sloc);
+  void print_sloc(std::ostream& out, const source_info& sloc);
 
 protected:
 
