@@ -12,7 +12,16 @@
 #include <vector>
 #include <sstream>
 
+#ifdef NDEBUG
+  #define CH_DBG(...)
+#else
+  #define CH_DBG(...) if (g_debug) do { llvm::outs() << __VA_ARGS__; llvm::outs().flush(); } while (false)
+#endif
+
 namespace {
+
+bool g_debug = false;
+bool g_dump_ast = false;
 
 static const char Injected_Source[] = R"-(  
   #define __builtin_VARINFO() __builtin_VARINFO_TOKEN()
@@ -40,6 +49,7 @@ public:
 
     auto &sm = pp_.getSourceManager();
     auto fileID = sm.getFileID(sm.getFileLoc(loc));
+    CH_DBG("@@ processing file: " << sm.getFilename(loc) << "\n");
     if (fileID == sm.getMainFileID()) {
       auto newloc = sm.getFileLoc({});
       auto buf = llvm::MemoryBuffer::getMemBuffer(Injected_Source);      
@@ -65,32 +75,12 @@ public:
   bool VisitCallExpr(clang::CallExpr* CE) {   
     auto callee = CE->getCalleeDecl();        
     if (callee == token_) {
-      //llvm::outs() << "found!\n";
+      CH_DBG("@@ found!\n");
       found_ = true;
       return false;
     }
     return true;
   }
-
-  /*bool VisitCXXDefaultArgExpr(clang::CXXDefaultArgExpr* DAE) {   
-    auto dc = DAE->getUsedContext();
-    if (auto callee = llvm::dyn_cast_or_null<clang::FunctionDecl>(dc)) {
-      for (int i = 0, n = callee->getNumParams(); i < n; ++i) {
-        auto param = callee->getParamDecl(i);
-        auto da = param->getDefaultArg();
-        if (da) {  
-          da->dump(llvm::outs());
-          HasTokenVisitor hasToken(context_, token_);
-          hasToken.TraverseStmt(da);
-          if (hasToken.found()) {
-            found_ = true;
-            return false;
-          }
-        }
-      }
-    }
-    return true;
-  } */ 
 
   bool found() const {
     return found_;
@@ -116,19 +106,10 @@ public:
       auto &context = SemaRef.getASTContext();
       auto type = context.getStringLiteralArrayType(context.CharTy, name_.size());
       auto sl = clang::StringLiteral::Create(context, name_, clang::StringLiteral::Ascii, false, type, {});
-      llvm::outs() << "updated: " << name_ << "\n";
+      CH_DBG("@@ updated: " << name_ << "\n");
       return sl;
     }
     return Base::TransformCallExpr(CE);
-  }
-
-  clang::ExprResult TransformImplicitCastExpr(clang::ImplicitCastExpr *ICE) {
-    auto &context = SemaRef.getASTContext();
-    clang::CXXCastPath path(ICE->path_size());    
-    auto subExpr = this->TransformExpr(ICE->getSubExpr()).get();
-    auto res = clang::ImplicitCastExpr::Create(
-      context, ICE->getType(), ICE->getCastKind(), subExpr, &path, ICE->getValueKind());
-    return res;
   }
 
   clang::ExprResult TransformMaterializeTemporaryExpr(clang::MaterializeTemporaryExpr *MTE) {
@@ -185,7 +166,7 @@ public:
         auto init = CI->getInit();
         if (init) {     
           auto &context = member->getASTContext();
-          //llvm::outs() << "field_name=" << member->getName() << "\n";
+          CH_DBG("@@ field_name=" << member->getName() << "\n");
           auto s = updates_.size();
           this->processArgs(init, context, member->getName());
           auto n = updates_.size();
@@ -213,15 +194,15 @@ public:
     auto init = VD->getInit();
     if (init) {    
       auto &context = VD->getASTContext();
-      //llvm::outs() << "decl_name=" << VD->getName() << "\n";
+      CH_DBG("@@ decl_name=" << VD->getName() << "\n");
       auto s = updates_.size();
       this->processArgs(init, context, VD->getName());
-      auto n = updates_.size();
-      if (s != n) {
+      auto e = updates_.size();
+      if (s != e) {
         std::ostringstream oss;
         const auto& ploc = compiler_.getSourceManager().getPresumedLoc(VD->getLocation());
         oss << VD->getName().str() << ":" << ploc.getFilename() << ":" << ploc.getLine() << ":" << ploc.getColumn();
-        for (int i = s; i < n; ++i) {
+        for (int i = s; i < e; ++i) {
           updates_[i].value = oss.str();
         }
       }
@@ -231,12 +212,22 @@ public:
 
   bool Traverse(clang::Decl* decl) {  
     if (!Base::TraverseDecl(decl))
-    return false;
+      return false;
 
     if (!updates_.empty()) {     
       TokenTransform transform(compiler_.getSema()); 
-      for (auto& upd : updates_) {                  
+      for (auto& upd : updates_) {                          
         auto res = transform.Transform(upd.arg, upd.value, token_);
+        
+        CH_DBG("@@ transform: " << upd.value << "\n");
+
+      #ifndef NDEBUG
+        if (g_debug) {
+          res.get()->dump(llvm::outs());  
+          llvm::outs().flush();
+        }
+      #endif
+
         if (auto expr = llvm::dyn_cast<clang::CXXConstructExpr>(upd.expr)) {
           expr->setArg(upd.param, res.get());
         } else if (auto expr = llvm::dyn_cast<clang::CXXMemberCallExpr>(upd.expr)) {
@@ -253,63 +244,160 @@ public:
 private:
 
   void processArgs(clang::Expr *init, clang::ASTContext &context, llvm::StringRef name) {
+
     if (auto EWC = llvm::dyn_cast<clang::ExprWithCleanups>(init)) {
       init = EWC->getSubExpr();
-    }
-
+    } 
+      
     if (auto BTE = llvm::dyn_cast<clang::CXXBindTemporaryExpr>(init)) {
       init = BTE->getSubExpr();
     }
-
+  
+    if (auto CE = llvm::dyn_cast<clang::CallExpr>(init)) {
+      auto callee = CE->getDirectCallee();
+      CH_DBG("@@ CallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
+      for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
+        this->FindToken(CE, callee, i, CE->getArg(i), context);
+      }
+    } else
     if (auto CE = llvm::dyn_cast<clang::CXXConstructExpr>(init)) {
       auto callee = CE->getConstructor();
-      //llvm::outs() << "CXXConstructExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n";          
+      CH_DBG("@@ CXXConstructExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");          
       for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        auto da = this->FindToken(callee, i, CE->getArg(i), context);
-        if (da) {
-          arg_update_t var{CE, i, da, ""};
-          updates_.push_back(var);     
-        }
+        this->FindToken(CE, callee, i, CE->getArg(i), context);
       }            
     } else
     if (auto CE = llvm::dyn_cast<clang::CXXMemberCallExpr>(init)) {
-      auto callee = CE->getCalleeDecl()->getAsFunction();
-      //llvm::outs() << "CXXMemberCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n";
+      auto callee = CE->getDirectCallee();
+      CH_DBG("@@ CXXMemberCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
       for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        auto da = this->FindToken(callee, i, CE->getArg(i), context);
-        if (da) {
-          arg_update_t var{CE, i, da, ""};
-          updates_.push_back(var);     
-        }
+        this->FindToken(CE, callee, i, CE->getArg(i), context);
       }
     } else
-    if (auto CE = llvm::dyn_cast<clang::CallExpr>(init)) {
-      auto callee = CE->getCalleeDecl()->getAsFunction();
-      //llvm::outs() << "CallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n";
+    if (auto CE = llvm::dyn_cast<clang::CXXOperatorCallExpr>(init)) {
+      auto callee = CE->getDirectCallee();
+      CH_DBG("@@ CXXOperatorCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
       for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        auto da = this->FindToken(callee, i, CE->getArg(i), context);
-        if (da) {
-          arg_update_t var{CE, i, da, ""};
+        this->FindToken(CE, i, context);
+      }
+    }
+  }
+
+  void FindToken(clang::Expr* callexpr,
+                 clang::FunctionDecl *callee, 
+                 int index, 
+                 clang::Expr *arg, 
+                 clang::ASTContext &context) {
+    if (auto DAE = llvm::dyn_cast<clang::CXXDefaultArgExpr>(arg)) {
+      CH_DBG("@@ CXXDefaultArgExpr=" << DAE->getStmtClassName() << DAE->getID(context) << "\n");
+      auto param = callee->getParamDecl(index);
+      auto da = param->getDefaultArg();
+      if (da) {  
+
+      #ifndef NDEBUG
+        if (g_debug) {
+          da->dump(llvm::outs()); 
+          llvm::outs().flush();
+        }
+      #endif
+        
+        HasTokenVisitor hasToken(context, token_);
+        hasToken.TraverseStmt(da);
+        if (hasToken.found()) {
+          arg_update_t var{callexpr, index, da, ""};
           updates_.push_back(var);     
         }
       }
     }
   }
 
-  clang::Expr* FindToken(clang::FunctionDecl *callee, int index, clang::Expr *arg, clang::ASTContext &context) {
-    if (auto dae = llvm::dyn_cast<clang::CXXDefaultArgExpr>(arg)) {
-      //llvm::outs() << "CXXDefaultArgExpr=" << dae->getStmtClassName() << dae->getID(context) << "\n";
-      auto param = callee->getParamDecl(index);
-      auto da = param->getDefaultArg();
-      if (da) {  
-        //da->dump(llvm::outs());
-        HasTokenVisitor hasToken(context, token_);
-        hasToken.TraverseStmt(da);
-        if (hasToken.found())
-          return da;
+  void FindToken(clang::CXXOperatorCallExpr* callexpr,
+                 int index, 
+                 clang::ASTContext &context) {
+    auto callee = callexpr->getCalleeDecl()->getAsFunction();
+    auto arg = callexpr->getArg(index);
+
+    clang::Expr *expr = nullptr, *parent = nullptr;      
+    if (auto BTE = llvm::dyn_cast<clang::CXXBindTemporaryExpr>(arg)) {
+      parent = BTE;
+      expr = BTE->getSubExpr();
+    } else
+    if (auto MTE = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(arg)) {
+      expr = MTE->GetTemporaryExpr();
+    } else {
+      return;
+    }
+    
+    if (auto ICE = llvm::dyn_cast<clang::ImplicitCastExpr>(expr)) {
+      parent = ICE;
+      expr = ICE->getSubExpr();
+    }      
+    
+    if (auto BTE = llvm::dyn_cast<clang::CXXBindTemporaryExpr>(expr)) {
+      parent = BTE;
+      expr = BTE->getSubExpr();
+    }
+
+    if (auto ICE = llvm::dyn_cast<clang::ImplicitCastExpr>(expr)) {
+      parent = ICE;
+      expr = ICE->getSubExpr();        
+    }
+
+    if (parent == nullptr)
+      return;
+
+    if (auto CE = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) {
+      auto s = updates_.size();
+      for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
+        this->FindToken(CE, CE->getConstructor(), i, CE->getArg(i), context);
+      }
+      auto e = updates_.size();
+      if (s != e) {
+        /*
+        const ASTContext &Ctx, 
+        CXXConstructorDecl *Cons, 
+        QualType Ty,
+        TypeSourceInfo *TSI, 
+        ArrayRef<Expr *> Args,
+        SourceRange ParenOrBraceRange, 
+        bool HadMultipleCandidates,
+        bool ListInitialization, 
+        bool StdInitListInitialization,
+        bool ZeroInitialization);
+        */
+
+        auto &sema = compiler_.getSema();
+        auto constructor = CE->getConstructor();
+        
+        llvm::SmallVector<clang::Expr *, 8> args(CE->arguments());
+
+        auto TOE = clang::CXXTemporaryObjectExpr::Create(
+            context, 
+            constructor, 
+            CE->getType(),
+            constructor->getTypeSourceInfo(), 
+            args, 
+            CE->getParenOrBraceRange(),
+            CE->hadMultipleCandidates(), 
+            CE->isListInitialization(),
+            CE->isStdInitListInitialization(), 
+            CE->requiresZeroInitialization()
+        ); 
+
+        if (auto BTE = llvm::dyn_cast<clang::CXXBindTemporaryExpr>(parent)) {
+          BTE->setSubExpr(TOE);
+        } else
+        if (auto ICE = llvm::dyn_cast<clang::ImplicitCastExpr>(parent)) {
+          ICE->setSubExpr(TOE);        
+        }
+
+        CH_DBG("@@ replaced TOE\n");
+
+        for (int i = s; i < e; ++i) {
+          updates_[i].expr = TOE;
+        }        
       }
     }
-    return nullptr;
   }
 
   clang::CompilerInstance &compiler_;
@@ -332,7 +420,9 @@ public:
     compiler_.getPreprocessor().addPPCallbacks(std::move(cb));
   }
 
-  bool HandleTopLevelDecl(clang::DeclGroupRef DG) override {    
+  bool HandleTopLevelDecl(clang::DeclGroupRef DG) override {  
+    CH_DBG("@@ HandleTopLevelDecl()\n");
+          
    auto &source_manager = compiler_.getSourceManager();
     for (auto decl : DG) {
       if (source_manager.isInSystemHeader(decl->getLocation())) 
@@ -344,17 +434,23 @@ public:
   }
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
-    auto &source_manager = compiler_.getSourceManager();
+    CH_DBG("@@ HandleTranslationUnit()\n");
+
+    auto &source_manager = compiler_.getSourceManager();    
     for (auto decl : context.getTranslationUnitDecl()->decls()) {
       if (source_manager.isInSystemHeader(decl->getLocation())) 
-        continue;      
+        continue;
       if (!visitor_.Traverse(decl))
         return;
     }
 
-    // dump AST
-    llvm::outs() << "#######################################################################################\n";
-    context.getTranslationUnitDecl()->dump(llvm::outs());
+  #ifndef NDEBUG
+    if (g_dump_ast) {
+      // dump AST
+      llvm::outs() << "#######################################################################################\n";
+      context.getTranslationUnitDecl()->dump(llvm::outs());
+    }
+  #endif
   }
 
 private:
@@ -369,16 +465,37 @@ public:
     return std::make_unique<MyASTConsumer>(compiler);
   }
 
-  bool ParseArgs(const clang::CompilerInstance &compiler,
-                 const std::vector<std::string> &args) override {
-    return true;
-  }
-
   clang::PluginASTAction::ActionType getActionType() override {
     return clang::PluginASTAction::AddBeforeMainAction;
   }
 
-  void PrintHelp(llvm::raw_ostream &ros) {}
+  bool ParseArgs(const clang::CompilerInstance &compiler,
+                 const std::vector<std::string> &args) override {
+    for (int i = 0, e = args.size(); i != e; ++i) {
+      if (args[i] == "help" || args[i] == "-help" || args[i] == "--help") {
+        this->PrintHelp(llvm::errs());
+      } else 
+      if (args[i] == "debug" || args[i] == "-debug" || args[i] == "--debug") {
+        g_debug = true;
+      } else 
+      if (args[i] == "dump-ast" || args[i] == "-dump-ast" || args[i] == "--dump-ast") {
+        g_dump_ast = true;
+      }else {
+        clang::DiagnosticsEngine &D = compiler.getDiagnostics();
+        D.Report(D.getCustomDiagID(clang::DiagnosticsEngine::Error, "invalid argument '%0'"));
+        return false;
+      }      
+    }
+    return true;
+  }
+
+  void PrintHelp(llvm::raw_ostream &ros) {
+    ros << "Cash Preprocessor Clang Plugin\n";
+    ros << "Options:\n";
+    ros << "-debug : Enable debug mode.\n";
+    ros << "-dump-ast : Dump updated AST.\n";
+    ros << "-help : Show usage.\n";
+  }
 };
 
 }

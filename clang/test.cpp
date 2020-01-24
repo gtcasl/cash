@@ -1,149 +1,28 @@
-#include <iostream>
-#include <string>
+#pragma once
 
-template <typename T>
-class Object {
+#include <cash.h>
+
+namespace ch {
+namespace htl {
+
+using namespace ch::logic;
+
+template <std::size_t N>
+class ch_counter {
 public:
-  Object(const char* varinfo = __builtin_VARINFO()) 
-    : data_(0)
-    , varinfo_(varinfo) 
-  {}  
 
-  Object(const T& data, const char* varinfo = __builtin_VARINFO()) 
-    : data_(data)
-    , varinfo_(varinfo)
-  {}
+  ch_counter() {}
 
-  Object(const Object& other, const char* varinfo = __builtin_VARINFO()) 
-    : data_(other.data_)
-    , varinfo_(varinfo)
-  {}
+protected:
 
-  auto& varinfo() const {
-    return varinfo_;
-  }
-
-  auto& data() const {
-    return data_;
-  }
-
-  Object copy(const char* varinfo = __builtin_VARINFO()) {
-    return Object(data_, varinfo);
-  }
-
-  friend Object operator+(Object lhs, const Object& rhs) {
-    return Object(lhs.data() + rhs.data(), lhs.varinfo().c_str());
-  }
-
-private:
-  std::string varinfo_;
-  T data_;
+  ch_uint<log2up(N)> value;
 };
 
-class src_info {
-public:
-  src_info(const char* varinfo) 
-    : varinfo_(varinfo)
-  {}
-
-  auto& varinfo() const {
-    return varinfo_;
-  }
-
-private:
-  std::string varinfo_;
-};
-
-#define CUR_SRC_INFO src_info(__builtin_VARINFO())
-#define SRC_INFO const src_info& sinfo = CUR_SRC_INFO
-
-template <typename T>
-class ObjectX {
-public:
-  ObjectX(SRC_INFO) 
-    : data_(0)
-    , sinfo_(sinfo)
-  {}
-
-  ObjectX(T data, SRC_INFO) 
-    : data_(data)
-    , sinfo_(sinfo)
-  {}
-
-  ObjectX(const ObjectX& other, SRC_INFO) 
-    : data_(other.data_)
-    , sinfo_(sinfo)
-  {}
-
-  auto& sinfo() const {
-    return sinfo_;
-  }
-
-  auto& varinfo() const {
-    return sinfo_.varinfo();
-  }
-
-  auto& data() const {
-    return data_;
-  }
-
-  auto copy(SRC_INFO) {
-    return ObjectX(data_, sinfo);
-  }
-
-  friend ObjectX operator+(ObjectX lhs, const ObjectX& rhs) {
-    return ObjectX(lhs.data() + rhs.data(), lhs.sinfo());
-  }
-
-private:
-  T data_;
-  src_info sinfo_;  
-};
-
-template <typename T>
-struct Object2 {
-  Object<T> obj_data;
-  ObjectX<int> qq;
-};
-
-template <typename T>
-auto foo(T x, const char* varinfo = __builtin_VARINFO()) {
-  return Object<T>(x, varinfo);
+}
 }
 
-template <typename T>
-auto fooX(T x, const src_info& sinfo = CUR_SRC_INFO) {
-  return ObjectX<T>(x, sinfo);
-}
-
-Object<int> obj0;
-ObjectX<int> obj1;
-
-void program1() {
-  Object<int> obj2;       
-  ObjectX<int> obj3;
-  Object2<int> obj4;
-  std::cout << "program1=" << obj0.varinfo() << ", " << obj1.varinfo() << ", " << obj2.varinfo() << ", " 
-            << obj3.varinfo() << ", " << obj4.obj_data.varinfo() << ", " << obj4.qq.varinfo() << std::endl;
-}
-
-template <typename T>
-void program2() {      
-  ObjectX<int> obj5, obj6;  
-  auto obj7 = obj0.copy();
-  auto obj8 = obj1.copy();
-  auto obj9 = foo<T>(9);
-  auto obj10 = fooX<T>(10);
-  auto obj11 = obj0 + obj7;
-  auto obj12 = obj1 + obj8;
-  std::cout << "program2=" << obj5.varinfo() << ", " << obj6.varinfo() << ", " << obj7.varinfo() << ", " 
-            << obj8.varinfo() << ", " << obj9.varinfo() << ", " << obj10.varinfo() << ", " << obj11.varinfo() << ", " << obj12.varinfo() << std::endl;
-}
 
 int main() {
-  program1();
-  program2<int>();
+  ch::htl::ch_counter<4> qq;
   return 0;
 }
-
-
