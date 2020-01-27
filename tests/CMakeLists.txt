@@ -20,10 +20,10 @@ set(SOURCE_FILES
     udf.cpp
     fixed.cpp
     complex.cpp    
-    router.cpp
-    cache.cpp
     jitregress.cpp    
     errors.cpp
+    router.cpp
+    cache.cpp
     main.cpp
 )
 
@@ -34,13 +34,22 @@ file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 add_executable(dogfood dogfood.cpp common.cpp)
 add_executable(testsuite ${SOURCE_FILES})
 
-# Define dependent libraries
+# define dependent libraries
 target_link_libraries(dogfood PRIVATE ${PROJECT_NAME})
 target_link_libraries(testsuite PRIVATE ${PROJECT_NAME})
 
 if (CODECOV)
+    # enable code coverage
     target_compile_options(testsuite PRIVATE --coverage)
     target_link_libraries(testsuite PRIVATE --coverage)
+endif()
+
+if (PLUGIN)
+    # enable clang-plugin
+    add_dependencies(dogfood cashpp)
+    add_dependencies(testsuite cashpp)
+    set_target_properties(dogfood PROPERTIES COMPILE_FLAGS "-Xclang -load -Xclang ${CMAKE_BINARY_DIR}/lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp")
+    set_target_properties(testsuite PROPERTIES COMPILE_FLAGS "-Xclang -load -Xclang ${CMAKE_BINARY_DIR}/lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp")
 endif()
 
 # register test

@@ -9,14 +9,14 @@ lnodeimpl* createOpNode(ch_op op,
                         uint32_t size, 
                         bool is_signed, 
                         const lnode& in,
-                        const source_info& sloc);
+                        const source_info& srcinfo);
 
 lnodeimpl* createOpNode(ch_op op,
                         uint32_t size,
                         bool is_signed,
                         const lnode& lhs,
                         const lnode& rhs,
-                        const source_info& sloc);
+                        const source_info& srcinfo);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,13 +74,11 @@ public:
              uint32_t src_offset,
              uint32_t length);
 
-  lnodeimpl* clone(const source_info& sloc) const;
+  lnodeimpl* clone(const source_info& srcinfo) const;
 
-  lnodeimpl* sliceref(size_t size, size_t start, const source_info& sloc) const;  
+  lnodeimpl* sliceref(size_t size, size_t start, const source_info& srcinfo) const;  
 
 protected:
-
-  logic_buffer& operator=(const logic_buffer& other);
 
   logic_buffer(lnodeimpl* impl) : lnode(impl) {}
 
@@ -88,13 +86,13 @@ protected:
 
   logic_buffer(uint32_t size, 
                const std::string& name, 
-               const source_info& sloc);
+               const source_info& srcinfo);
 
   logic_buffer(uint32_t size,
                const logic_buffer& src,
                uint32_t src_offset,
                const std::string& name, 
-               const source_info& sloc);  
+               const source_info& srcinfo);  
   
   void ensure_proxy() const;
 
@@ -103,16 +101,16 @@ protected:
   friend auto make_logic_buffer(const sdata_type& value);
 
   template <typename A0> 
-  friend auto make_logic_buffer(A0&& arg0, const source_info& sloc);
+  friend auto make_logic_buffer(A0&& arg0, const source_info& srcinfo);
   
   template <typename A0, typename A1> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& sloc); 
+  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& srcinfo); 
 
   template <typename A0, typename A1, typename A2> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& sloc);
+  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& srcinfo);
 
   template <typename A0, typename A1, typename A2, typename A3> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& sloc);
+  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& srcinfo);
 };
 
 inline auto make_logic_buffer(lnodeimpl* impl) {
@@ -124,23 +122,23 @@ inline auto make_logic_buffer(const sdata_type& value) {
 }
 
 template <typename A0>
-auto make_logic_buffer(A0&& arg0, const source_info& sloc) {
-  return logic_buffer(std::forward<A0>(arg0), sloc);
+auto make_logic_buffer(A0&& arg0, const source_info& srcinfo) {
+  return logic_buffer(std::forward<A0>(arg0), srcinfo);
 }
 
 template <typename A0, typename A1>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& sloc) {
-  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), sloc);
+auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& srcinfo) {
+  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), srcinfo);
 }
 
 template <typename A0, typename A1, typename A2>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& sloc) {
-  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), sloc);
+auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& srcinfo) {
+  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), srcinfo);
 }
 
 template <typename A0, typename A1, typename A2, typename A3>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& sloc) {
-  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), std::forward<A3>(arg3), sloc);
+auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& srcinfo) {
+  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), std::forward<A3>(arg3), srcinfo);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,28 +202,28 @@ public:
   }
 
   template <typename T>
-  static auto clone(const T& obj, const source_info& sloc) {
+  static auto clone(const T& obj, const source_info& srcinfo) {
     assert(ch_width_v<T> == obj.__buffer().size());
-    auto data = obj.__buffer().clone(sloc);
+    auto data = obj.__buffer().clone(srcinfo);
     return T(make_logic_buffer(data));
   }
 
   template <typename R, typename T>
-  static auto slice(const T& obj, size_t start, const source_info& sloc) {
+  static auto slice(const T& obj, size_t start, const source_info& srcinfo) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    auto buffer = make_logic_buffer(ch_width_v<R>, "slice", sloc);
+    auto buffer = make_logic_buffer(ch_width_v<R>, "slice", srcinfo);
     buffer.write(0, obj.__buffer(), start, ch_width_v<R>);
     return std::add_const_t<R>(buffer);
   }
 
   template <typename R, typename T>
-  static auto sliceref(const T& obj, size_t start, const source_info& sloc) {
+  static auto sliceref(const T& obj, size_t start, const source_info& srcinfo) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    auto data = obj.__buffer().sliceref(ch_width_v<R>, start, sloc);
+    auto data = obj.__buffer().sliceref(ch_width_v<R>, start, srcinfo);
     return R(make_logic_buffer(data));
   }
 
@@ -242,143 +240,143 @@ public:
   }
 
   template <typename T>
-  static const auto& sloc(const T& obj) {
-    return obj.__buffer().sloc();
+  static const auto& srcinfo(const T& obj) {
+    return obj.__buffer().srcinfo();
   }
 
   template <typename T, typename U>
-  static auto do_eq(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_eq(other, sloc);
+  static auto do_eq(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_eq(other, srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_ne(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_ne(other, sloc);
+  static auto do_ne(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_ne(other, srcinfo);
   }
 
   template <typename T>
-  static auto do_not(const T& obj, const source_info& sloc) {
-    return obj.do_not(sloc);
+  static auto do_not(const T& obj, const source_info& srcinfo) {
+    return obj.do_not(srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_andl(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_andl(other, sloc);
+  static auto do_andl(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_andl(other, srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_orl(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_orl(other, sloc);
+  static auto do_orl(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_orl(other, srcinfo);
   }
 
   template <typename R, typename T>
-  static auto do_inv(const T& obj, const source_info& sloc) {
-    return obj.template do_inv<R>(sloc);
+  static auto do_inv(const T& obj, const source_info& srcinfo) {
+    return obj.template do_inv<R>(srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_and(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_and<R>(other, sloc);
+  static auto do_and(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_and<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_or(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_or<R>(other, sloc);
+  static auto do_or(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_or<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_xor(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_xor<R>(other, sloc);
+  static auto do_xor(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_xor<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_shl(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_shl<R>(other, sloc);
+  static auto do_shl(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_shl<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_shr(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_shr<R>(other, sloc);
+  static auto do_shr(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_shr<R>(other, srcinfo);
   }
 
   template <typename T>
-  static auto do_andr(const T& obj, const source_info& sloc) {
-    return obj.do_andr(sloc);
+  static auto do_andr(const T& obj, const source_info& srcinfo) {
+    return obj.do_andr(srcinfo);
   }
 
   template <typename T>
-  static auto do_orr(const T& obj, const source_info& sloc) {
-    return obj.do_orr(sloc);
+  static auto do_orr(const T& obj, const source_info& srcinfo) {
+    return obj.do_orr(srcinfo);
   }
 
   template <typename T>
-  static auto do_xorr(const T& obj, const source_info& sloc) {
-    return obj.do_xorr(sloc);
+  static auto do_xorr(const T& obj, const source_info& srcinfo) {
+    return obj.do_xorr(srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_lt(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_lt(other, sloc);
+  static auto do_lt(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_lt(other, srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_le(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_le(other, sloc);
+  static auto do_le(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_le(other, srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_gt(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_gt(other, sloc);
+  static auto do_gt(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_gt(other, srcinfo);
   }
 
   template <typename T, typename U>
-  static auto do_ge(const T& obj, const U& other, const source_info& sloc) {
-    return obj.do_ge(other, sloc);
+  static auto do_ge(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.do_ge(other, srcinfo);
   }
 
   template <typename R, typename T>
-  static auto do_neg(const T& obj, const source_info& sloc) {
-    return obj.template do_neg<R>(sloc);
+  static auto do_neg(const T& obj, const source_info& srcinfo) {
+    return obj.template do_neg<R>(srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_add(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_add<R>(other, sloc);
+  static auto do_add(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_add<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_sub(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_sub<R>(other, sloc);
+  static auto do_sub(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_sub<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_mul(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_mul<R>(other, sloc);
+  static auto do_mul(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_mul<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_div(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_div<R>(other, sloc);
+  static auto do_div(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_div<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_mod(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_mod<R>(other, sloc);
+  static auto do_mod(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_mod<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_min(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_min<R>(other, sloc);
+  static auto do_min(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_min<R>(other, srcinfo);
   }
 
   template <typename R, typename T, typename U>
-  static auto do_max(const T& obj, const U& other, const source_info& sloc) {
-    return obj.template do_max<R>(other, sloc);
+  static auto do_max(const T& obj, const U& other, const source_info& srcinfo) {
+    return obj.template do_max<R>(other, srcinfo);
   }
 
   template <typename R, typename T>
-  static auto do_abs(const T& obj, const source_info& sloc) {
-    return obj.template do_abs<R>(sloc);
+  static auto do_abs(const T& obj, const source_info& srcinfo) {
+    return obj.template do_abs<R>(srcinfo);
   }
 
   template <typename T>
@@ -395,7 +393,7 @@ auto get_lnode(const T& obj) {
 }
 
 template <typename R, typename T>
-auto to_lnode(const T& obj, const source_info& sloc) {
+auto to_lnode(const T& obj, const source_info& srcinfo) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
   if constexpr (is_logic_type_v<T>
              && (ch_width_v<T> == ch_width_v<R>)) {
@@ -413,20 +411,20 @@ auto to_lnode(const T& obj, const source_info& sloc) {
     ch_system_t<R> tmp(obj);
     return lnode(get_snode(tmp));
   } else {
-    return get_lnode(R(obj, sloc));
+    return get_lnode(R(obj, srcinfo));
   }
 }
 
 template <unsigned N, typename T>
-auto to_lnode(const T& obj, const source_info& sloc) {
-  return to_lnode<ch_bit<N>>(obj, sloc);
+auto to_lnode(const T& obj, const source_info& srcinfo) {
+  return to_lnode<ch_bit<N>>(obj, srcinfo);
 }
 
 template <typename R, typename T>
-auto logic_op_cast(const T& obj, const source_info& sloc) {
+auto logic_op_cast(const T& obj, const source_info& srcinfo) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
   if constexpr ((is_signed_v<T> != is_signed_v<R> || !is_resizable_v<R>)) {
-    return R(obj, sloc);
+    return R(obj, srcinfo);
   } else
   if constexpr (is_logic_type_v<T>) {
     return obj.template as<ch_size_cast_t<R, ch_width_v<T>>>();
@@ -439,7 +437,7 @@ auto logic_op_cast(const T& obj, const source_info& sloc) {
     ch_size_cast_t<ch_system_t<T>, N> tmp(obj);
     return ch_size_cast_t<R, N>(make_logic_buffer(get_snode(tmp)));
   } else {
-    return R(obj, sloc);
+    return R(obj, srcinfo);
   }
 }
 
@@ -449,26 +447,26 @@ auto make_logic_type(const lnode& node) {
 }
 
 template <ch_op op, typename A>
-auto make_logic_op(const A& a, const source_info& sloc) {
-  auto node = createOpNode(op, 1, false, get_lnode(a), sloc);
+auto make_logic_op(const A& a, const source_info& srcinfo) {
+  auto node = createOpNode(op, 1, false, get_lnode(a), srcinfo);
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A>
-auto make_logic_op(const A& a, const source_info& sloc) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), sloc);
+auto make_logic_op(const A& a, const source_info& srcinfo) {
+  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), srcinfo);
   return make_logic_type<R>(node);
 }
 
 template <ch_op op, typename A, typename B>
-auto make_logic_op(const A& a, const B& b, const source_info& sloc) {
-  auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b), sloc);
+auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
+  auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b), srcinfo);
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A, typename B>
-auto make_logic_op(const A& a, const B& b, const source_info& sloc) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b), sloc);
+auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
+  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b), srcinfo);
   return make_logic_type<R>(node);
 }
 
@@ -505,336 +503,336 @@ auto make_logic_op(const A& a, const B& b, const source_info& sloc) {
   auto as_uint() { \
     return this->template as<ch_uint<type::traits::bitwidth>>(); \
   } \
-  auto as_reg(CH_SLOC) { \
+  auto as_reg(CH_SRC_INFO) { \
     auto self = reinterpret_cast<type*>(this); \
-    ch_reg<type> s(sloc); \
+    ch_reg<type> s(srcinfo); \
     *self = s; \
     return s; \
   } \
-  auto as_reg(const type& init, CH_SLOC) { \
+  auto as_reg(const type& init, CH_SRC_INFO) { \
     auto self = reinterpret_cast<type*>(this); \
-    ch_reg<type> s(init, sloc); \
+    ch_reg<type> s(init, srcinfo); \
     *self = s; \
     return s; \
   } \
-  auto ref(CH_SLOC) { \
+  auto ref(CH_SRC_INFO) { \
     auto self = reinterpret_cast<type*>(this); \
-    return ch::internal::logic_accessor::sliceref<type>(*self, 0, sloc); \
+    return ch::internal::logic_accessor::sliceref<type>(*self, 0, srcinfo); \
   } \
-  auto clone(CH_SLOC) const { \
+  auto clone(CH_SRC_INFO) const { \
     auto self = reinterpret_cast<const type*>(this); \
-    return ch::internal::logic_accessor::clone(*self, sloc); \
+    return ch::internal::logic_accessor::clone(*self, srcinfo); \
   }
 
 #define CH_LOGIC_OPERATOR1B_IMPL(base, op, method) \
-  friend auto op(const sloc_proxy<base>& self) { \
+  friend auto op(const srcinfo_proxy<base>& self) { \
     auto& _self = reinterpret_cast<const T&>(self.data); \
-    return logic_accessor::method<T>(_self, self.sloc); \
+    return logic_accessor::method<T>(_self, self.srcinfo); \
   }
 
 #define CH_LOGIC_OPERATOR1X_IMPL(base, op, method) \
-  friend auto op(const sloc_proxy<base>& self) { \
+  friend auto op(const srcinfo_proxy<base>& self) { \
     auto& _self = reinterpret_cast<const T&>(self.data); \
-    return logic_accessor::method<T>(_self, self.sloc); \
+    return logic_accessor::method<T>(_self, self.srcinfo); \
   }
 
 #define CH_LOGIC_OPERATOR2B_IMPL(base, op, method) \
-  friend auto op(const sloc_proxy<base>& lhs, const base& rhs) { \
+  friend auto op(const srcinfo_proxy<base>& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, lhs.sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const sloc_proxy<base>& lhs, const U& rhs) { \
+  friend auto op(const srcinfo_proxy<base>& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = logic_op_cast<T>(rhs, lhs.sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, lhs.sloc); \
+      auto _rhs = logic_op_cast<T>(rhs, lhs.srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
     } else { \
-      return op(_lhs, sloc_proxy(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.sloc)); \
+      return op(_lhs, srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.srcinfo)); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const U& lhs, const sloc_proxy<base>& rhs) { \
+  friend auto op(const U& lhs, const srcinfo_proxy<base>& rhs) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs, rhs.sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, rhs.sloc); \
+      auto _lhs = logic_op_cast<T>(lhs, rhs.srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, rhs.srcinfo); \
     } else { \
-      return op(sloc_proxy(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.sloc), _rhs); \
+      return op(srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.srcinfo), _rhs); \
     } \
   }
 
 #define CH_LOGIC_OPERATOR2X_IMPL(base, op, method) \
-  friend auto op(const sloc_proxy<base>& lhs, const base& rhs) { \
+  friend auto op(const srcinfo_proxy<base>& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, lhs.sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const sloc_proxy<base>& lhs, const U& rhs) { \
+  friend auto op(const srcinfo_proxy<base>& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = logic_op_cast<T>(rhs, lhs.sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, lhs.sloc); \
+      auto _rhs = logic_op_cast<T>(rhs, lhs.srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
     } else { \
-      auto _rhs = sloc_proxy(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.sloc); \
+      auto _rhs = srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.srcinfo); \
       return op(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const U& lhs, const sloc_proxy<base>& rhs) { \
+  friend auto op(const U& lhs, const srcinfo_proxy<base>& rhs) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs, rhs.sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, rhs.sloc); \
+      auto _lhs = logic_op_cast<T>(lhs, rhs.srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, rhs.srcinfo); \
     } else { \
-      return op(sloc_proxy(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.sloc), _rhs); \
+      return op(srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.srcinfo), _rhs); \
     } \
   }
 
 #define CH_LOGIC_OPERATOR2Y_IMPL(base, op, method) \
-  friend auto op(const sloc_proxy<base>& lhs, const base& rhs) { \
+  friend auto op(const srcinfo_proxy<base>& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, lhs.sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
             CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto op(const sloc_proxy<base>& lhs, const U& rhs) { \
+  friend auto op(const srcinfo_proxy<base>& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto _rhs = ch_logic_t<U>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, lhs.sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
             CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto op(const U& lhs, const sloc_proxy<base>& rhs) { \
+  friend auto op(const U& lhs, const srcinfo_proxy<base>& rhs) { \
     auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
-    return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, rhs.sloc); \
+    return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, rhs.srcinfo); \
   }
   
 #define CH_LOGIC_OPERATOR2Z_IMPL(base, op, method) \
-  T& op(const sloc_proxy<base>& rhs) { \
+  T& op(const srcinfo_proxy<base>& rhs) { \
     auto& self = reinterpret_cast<T&>(*this); \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
-    self = logic_accessor::method<T>(ch_clone(self), _rhs, rhs.sloc); \
+    self = logic_accessor::method<T>(ch_clone(self), _rhs, rhs.srcinfo); \
     return self; \
   } \
   T& op(T rhs) { \
     auto& self = reinterpret_cast<T&>(*this); \
-    auto sloc = logic_accessor::sloc(rhs); \
-    self = logic_accessor::method<T>(ch_clone(self), rhs, sloc); \
+    auto srcinfo = logic_accessor::srcinfo(rhs); \
+    self = logic_accessor::method<T>(ch_clone(self), rhs, srcinfo); \
     return self; \
   }
 
 #define CH_LOGIC_FUNCTION1B_DECL(base, func) \
-  template <typename T> auto func(const base<T>& self, CH_SLOC);
+  template <typename T> auto func(const base<T>& self, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION1X_DECL(base, func) \
-  template <unsigned R, typename T> auto func(const base<T>& self, CH_SLOC);
+  template <unsigned R, typename T> auto func(const base<T>& self, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION2B_DECL(base, func) \
-  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SLOC); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SLOC); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SLOC);
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION2X_DECL(base, func) \
-  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SLOC); \
-  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SLOC); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SLOC); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs, CH_SLOC); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SLOC); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SLOC);
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION2Y_DECL(base, func) \
-  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SLOC); \
-  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SLOC); \
-  template <typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SLOC); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SLOC); \
-  template <typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SLOC); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SLOC);
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION1B_IMPL(base, func, method) \
-  friend auto func(const base& self, CH_SLOC) { \
+  friend auto func(const base& self, CH_SRC_INFO) { \
     auto& _self = reinterpret_cast<const T&>(self); \
-    return logic_accessor::method<T>(_self, sloc); \
+    return logic_accessor::method<T>(_self, srcinfo); \
   }
 
 #define CH_LOGIC_FUNCTION1X_IMPL(base, func, method) \
-  friend auto func(const base& self, CH_SLOC) { \
+  friend auto func(const base& self, CH_SRC_INFO) { \
     auto& _self = reinterpret_cast<const T&>(self); \
-    return logic_accessor::method<T>(_self, sloc); \
+    return logic_accessor::method<T>(_self, srcinfo); \
   } \
   template <unsigned R> \
-  friend auto func(const base& self, CH_SLOC) { \
+  friend auto func(const base& self, CH_SRC_INFO) { \
     auto& _self = reinterpret_cast<const T&>(self); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return logic_accessor::method<T>(_self, sloc); \
+      return logic_accessor::method<T>(_self, srcinfo); \
     } else { \
-      return logic_accessor::method<ch_size_cast_t<T, R>>(_self, sloc); \
+      return logic_accessor::method<ch_size_cast_t<T, R>>(_self, srcinfo); \
     } \
   }
 
 #define CH_LOGIC_FUNCTION2B_IMPL(base, func, method) \
-  friend auto func(const base& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto func(const base& lhs, const U& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = logic_op_cast<T>(rhs, sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      auto _rhs = logic_op_cast<T>(rhs, srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return func(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs), sloc); \
+      return func(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs), srcinfo); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto func(const U& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs, sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      auto _lhs = logic_op_cast<T>(lhs, srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs, sloc); \
+      return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs, srcinfo); \
     } \
   }
 
 #define CH_LOGIC_FUNCTION2X_IMPL(base, func, method) \
-  friend auto func(const base& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
   } \
   template <unsigned R> \
-  friend auto func(const base& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, srcinfo); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto func(const base& lhs, const U& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = logic_op_cast<T>(rhs, sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      auto _rhs = logic_op_cast<T>(rhs, srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return func(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs), sloc); \
+      return func(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs), srcinfo); \
     } \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto func(const base& lhs, const U& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = logic_op_cast<T>(rhs, sloc); \
+      auto _rhs = logic_op_cast<T>(rhs, srcinfo); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+        return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
       } else { \
-        return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, sloc); \
+        return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, srcinfo); \
       } \
     } else { \
-      return func<R>(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs), sloc); \
+      return func<R>(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs), srcinfo); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto func(const U& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs, sloc); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      auto _lhs = logic_op_cast<T>(lhs, srcinfo); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs, sloc); \
+      return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs, srcinfo); \
     } \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto func(const U& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_op_cast<T>(lhs, sloc); \
+      auto _lhs = logic_op_cast<T>(lhs, srcinfo); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+        return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
       } else { \
-        return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, sloc); \
+        return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, srcinfo); \
       } \
     } else { \
-      return func<R>(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs, sloc); \
+      return func<R>(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs, srcinfo); \
     } \
   }
 
 #define CH_LOGIC_FUNCTION2Y_IMPL(base, func, method) \
-  friend auto func(const base& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
   } \
   template <unsigned R> \
-  friend auto func(const base& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, srcinfo); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto func(const base& lhs, const U& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_logic_t<U>(rhs); \
-    return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+    return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto func(const base& lhs, const U& rhs, CH_SLOC) { \
+  friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_logic_t<U>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return logic_accessor::method<T>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
     } else { \
-      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs, srcinfo); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto func(const U& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, sloc); \
+    return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, srcinfo); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto func(const U& lhs, const base& rhs, CH_SLOC) { \
+  friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, srcinfo); \
     } else { \
-      return logic_accessor::method<ch_size_cast_t<ch_logic_t<U>, R>>(_lhs, _rhs, sloc); \
+      return logic_accessor::method<ch_size_cast_t<ch_logic_t<U>, R>>(_lhs, _rhs, srcinfo); \
     } \
   }
 

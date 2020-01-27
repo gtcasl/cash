@@ -25,10 +25,10 @@ struct Config {
   static_assert(ispow2(DataBits) && (DataBits <= BlockSize*8), "invalid DataBits");
   static_assert(ispow2(WordBits) && (WordBits <= DataBits),  "invalid WordBits");
 
-  static constexpr unsigned num_ways   = NumWays;
-  static constexpr unsigned addr_bits  = AddrBits;
-  static constexpr unsigned data_bits  = DataBits;
-  static constexpr unsigned word_bits  = WordBits;
+  static constexpr unsigned num_ways  = NumWays;
+  static constexpr unsigned addr_bits = AddrBits;
+  static constexpr unsigned data_bits = DataBits;
+  static constexpr unsigned word_bits = WordBits;
 
   static constexpr unsigned num_blocks  = CacheSize / BlockSize;
   static constexpr unsigned block_bits  = BlockSize * 8;
@@ -133,7 +133,7 @@ struct CacheWay {
   void describe() {
     //--
     static constexpr unsigned words_per_block = Cfg::block_bits / Cfg::word_bits;
-    std::array<ch_mem<ch_bit<Cfg::word_bits>, Cfg::num_sets>, words_per_block> data_store;
+    ch_vec<ch_mem<ch_bit<Cfg::word_bits>, Cfg::num_sets>, words_per_block> data_store;
     for (unsigned i = 0; i < words_per_block; ++i) {
       ch_asliceref<Cfg::word_bits>(io.rd_data, i) = data_store[i].read(io.index);
       auto wdata = ch_aslice<Cfg::word_bits>(io.wr_data, i);
@@ -176,7 +176,7 @@ struct Cache {
     auto r_mem_writedata = io.mem.writedata.as_reg();
 
     //--
-    std::array<ch_module<CacheWay<Cfg>>, Cfg::num_ways> ways;
+    ch_vec<ch_module<CacheWay<Cfg>>, Cfg::num_ways> ways;
     ch_module<ReplacePLRU<Cfg>> plru;
     ch_reg<State> state(State::idle);
     ch_vec<ch_bit<Cfg::block_bits>, Cfg::num_ways> rd_data_set;

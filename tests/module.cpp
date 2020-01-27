@@ -80,7 +80,7 @@ struct Filter {
 };
 
 template <typename T>
-struct FilterBlock {
+struct FilterBlockX {
   filter_io<T> io;
 
   void describe() {
@@ -90,6 +90,19 @@ struct FilterBlock {
   }
 
   ch_module<Filter<T>> f1_, f2_;
+};
+
+template <typename T>
+struct FilterBlockV {
+  filter_io<T> io;
+
+  void describe() {
+    fs_[0][0].io.x(io.x);
+    fs_[0][0].io.y(fs_[0][1].io.x);
+    fs_[0][1].io.y(io.y);    
+  }
+
+  ch_vec<ch_vec<ch_module<Filter<T>>, 2>, 2> fs_;
 };
 
 struct Adder {
@@ -320,7 +333,7 @@ TEST_CASE("module", "[module]") {
     });
 
     TESTX([]()->bool {
-      ch_device<FilterBlock<ch_uint16>> device;
+      ch_device<FilterBlockX<ch_uint16>> device;
       ch_tracer trace(device);
       ch_tick t = trace.reset(0);
 
@@ -334,11 +347,35 @@ TEST_CASE("module", "[module]") {
       ret &= (12 == device.io.y.data);
       ret &= !device.io.y.parity;
 
-      ch_toVerilog("filter.v", device);
-      ch_toFIRRTL("filter.fir", device);
+      ch_toVerilog("filterx.v", device);
+      ch_toFIRRTL("filterx.fir", device);
 
-      trace.toVerilog("filter_tb.v", "filter.v");
-      ret &= (checkVerilog("filter_tb.v"));      
+      trace.toVerilog("filterx_tb.v", "filterx.v");
+      ret &= (checkVerilog("filterx_tb.v"));      
+
+      return !!ret;
+    });
+
+    TESTX([]()->bool {
+      ch_device<FilterBlockV<ch_uint16>> device;
+      ch_tracer trace(device);
+      ch_tick t = trace.reset(0);
+
+      device.io.x.data   = 3;
+      device.io.x.valid  = 1;
+      device.io.x.parity = 0;
+      t = trace.step(t, 4);
+
+      RetCheck ret;
+      ret &= !!device.io.y.valid;
+      ret &= (12 == device.io.y.data);
+      ret &= !device.io.y.parity;
+
+      ch_toVerilog("filterv.v", device);
+      ch_toFIRRTL("filterv.fir", device);
+
+      trace.toVerilog("filterv_tb.v", "filterv.v");
+      ret &= (checkVerilog("filterv_tb.v"));      
 
       return !!ret;
     });
@@ -350,7 +387,7 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(device);
       device.io.in = 0xA;
       sim.run(10);
-      std::cout << "out = " << device.io.out << std::endl;
+      //std::cout << "out = " << device.io.out << std::endl;
       RetCheck ret;
       ret &= device.io.out == 0xe;
       return !!ret;
@@ -363,7 +400,7 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(device);
       device.io.in = 0xA;
       sim.run(10);
-      std::cout << "out = "  << device.io.out << std::endl;
+      //std::cout << "out = "  << device.io.out << std::endl;
       RetCheck ret;
       ret &= device.io.out == 0xe;
       return !!ret;
@@ -376,7 +413,7 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(device);
       device.io.in = 0xA;
       sim.run(10);
-      std::cout << "out = "  << device.io.out << std::endl;
+      //std::cout << "out = "  << device.io.out << std::endl;
       RetCheck ret;
       ret &= device.io.out == 0xd;
       return !!ret;
@@ -392,7 +429,7 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(device);
       sim.run(2);
 
-      std::cout << "out = "  << device.io.out << std::endl;
+      //std::cout << "out = "  << device.io.out << std::endl;
 
       RetCheck ret;
       ret &= device.io.out == 3;

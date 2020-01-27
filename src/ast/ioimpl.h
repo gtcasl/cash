@@ -15,7 +15,7 @@ protected:
          lnodetype type,
          uint32_t size,
          const std::string& name,
-         const source_info& sloc);
+         const source_info& srcinfo);
 
   friend class context;
 };
@@ -36,7 +36,7 @@ protected:
              uint32_t size,
              const io_value_t& value,
              const std::string& name,
-             const source_info& sloc);
+             const source_info& srcinfo);
 
   io_value_t value_;
 
@@ -70,7 +70,7 @@ protected:
             uint32_t size,
             const io_value_t& value,
             const std::string& name,
-            const source_info& sloc);
+            const source_info& srcinfo);
 
   ~inputimpl() override;
 
@@ -95,7 +95,7 @@ protected:
              lnodeimpl* src,
              const io_value_t& value,
              const std::string& name,
-             const source_info& sloc);
+             const source_info& srcinfo);
 
   ~outputimpl() override;
 
@@ -120,7 +120,7 @@ protected:
   tapimpl(context* ctx,
           lnodeimpl* target,
           const std::string& name,
-          const source_info& sloc);
+          const source_info& srcinfo);
 
   ~tapimpl() override;
 

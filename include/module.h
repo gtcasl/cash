@@ -17,17 +17,18 @@ protected:
 
 public:
 
-  static_assert(has_logic_io_v<T>, "missing io port");
+  static_assert(is_logic_io_v<decltype(T::io)>, "missing io port");
   static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
   using base = device_base;
+  using value_type = T;
   using io_type = ch_flip_io<decltype(T::io)>;
 
   io_type io;
 
-  ch_module(CH_SLOC)
+  ch_module(CH_SRC_INFO)
     : base(std::type_index(typeid(T)), is_pod_module_v<T>, idname<T>())
-    , obj_(this->load<T>(sloc))
-    , io(obj_->io, sloc)
+    , obj_(this->load<T>(srcinfo))
+    , io(obj_->io, srcinfo)
   {}
 
 #define CH_MODULE_GEN_TMPL(a, i, x) typename Arg##i
@@ -37,10 +38,10 @@ public:
 #define CH_MODULE_GEN(...) \
   template <CH_FOR_EACH(CH_MODULE_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
             CH_REQUIRE(std::is_constructible_v<T, CH_FOR_EACH(CH_MODULE_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>)> \
-  ch_module(CH_FOR_EACH(CH_MODULE_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
+  ch_module(CH_FOR_EACH(CH_MODULE_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
     : base(std::type_index(typeid(T)), is_pod_module_v<T, CH_FOR_EACH(CH_MODULE_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>, idname<T>()) \
-    , obj_(this->load<T>(sloc, CH_FOR_EACH(CH_MODULE_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__))) \
-    , io(obj_->io, sloc) \
+    , obj_(this->load<T>(srcinfo, CH_FOR_EACH(CH_MODULE_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__))) \
+    , io(obj_->io, srcinfo) \
   {}
 CH_VA_ARGS_MAP(CH_MODULE_GEN)
 #undef CH_MODULE_GEN_TMPL

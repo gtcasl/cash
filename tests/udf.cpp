@@ -34,6 +34,15 @@ TEST_CASE("udf", "[udf]") {
       udf.io.rhs = 2;
       return (3 == udf.io.dst);
     });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_udf_comb<Add>, 2> udfs;
+      for (int i = 0; i < 2; ++i) {
+        udfs[i].io.lhs = 1;
+        udfs[i].io.rhs = 2;
+      }
+      return (3 == udfs[0].io.dst && 3 == udfs[1].io.dst);
+    });
   }
 
   SECTION("udf_seq", "[udf_seq]") {
@@ -42,6 +51,15 @@ TEST_CASE("udf", "[udf]") {
       udf.io.lhs = 1;
       udf.io.rhs = 2;
       return (3 == udf.io.dst);
+    }, 1);
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_udf_seq<Add>, 2> udfs;
+      for (int i = 0; i < 2; ++i) {
+        udfs[i].io.lhs = 1;
+        udfs[i].io.rhs = 2;
+      }
+      return (3 == udfs[0].io.dst && 3 == udfs[1].io.dst);
     }, 1);
   }
 }

@@ -3,7 +3,7 @@
 
 static int g_test_number = 0;
 
-static bool begin_test(const ch::internal::source_info& sloc) {
+static bool begin_test(const ch::internal::source_location& sloc) {
   ++g_test_number;
   auto testid = std::getenv("CASH_TESTID");
   if (testid) {
@@ -85,7 +85,7 @@ RetCheck& RetCheck::operator&=(const sloc_proxy<bool>& value) {
 
 bool TEST(const std::function<ch_bool ()>& test,
           ch_tick cycles,
-          const ch::internal::source_info& sloc) {
+          const ch::internal::source_location& sloc) {
   if (!begin_test(sloc))
     return true;
 
@@ -111,7 +111,7 @@ bool TEST(const std::function<ch_bool ()>& test,
 
 bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
            ch_tick cycles,
-           const ch::internal::source_info& sloc) {
+           const ch::internal::source_location& sloc) {
   if (!begin_test(sloc))
     return true;
 
@@ -139,7 +139,7 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
 
 bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
            ch_tick cycles,
-           const ch::internal::source_info& sloc) {
+           const ch::internal::source_location& sloc) {
   if (!begin_test(sloc))
     return true;
 
@@ -167,7 +167,7 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
 }
 
 bool TESTX(const std::function<bool()>& test,
-           const ch::internal::source_info& sloc) {
+           const ch::internal::source_location& sloc) {
   if (!begin_test(sloc))
     return true;
   

@@ -15,15 +15,15 @@ TEST_CASE("hof", "[hof]") {
     });
 
     TEST([]()->ch_bool {
-      ch_vec<ch_uint<4>, 4> a{3, 2, 1, 0};
-      std::array<ch_uint<4>, 4> e{4, 3, 2, 1};
-      auto r = ch_map(a, [](const auto& x)->ch_uint<4> { return x + 1; });
+      ch_vec<ch_suint<4>, 4> a{3, 2, 1, 0}, e{4, 3, 2, 1};
+      auto r = ch_map(a, [](const auto& x)->ch_suint<4> { return x + 1; });
       return (r == e);
     });
 
     TEST([]()->ch_bool {
-      ch_vec<ch_suint<4>, 4> a{3, 2, 1, 0}, e{4, 3, 2, 1};
-      auto r = ch_map(a, [](const auto& x)->ch_suint<4> { return x + 1; });
+      ch_vec<ch_uint<4>, 4> a{3, 2, 1, 0};
+      std::array<ch_uint<4>, 4> e{4, 3, 2, 1};
+      auto r = ch_map(a, [](const auto& x)->ch_uint<4> { return x + 1; });
       return (r == e);
     });
   }

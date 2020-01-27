@@ -240,12 +240,12 @@ struct logic_io_traits {
   static constexpr int type = traits_logic_io;
   static constexpr unsigned bitwidth = Bitwidth;
   static constexpr ch_direction direction = Direction;
-  using logic_io      = LogicIO;
-  using flip_io       = FlipIO;
-  using system_io     = SystemIO;
-  using system_flip_io= SystemFlipIO;
-  using system_type   = SystemType;
-  using logic_type    = LogicType;
+  using logic_io       = LogicIO;
+  using flip_io        = FlipIO;
+  using system_io      = SystemIO;
+  using system_flip_io = SystemFlipIO;
+  using system_type    = SystemType;
+  using logic_type     = LogicType;
 };
 
 template <ch_direction Direction,
@@ -258,11 +258,11 @@ struct base_system_io_traits {
   static constexpr unsigned bitwidth = ch_width_v<SystemType>;
   static constexpr unsigned is_signed = is_signed_v<SystemType>;
   static constexpr ch_direction direction = Direction;
-  using system_io     = SystemIO;
-  using flip_io       = FlipIO;
-  using logic_io      = LogicIO;
-  using system_type   = SystemType;
-  using logic_type    = ch_logic_t<SystemType>;
+  using system_io   = SystemIO;
+  using flip_io     = FlipIO;
+  using logic_io    = LogicIO;
+  using system_type = SystemType;
+  using logic_type  = ch_logic_t<SystemType>;
 };
 
 template <ch_direction Direction,
@@ -275,11 +275,11 @@ struct base_logic_io_traits {
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
   static constexpr unsigned is_signed = is_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
-  using logic_io      = LogicIO;
-  using flip_io       = FlipIO;
-  using system_io     = SystemIO;
-  using logic_type    = LogicType;
-  using system_type   = ch_system_t<LogicType>;
+  using logic_io    = LogicIO;
+  using flip_io     = FlipIO;
+  using system_io   = SystemIO;
+  using logic_type  = LogicType;
+  using system_type = ch_system_t<LogicType>;
 };
 
 template <typename T>

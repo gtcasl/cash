@@ -33,7 +33,7 @@ using select_constructible_t = typename select_constructible<R, Ts...>::type;
 
 #define CH_UNION_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::make_logic_buffer( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, CH_STRINGIZE(CH_PAIR_R(x)), buffer.sloc()))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, CH_STRINGIZE(CH_PAIR_R(x)), buffer.srcinfo()))
 
 #define CH_UNION_SYSTEM_FIELD(a, i, x) \
   ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
@@ -108,21 +108,21 @@ public:
 #define CH_UNION_LOGIC_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   type_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), CH_CUR_SLOC)) \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), CH_CUR_SRC_INFO)) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   template <typename __U, \
             CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
-  type_name(const __U& __other, CH_SLOC) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), sloc)) { \
+  type_name(const __U& __other, CH_SRC_INFO) \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), srcinfo)) { \
     using arg_type = ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>; \
     auto arg = ch_sliceref<arg_type>(*this) = __other; \
     if constexpr (ch_width_v<arg_type> < traits::bitwidth) { \
       ch_sliceref<ch_bit<traits::bitwidth - ch_width_v<arg_type>>>(*this, ch_width_v<arg_type>) = 0; \
     } \
   } \
-  type_name(const type_name& __other, CH_SLOC) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), sloc)) { \
+  type_name(const type_name& __other, CH_SRC_INFO) \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name), srcinfo)) { \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic.h"
+#include "ioport.h"
 
 namespace ch {
 namespace internal {
@@ -12,7 +12,7 @@ enum class udf_verilog { header, declaration, body };
 void createUDFNode(const std::string& name, 
                    bool is_seq, 
                    udf_iface* udf,
-                   const source_info& sloc);
+                   const source_info& srcinfo);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,8 +54,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-CH_DEF_SFINAE_CHECK(has_system_io, is_system_io_v<decltype(T::io)>);
 
 template<typename T>
 using detect_eval_t = decltype(std::declval<T&>().eval());
@@ -109,14 +107,15 @@ protected:
 template <typename T>
 class ch_udf_comb {
 public:
-  static_assert(has_system_io_v<T>, "missing io port");
+  static_assert(is_system_io_v<decltype(T::io)>, "missing io port");
   static_assert(is_detected_v<detect_eval_t, T>, "missing eval() method");
+  using value_type = T;
   using io_type = ch_flip_io<ch_logic_io<decltype(T::io)>>;
 
   io_type io;
 
-  ch_udf_comb(CH_SLOC)
-    : io(create(new udf_wrapper<T>(), sloc)->io(), sloc)
+  ch_udf_comb(CH_SRC_INFO)
+    : io(create(new udf_wrapper<T>(), srcinfo)->io(), srcinfo)
   {}
 
 #define CH_UDF_GEN_TMPL(a, i, x) typename Arg##i
@@ -127,8 +126,8 @@ public:
   template <CH_FOR_EACH(CH_UDF_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
             CH_REQUIRE(std::is_constructible_v<T, CH_FOR_EACH(CH_UDF_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)> \
                     && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_udf_comb>)> \
-  ch_udf_comb(CH_FOR_EACH(CH_UDF_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
-    : io(create(new udf_wrapper<T>(CH_FOR_EACH(CH_UDF_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)), sloc)->io(), sloc) \
+  ch_udf_comb(CH_FOR_EACH(CH_UDF_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
+    : io(create(new udf_wrapper<T>(CH_FOR_EACH(CH_UDF_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)), srcinfo)->io(), srcinfo) \
   {}
 CH_VA_ARGS_MAP(CH_UDF_GEN)
 #undef CH_UDF_GEN_TMPL
@@ -143,8 +142,8 @@ CH_VA_ARGS_MAP(CH_UDF_GEN)
 
 protected:
 
-  static auto create(udf_wrapper<T>* obj, const source_info& sloc) {
-    createUDFNode(idname<T>(), false, obj, sloc);
+  static auto create(udf_wrapper<T>* obj, const source_info& srcinfo) {
+    createUDFNode(idname<T>(), false, obj, srcinfo);
     return obj;
   }
 
@@ -160,14 +159,15 @@ protected:
 template <typename T>
 class ch_udf_seq {
 public:
-  static_assert(has_system_io_v<T>, "missing io port");
+  static_assert(is_system_io_v<decltype(T::io)>, "missing io port");
   static_assert(is_detected_v<detect_eval_t, T>, "missing eval() method");
+  using value_type = T;
   using io_type = ch_flip_io<ch_logic_io<decltype(T::io)>>;
 
   io_type io;
 
-  ch_udf_seq(CH_SLOC)
-    : io(create(new udf_wrapper<T>(), sloc)->io(), sloc)
+  ch_udf_seq(CH_SRC_INFO)
+    : io(create(new udf_wrapper<T>(), srcinfo)->io(), srcinfo)
   {}
 
 #define CH_UDF_GEN_TMPL(a, i, x) typename Arg##i
@@ -178,8 +178,8 @@ public:
   template <CH_FOR_EACH(CH_UDF_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
             CH_REQUIRE(std::is_constructible_v<T, CH_FOR_EACH(CH_UDF_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)> \
                     && !std::is_same_v<remove_cv_ref_t<Arg0>, ch_udf_seq>)> \
-  ch_udf_seq(CH_FOR_EACH(CH_UDF_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
-    : io(create(new udf_wrapper<T>(CH_FOR_EACH(CH_UDF_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)), sloc)->io(), sloc) \
+  ch_udf_seq(CH_FOR_EACH(CH_UDF_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
+    : io(create(new udf_wrapper<T>(CH_FOR_EACH(CH_UDF_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)), srcinfo)->io(), srcinfo) \
   {}
 CH_VA_ARGS_MAP(CH_UDF_GEN)
 #undef CH_UDF_GEN_TMPL
@@ -194,8 +194,8 @@ CH_VA_ARGS_MAP(CH_UDF_GEN)
 
 protected:
 
-  static auto create(udf_wrapper<T>* obj, const source_info& sloc) {
-    createUDFNode(idname<T>(), true, obj, sloc);
+  static auto create(udf_wrapper<T>* obj, const source_info& srcinfo) {
+    createUDFNode(idname<T>(), true, obj, srcinfo);
     return obj;
   }
 

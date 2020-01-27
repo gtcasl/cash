@@ -28,10 +28,10 @@ protected:
   };
 
   struct cond_br_t {
-    cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent, const source_info& p_sloc)
+    cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent, const source_info& p_srcinfo)
       : key(p_key)
       , parent(p_parent)
-      , sloc(p_sloc)
+      , srcinfo(p_srcinfo)
     {}
 
     ~cond_br_t() {
@@ -42,7 +42,7 @@ protected:
 
     lnodeimpl* key;
     cond_block_t* parent;
-    const source_info sloc;
+    const source_info srcinfo;
     std::list<cond_block_t*> blocks;
   };
 
@@ -92,7 +92,7 @@ public:
 
   void add_definition(lnodeimpl* node);
 
-  void begin_branch(lnodeimpl* key, const source_info& sloc);
+  void begin_branch(lnodeimpl* key, const source_info& srcinfo);
 
   void end_branch();
 
@@ -106,9 +106,9 @@ public:
              uint32_t offset,
              uint32_t length,
              lnodeimpl* src,
-             const source_info& sloc);
+             const source_info& srcinfo);
 
-  lnodeimpl* get_predicate(const source_info& sloc);
+  lnodeimpl* get_predicate(const source_info& srcinfo);
 };
 
 }}

@@ -130,8 +130,6 @@ src/simref.cpp
 src/simref.h
 src/simulatorimpl.cpp
 src/simulatorimpl.h
-src/slocmgr.cpp
-src/slocmgr.h
 src/system.cpp
 src/timeimpl.cpp
 src/timeimpl.h

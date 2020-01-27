@@ -500,7 +500,7 @@ TEST_CASE("misc", "[misc]") {
           bypass[1].io.in = rhs;
           auto x = bypass[0].io.out + bypass[1].io.out;
           auto y = bypass[1]->bypass_->tap_ - bypass[0]->bypass_->tap_;
-          ch_print("y={0}", y);
+          //ch_print("y={0}", y);
           return x * y;
         }
       );

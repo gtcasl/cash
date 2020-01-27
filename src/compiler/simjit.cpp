@@ -319,14 +319,17 @@ extern "C" void print_data_eval(print_data_t* self) {
 
 struct assert_data_t {
   char* msg;
+  char* name;
   char* file;
   int line;
+  int column;
   sdata_type time;
 
   static uint32_t size(assertimpl* node) {
     uint32_t size = sizeof(assert_data_t);
     size += node->msg().size() + 1; // msg
-    size += node->sloc().file().size() + 1; // file
+    size += node->srcinfo().name().size() + 1; // name
+    size += node->srcinfo().sloc().file().size() + 1; // file
     return size;
   }
 
@@ -338,12 +341,19 @@ struct assert_data_t {
     memcpy(msg, node->msg().c_str(), msg_len);
     buf += msg_len;
 
-    auto file_len = node->sloc().file().size() + 1;
+    auto name_len = node->srcinfo().name().size() + 1;
+    name = reinterpret_cast<char*>(buf);
+    memcpy(name, node->srcinfo().name().c_str(), name_len);
+    buf += name_len;
+
+    auto file_len = node->srcinfo().sloc().file().size() + 1;
     file = reinterpret_cast<char*>(buf);
-    memcpy(file, node->sloc().file().c_str(), file_len);
+    memcpy(file, node->srcinfo().sloc().file().c_str(), file_len);
     buf += file_len;
 
-    line = node->sloc().line();
+    line = node->srcinfo().sloc().line();
+
+    column = node->srcinfo().sloc().column();
 
     init_sdata(cp, &time, node->time().impl());
   }
@@ -352,9 +362,11 @@ struct assert_data_t {
 extern "C" void assert_data_eval(assert_data_t* self) {
   throw std::domain_error(sstreamf() << "assertion failure at tick " 
                                      << static_cast<uint64_t>(self->time) << ", " 
-                                     << self->msg << "(" 
+                                     << self->msg << "('" 
+                                     << self->name << "' in " 
                                      << self->file << ":" 
-                                     << self->line << ")");
+                                     << self->line << ":" 
+                                     << self->column << ")");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3273,7 +3285,7 @@ public:
 SrcMarker::SrcMarker(Compiler* cp,
                      const char* fname,
                      const char* node,
-                     const source_info& sloc)
+                     const source_location& sloc)
   : cp_(cp) {
   if (node) {
     auto str = stringf("%s @var=%s @file=%s @line=%d", fname, node, sloc.file().c_str(), sloc.line());

@@ -70,9 +70,9 @@ public:
                      lnodeimpl* src,
                      uint32_t src_offset,
                      uint32_t length,
-                     const source_info& sloc);
+                     const source_info& srcinfo);
 
-  lnodeimpl* source(uint32_t offset, uint32_t length, const source_info& sloc) const;
+  lnodeimpl* source(uint32_t offset, uint32_t length, const source_info& srcinfo) const;
 
   void print(std::ostream& out) const override;
   
@@ -81,19 +81,19 @@ protected:
   proxyimpl(context* ctx,
             uint32_t size,
             const std::string& name,
-            const source_info& sloc);
+            const source_info& srcinfo);
 
   proxyimpl(context* ctx,
             lnodeimpl* src,
             const std::string& name,
-            const source_info& sloc);
+            const source_info& srcinfo);
 
   proxyimpl(context* ctx,
             lnodeimpl* src,
             uint32_t offset,
             uint32_t length,
             const std::string& name,
-            const source_info& sloc);
+            const source_info& srcinfo);
 
   std::vector<range_t> ranges_;
 
@@ -109,7 +109,7 @@ public:
              lnodeimpl* src,
              uint32_t src_offset,
              uint32_t length,
-             const source_info& sloc) override;
+             const source_info& srcinfo) override;
 
 protected:
 
@@ -118,7 +118,7 @@ protected:
           uint32_t offset,
           uint32_t length,
           const std::string& name,
-          const source_info& sloc);
+          const source_info& srcinfo);
 
   friend class context;
 };

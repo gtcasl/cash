@@ -35,7 +35,7 @@ protected:
   device_base(const std::type_index& signature, bool is_pod, const std::string& name);
 
   template <typename T, typename... Args>
-  auto load(const source_info& sloc, Args&&... args) {
+  auto load(const source_info& srcinfo, Args&&... args) {
     auto is_dup = this->begin();
     auto obj = new T(std::forward<Args>(args)...);
     if (!is_dup) {
@@ -44,7 +44,7 @@ protected:
       ch_cout.flush();
       this->end_build();
     }
-    this->end(sloc);
+    this->end(srcinfo);
     return obj;
   }
 
@@ -54,7 +54,7 @@ protected:
 
   void end_build();
 
-  void end(const source_info& sloc);
+  void end(const source_info& srcinfo);
 
   deviceimpl* impl_;
 
@@ -62,8 +62,6 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-CH_DEF_SFINAE_CHECK(has_logic_io, is_logic_io_v<decltype(T::io)>);
 
 template<typename T>
 using detect_describe_t = decltype(std::declval<T&>().describe());
@@ -86,25 +84,26 @@ protected:
 
 public:
 
-  static_assert(has_logic_io_v<T>, "missing io port");
+  static_assert(is_logic_io_v<decltype(T::io)>, "missing io port");
   static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
   using base = device_base;
+  using value_type = T;
   using io_type = ch_flip_io<ch_system_io<decltype(T::io)>>;
 
   io_type io;
 
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
-  ch_device(const std::string& name, Args&&... args)
-    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, name)
+  ch_device(Args&&... args)
+    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, idname<T>(true))
     , obj_(this->load<T>(source_info(), std::forward<Args>(args)...))
     , io(obj_->io)
   {}
 
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>
-  ch_device(Args&&... args)
-    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, idname<T>(true))
+  ch_device(const std::string& name, Args&&... args)
+    : base(std::type_index(typeid(T)), is_pod_module_v<T, Args...>, name)
     , obj_(this->load<T>(source_info(), std::forward<Args>(args)...))
     , io(obj_->io)
   {}

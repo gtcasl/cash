@@ -17,17 +17,17 @@ void branchconverter::add_definition(lnodeimpl *node) {
   cond_inits_[node->id()] = curr_block;
 }
 
-void branchconverter::begin_branch(lnodeimpl* key, const source_info& sloc) {
+void branchconverter::begin_branch(lnodeimpl* key, const source_info& srcinfo) {
   // create new conditional branch
   // add to current block and push on the stack
   cond_br_t* new_branch;
   if (!cond_branches_.empty()) {
     auto curr_branch = cond_branches_.top();
     auto curr_block = curr_branch->blocks.back();
-    new_branch = new cond_br_t(key, curr_block, sloc);
+    new_branch = new cond_br_t(key, curr_block, srcinfo);
     curr_block->branches.push_back(new_branch);
   } else {
-    new_branch = new cond_br_t(key, nullptr, sloc);
+    new_branch = new cond_br_t(key, nullptr, srcinfo);
   }
   cond_branches_.push(new_branch);
 }
@@ -98,7 +98,7 @@ void branchconverter::write(
     uint32_t offset,
     uint32_t length,
     lnodeimpl* src,
-    const source_info& sloc) {
+    const source_info& srcinfo) {
   assert(this->is_local(dst));
   auto& defs       = cond_vars_[dst];
   auto curr_branch = cond_branches_.top();
@@ -111,7 +111,7 @@ void branchconverter::write(
                             lnodeimpl* src,
                             uint32_t src_offset) {
     if (src->size() != range.length) {
-      src = ctx_->create_node<proxyimpl>(src, src_offset, range.length, "slice", sloc);
+      src = ctx_->create_node<proxyimpl>(src, src_offset, range.length, "slice", srcinfo);
     }
     slices[range][loc] = src;
   };
@@ -312,7 +312,7 @@ branchconverter::emit(proxyimpl* dst,
 
     // create select node
     auto sel = ctx_->create_node<selectimpl>(
-                        range.length, branch->key, branch->sloc);
+                        range.length, branch->key, branch->srcinfo);
     if (branch->key && (branch->key->size() <= 64)) {
       // insert switch cases in ascending order
       for (auto& value : values) {
@@ -358,7 +358,7 @@ branchconverter::emit(proxyimpl* dst,
   };
 
   // get current variable value
-  auto current = dst->source(range.offset, range.length, branch->sloc);
+  auto current = dst->source(range.offset, range.length, branch->srcinfo);
 
   // emit conditional variable
   auto it = cond_inits_.find(dst->id());
@@ -371,7 +371,7 @@ branchconverter::emit(proxyimpl* dst,
   return current;
 }
 
-lnodeimpl* branchconverter::get_predicate(const source_info& sloc) {
+lnodeimpl* branchconverter::get_predicate(const source_info& srcinfo) {
   if (cond_branches_.empty())
     return nullptr;
 
@@ -384,7 +384,7 @@ lnodeimpl* branchconverter::get_predicate(const source_info& sloc) {
   // create predicate variable
   auto zero = ctx_->create_literal(sdata_type(1, 0));
   auto one = ctx_->create_literal(sdata_type(1, 1));  
-  pred = ctx_->create_node<proxyimpl>(zero, 0, 1, "predicate", sloc);
+  pred = ctx_->create_node<proxyimpl>(zero, 0, 1, "predicate", srcinfo);
 
   // remove from source init block
   auto it = cond_inits_.find(pred->id());
@@ -393,7 +393,7 @@ lnodeimpl* branchconverter::get_predicate(const source_info& sloc) {
   }
 
   // assign predicate
-  this->write(pred, 0, 1, one, sloc);
+  this->write(pred, 0, 1, one, srcinfo);
 
   curr_block->pred = pred;
   return pred;

@@ -104,8 +104,8 @@ memimpl::memimpl(context* ctx,
                  const sdata_type& init_data,
                  bool force_logic_ram,
                  const std::string& name,
-                 const source_info& sloc)
-  : ioimpl(ctx, type_mem, data_width * num_items, name, sloc)
+                 const source_info& srcinfo)
+  : ioimpl(ctx, type_mem, data_width * num_items, name, srcinfo)
   , init_data_(init_data)
   , data_width_(data_width)
   , num_items_(num_items)
@@ -118,22 +118,22 @@ lnodeimpl* memimpl::clone(context* ctx, const clone_map&) const {
                                    init_data_,
                                    force_logic_ram_,
                                    name_,
-                                   sloc_);
+                                   srcinfo_);
 }
 
-memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_info& sloc) {
+memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_info& srcinfo) {
   for (auto port : rdports_) {
     if (port->addr().id() == addr->id())
       return port;
   }
-  auto impl = ctx_->create_node<marportimpl>(this, addr, sloc);
+  auto impl = ctx_->create_node<marportimpl>(this, addr, srcinfo);
   return impl;
 }
 
 memportimpl* memimpl::create_srport(lnodeimpl* cd,
                                     lnodeimpl* addr,
                                     lnodeimpl* enable,
-                                    const source_info& sloc) {
+                                    const source_info& srcinfo) {
   for (auto port : rdports_) {
     if (port->addr().id() == addr->id()) {
       CH_CHECK(port->cd().id() == cd->id(),
@@ -144,7 +144,7 @@ memportimpl* memimpl::create_srport(lnodeimpl* cd,
       return port;
     }
   }
-  auto impl = ctx_->create_node<msrportimpl>(this, cd, addr, enable, sloc);
+  auto impl = ctx_->create_node<msrportimpl>(this, cd, addr, enable, srcinfo);
   return impl;
 }
 
@@ -152,12 +152,12 @@ mwportimpl* memimpl::create_wport(lnodeimpl* cd,
                                   lnodeimpl* addr,
                                   lnodeimpl* wdata,
                                   lnodeimpl* enable,
-                                  const source_info& sloc) {
+                                  const source_info& srcinfo) {
   for (auto port : wrports_) {
     if (port->addr().id() == addr->id())
       throw std::domain_error("duplicate memory write to the same address not allowed");
   }
-  auto impl = ctx_->create_node<mwportimpl>(this, cd, addr, wdata, enable, sloc);
+  auto impl = ctx_->create_node<mwportimpl>(this, cd, addr, wdata, enable, srcinfo);
   return impl;
 }
 
@@ -254,8 +254,8 @@ memportimpl::memportimpl(context* ctx,
                          lnodeimpl* cd,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
-                         const source_info& sloc)
-  : ioimpl(ctx, type, size, mem->name(), sloc)
+                         const source_info& srcinfo)
+  : ioimpl(ctx, type, size, mem->name(), srcinfo)
   , mem_(mem)
   , cd_idx_(-1)
   , addr_idx_(-1)
@@ -294,8 +294,8 @@ lnodeimpl* memportimpl::remove_enable() {
 marportimpl::marportimpl(context* ctx,
                          memimpl* mem,
                          lnodeimpl* addr,
-                         const source_info& sloc)
-  : memportimpl(ctx, type_marport, mem->data_width(), mem, nullptr, addr, nullptr, sloc) {
+                         const source_info& srcinfo)
+  : memportimpl(ctx, type_marport, mem->data_width(), mem, nullptr, addr, nullptr, srcinfo) {
   // add memory as source
   this->add_src(mem);
   mem->add_rdport(this);
@@ -308,7 +308,7 @@ marportimpl::~marportimpl() {
 lnodeimpl* marportimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto mem = reinterpret_cast<memimpl*>(cloned_nodes.at(mem_->id()));
   auto addr = cloned_nodes.at(this->addr().id());
-  return ctx->create_node<marportimpl>(mem, addr, sloc_);
+  return ctx->create_node<marportimpl>(mem, addr, srcinfo_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -318,8 +318,8 @@ msrportimpl::msrportimpl(context* ctx,
                          lnodeimpl* cd,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
-                         const source_info& sloc)
-  : memportimpl(ctx, type_msrport, mem->data_width(), mem, cd, addr, enable, sloc) {
+                         const source_info& srcinfo)
+  : memportimpl(ctx, type_msrport, mem->data_width(), mem, cd, addr, enable, srcinfo) {
   // add memory as source
   this->add_src(mem);
   mem->add_rdport(this);
@@ -337,7 +337,7 @@ lnodeimpl* msrportimpl::clone(context* ctx, const clone_map& cloned_nodes) const
   if (this->has_enable()) {
     enable = cloned_nodes.at(this->enable().id());
   }
-  return ctx->create_node<msrportimpl>(mem, cd, addr, enable, sloc_);
+  return ctx->create_node<msrportimpl>(mem, cd, addr, enable, srcinfo_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -348,8 +348,8 @@ mwportimpl::mwportimpl(context* ctx,
                        lnodeimpl* addr,
                        lnodeimpl* wdata,
                        lnodeimpl* enable,
-                       const source_info& sloc)
-  : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, sloc) {
+                       const source_info& srcinfo)
+  : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, srcinfo) {
   assert(wdata->size() == mem->data_width());
   // add as memory source
   mem->add_src(this);
@@ -372,7 +372,7 @@ lnodeimpl* mwportimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
   if (this->has_enable()) {
     enable = cloned_nodes.at(this->enable().id());
   }
-  return ctx->create_node<mwportimpl>(mem, cd, addr, wdata, enable, sloc_);
+  return ctx->create_node<mwportimpl>(mem, cd, addr, wdata, enable, srcinfo_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -382,29 +382,29 @@ memory::memory(uint32_t data_width,
                const sdata_type& init_data,
                bool is_logic_rom,
                const std::string& name,
-               const source_info& sloc) {
+               const source_info& srcinfo) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");  
-  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, name, sloc);
+  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, name, srcinfo);
 }
 
-lnode memory::aread(const lnode& addr, const source_info& sloc) const {
-  return impl_->create_arport(addr.impl(), sloc);
+lnode memory::aread(const lnode& addr, const source_info& srcinfo) const {
+  return impl_->create_arport(addr.impl(), srcinfo);
 }
 
 lnode memory::sread(const lnode& addr, 
                     const lnode& enable, 
-                    const source_info& sloc) const {
-  auto cd = ctx_curr()->current_cd(sloc);
+                    const source_info& srcinfo) const {
+  auto cd = ctx_curr()->current_cd(srcinfo);
   auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
-  return impl_->create_srport(cd, addr.impl(), enable_impl, sloc);
+  return impl_->create_srport(cd, addr.impl(), enable_impl, srcinfo);
 }
 
 void memory::write(const lnode& addr, 
                    const lnode& value,
                    const lnode& enable, 
-                   const source_info& sloc) {
+                   const source_info& srcinfo) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory access disallowed inside conditional blocks");
-  auto cd = ctx_curr()->current_cd(sloc);
+  auto cd = ctx_curr()->current_cd(srcinfo);
   auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
-  impl_->create_wport(cd, addr.impl(), value.impl(), enable_impl, sloc);
+  impl_->create_wport(cd, addr.impl(), value.impl(), enable_impl, srcinfo);
 }

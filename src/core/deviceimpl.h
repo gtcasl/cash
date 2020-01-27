@@ -23,7 +23,7 @@ public:
 
   void end_build();
 
-  void end(const source_info& sloc);
+  void end(const source_info& srcinfo);
 
   context* ctx() const {
     return ctx_;

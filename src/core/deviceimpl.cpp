@@ -47,10 +47,10 @@ void deviceimpl::end_build() {
  compiler.optimize();
 }
 
-void deviceimpl::end(const source_info& sloc) {
+void deviceimpl::end(const source_info& srcinfo) {
   ctx_swap(old_ctx_);
   if (old_ctx_) {
-    old_ctx_->create_binding(ctx_, sloc);
+    old_ctx_->create_binding(ctx_, srcinfo);
   }
   is_opened_ = false;
 }
@@ -120,8 +120,8 @@ void device_base::end_build() {
   impl_->end_build();
 }
 
-void device_base::end(const source_info& sloc) {
-  impl_->end(sloc);
+void device_base::end(const source_info& srcinfo) {
+  impl_->end(srcinfo);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

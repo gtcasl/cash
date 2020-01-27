@@ -133,36 +133,36 @@ public:
   using base = ch_numbase<ch_float32>;
 
   ch_float32(const logic_buffer& buffer 
-      = make_logic_buffer(32, idname<ch_float32>(), CH_CUR_SLOC))
+      = make_logic_buffer(32, idname<ch_float32>(), CH_CUR_SRC_INFO))
     : buffer_(buffer)
   {}
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= 32)>
-  explicit ch_float32(const ch_sbitbase<U>& other, CH_SLOC)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
+  explicit ch_float32(const ch_sbitbase<U>& other, CH_SRC_INFO)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= 32)>
-  explicit ch_float32(const ch_bitbase<U>& other, CH_SLOC)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
+  explicit ch_float32(const ch_bitbase<U>& other, CH_SRC_INFO)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
-  ch_float32(float other, CH_SLOC)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
+  ch_float32(float other, CH_SRC_INFO)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
     this->operator=(other);
   }
 
-  ch_float32(const ch_sfloat32& other, CH_SLOC)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
+  ch_float32(const ch_sfloat32& other, CH_SRC_INFO)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
     base::operator=(other);
   }
 
-  ch_float32(const ch_float32& other, CH_SLOC)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), sloc)) {
+  ch_float32(const ch_float32& other, CH_SRC_INFO)
+    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
     this->operator=(other);
   }
 
@@ -514,8 +514,8 @@ auto ch_float32::do_mod(const U& other) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned Delay>
-auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
-  ch_udf_seq<sfAdd> udf(Delay, sloc);
+auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SRC_INFO) {
+  ch_udf_seq<sfAdd> udf(Delay, srcinfo);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;
@@ -523,8 +523,8 @@ auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
-  ch_udf_seq<sfSub> udf(Delay, sloc);
+auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SRC_INFO) {
+  ch_udf_seq<sfSub> udf(Delay, srcinfo);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;
@@ -532,8 +532,8 @@ auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
-  ch_udf_seq<sfMul> udf(Delay, sloc);
+auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SRC_INFO) {
+  ch_udf_seq<sfMul> udf(Delay, srcinfo);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;
@@ -541,8 +541,8 @@ auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SLOC) {
-  ch_udf_seq<sfDiv> udf(Delay, sloc);
+auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, CH_SRC_INFO) {
+  ch_udf_seq<sfDiv> udf(Delay, srcinfo);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
   udf.io.rhs = rhs;

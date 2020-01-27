@@ -34,7 +34,7 @@ void ch_write(T& obj,
 // slicing functions
 
 template <typename R, typename T>
-auto ch_slice(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_slice(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
@@ -44,14 +44,14 @@ auto ch_slice(T&& obj, size_t start = 0, CH_SLOC) {
     return obj.template as<R>();
   } else
   if constexpr (is_logic_type_v<T>) {
-    return logic_accessor::slice<R>(std::forward<T>(obj), start, sloc);
+    return logic_accessor::slice<R>(std::forward<T>(obj), start, srcinfo);
   } else {
     return system_accessor::slice<R>(std::forward<T>(obj), start);
   }
 }
 
 template <typename R, typename T>
-auto ch_sliceref(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_sliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
@@ -61,26 +61,26 @@ auto ch_sliceref(T&& obj, size_t start = 0, CH_SLOC) {
     return obj.template as<R>();
   } else
   if constexpr (is_logic_type_v<T>) {
-    return logic_accessor::sliceref<R>(std::forward<T>(obj), start, sloc);
+    return logic_accessor::sliceref<R>(std::forward<T>(obj), start, srcinfo);
   } else {
     return system_accessor::sliceref<R>(std::forward<T>(obj), start);
   }
 }
 
 template <typename R, typename T>
-auto ch_aslice(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_aslice(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
-  return ch_slice<R>(std::forward<T>(obj), start * ch_width_v<R>, sloc);
+  return ch_slice<R>(std::forward<T>(obj), start * ch_width_v<R>, srcinfo);
 }
 
 template <typename R, typename T>
-auto ch_asliceref(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_asliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
-  return ch_sliceref<R>(std::forward<T>(obj), start * ch_width_v<R>, sloc);
+  return ch_sliceref<R>(std::forward<T>(obj), start * ch_width_v<R>, srcinfo);
 }
 
 template <unsigned N, typename T>
-auto ch_slice(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_slice(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
@@ -88,13 +88,13 @@ auto ch_slice(T&& obj, size_t start = 0, CH_SLOC) {
     CH_UNUSED(start);
     return std::move(obj);
   } else {
-    return ch_slice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, sloc);
+    return ch_slice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, srcinfo);
   }
 }
 
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
-auto ch_aslice(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_aslice(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
@@ -102,13 +102,13 @@ auto ch_aslice(T&& obj, size_t start = 0, CH_SLOC) {
     CH_UNUSED(start);
     return std::move(obj);
   } else {
-    return ch_aslice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, sloc);
+    return ch_aslice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, srcinfo);
   }
 }
 
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
-auto ch_sliceref(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_sliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
@@ -116,13 +116,13 @@ auto ch_sliceref(T&& obj, size_t start = 0, CH_SLOC) {
     CH_UNUSED(start);
     return std::move(obj);
   } else {
-    return ch_sliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, sloc);
+    return ch_sliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, srcinfo);
   }
 }
 
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
-auto ch_asliceref(T&& obj, size_t start = 0, CH_SLOC) {
+auto ch_asliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
@@ -130,53 +130,53 @@ auto ch_asliceref(T&& obj, size_t start = 0, CH_SLOC) {
     CH_UNUSED(start);
     return std::move(obj);
   } else {
-    return ch_asliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, sloc);
+    return ch_asliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start, srcinfo);
   }
 }
 
 // padding function
 
 template <unsigned N, typename T>
-auto ch_pad(T&& obj, CH_SLOC) {
+auto ch_pad(T&& obj, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (0 == N || !is_resizable_v<T>) {
     static_assert(0 == N, "invalid size");
     return std::move(obj);
   } else {
-    return ch_size_cast_t<T, (ch_width_v<T> + N)>(std::forward<T>(obj), sloc);
+    return ch_size_cast_t<T, (ch_width_v<T> + N)>(std::forward<T>(obj), srcinfo);
   }
 }
 
 // resize function
 
 template <typename R, typename T>
-auto ch_resize(T&& obj, CH_SLOC) {
+auto ch_resize(T&& obj, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> <= ch_width_v<R>) {
-    return ch_pad<ch_width_v<R>-ch_width_v<T>>(std::forward<T>(obj), sloc).template as<R>();
+    return ch_pad<ch_width_v<R>-ch_width_v<T>>(std::forward<T>(obj), srcinfo).template as<R>();
   } else {
-    return ch_slice<R>(std::forward<T>(obj), 0, sloc);
+    return ch_slice<R>(std::forward<T>(obj), 0, srcinfo);
   }
 }
 
 template <unsigned M, typename T>
-auto ch_resize(T&& obj, CH_SLOC) {
+auto ch_resize(T&& obj, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> <= M) {
-    return ch_pad<M-ch_width_v<T>>(std::forward<T>(obj), sloc);
+    return ch_pad<M-ch_width_v<T>>(std::forward<T>(obj), srcinfo);
   } else {
-    return ch_slice<M>(std::forward<T>(obj), 0, sloc);
+    return ch_slice<M>(std::forward<T>(obj), 0, srcinfo);
   }
 }
 
 // rotate functions
 
 template <typename T>
-inline auto ch_rotl(const T& obj, uint32_t dist, CH_SLOC) {
+inline auto ch_rotl(const T& obj, uint32_t dist, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");  
   auto mod = dist % ch_width_v<T>;
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotl", sloc));
+    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotl", srcinfo));
     logic_accessor::write(out, 0, obj, ch_width_v<T> - mod, mod);
     logic_accessor::write(out, mod, obj, 0, ch_width_v<T> - mod);
     return out;
@@ -189,11 +189,11 @@ inline auto ch_rotl(const T& obj, uint32_t dist, CH_SLOC) {
 }
 
 template <typename T>
-inline auto ch_rotr(const T& obj, uint32_t dist, CH_SLOC) {
+inline auto ch_rotr(const T& obj, uint32_t dist, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");  
   auto mod = dist % ch_width_v<T>;
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotr", sloc));
+    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotr", srcinfo));
     logic_accessor::write(out, 0, obj, mod, ch_width_v<T> - mod);
     logic_accessor::write(out, ch_width_v<T> - mod, obj, 0, mod);
     return out;
@@ -208,13 +208,13 @@ inline auto ch_rotr(const T& obj, uint32_t dist, CH_SLOC) {
 // shuffle function
 
 template <unsigned N, typename T>
-auto ch_shuffle(const T& obj, const std::array<size_t, N>& indices, CH_SLOC) {
+auto ch_shuffle(const T& obj, const std::array<size_t, N>& indices, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(0 == (ch_width_v<T> % N), "invalid indices size");  
   auto stride = ch_width_v<T> / N;
   CH_CHECK(stride * N == ch_width_v<T>, "invalid size");
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "shuffle", sloc));
+    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "shuffle", srcinfo));
     for (unsigned i = 0; i < N; ++i) {
       auto j = indices[N - 1 - i];
       CH_CHECK(j < N, "invalid index");
@@ -315,12 +315,12 @@ void cat_impl(O& inout, uint32_t dst_offset, const I0& arg0, const Is&... args) 
 #define CH_CAT_GEN(...) \
   template <typename R, \
             CH_FOR_EACH(CH_CAT_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  auto ch_cat(CH_FOR_EACH(CH_CAT_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
+  auto ch_cat(CH_FOR_EACH(CH_CAT_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) { \
     CH_FOR_EACH(CH_CAT_GEN_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     static_assert(ch_width_v<R> == N, "size mismatch"); \
     if constexpr (is_logic_type_v<R>) { \
-      R ret(make_logic_buffer(N, "cat", sloc)); \
+      R ret(make_logic_buffer(N, "cat", srcinfo)); \
       detail::cat_impl(ret, N, CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
       return ret; \
     } else { \
@@ -330,13 +330,13 @@ void cat_impl(O& inout, uint32_t dst_offset, const I0& arg0, const Is&... args) 
     } \
   } \
   template <CH_FOR_EACH(CH_CAT_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  auto ch_cat(CH_FOR_EACH(CH_CAT_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
+  auto ch_cat(CH_FOR_EACH(CH_CAT_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) { \
     CH_FOR_EACH(CH_CAT_GEN_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     if constexpr (CH_FOR_EACH(CH_CAT_GEN_RTYPE, , CH_SEP_ORL, __VA_ARGS__)) { \
-      return ch_cat<ch_bit<N>>(CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__), sloc); \
+      return ch_cat<ch_bit<N>>(CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__), srcinfo); \
     } else { \
-      return ch_cat<ch_sbit<N>>(CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__), sloc); \
+      return ch_cat<ch_sbit<N>>(CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__), srcinfo); \
     } \
   }
 CH_VA_ARGS_MAP(CH_CAT_GEN)
@@ -351,14 +351,14 @@ CH_VA_ARGS_MAP(CH_CAT_GEN)
 // duplicate function
 
 template <unsigned N, typename T>
-auto ch_dup(T&& obj, CH_SLOC) {
+auto ch_dup(T&& obj, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N > 0, "invalid size");
   if constexpr (1 == N) {
     return std::move(obj);
   } else
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T> * N> out(make_logic_buffer(ch_width_v<T> * N, "dup", sloc));
+    ch_bit<ch_width_v<T> * N> out(make_logic_buffer(ch_width_v<T> * N, "dup", srcinfo));
     for (unsigned i = 0; i < N; ++i) {
       logic_accessor::write(out, i * ch_width_v<T>, obj, 0, ch_width_v<T>);
     }
@@ -391,9 +391,9 @@ auto ch_ref(T& obj) {
 // clone function
 
 template <typename T>
-auto ch_clone(const T& obj, CH_SLOC) {
+auto ch_clone(const T& obj, CH_SRC_INFO) {
   static_assert(is_logic_type_v<T>, "invalid type");
-  return obj.clone(sloc);
+  return obj.clone(srcinfo);
 }
 
 // map function

@@ -676,60 +676,39 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class source_info {
+class source_location {
 public:
-  explicit source_info(const char* varinfo = nullptr)   
-    : line_(0)
-    , column_(0) {
-    if (varinfo && *varinfo) {
-      std::istringstream iss(varinfo);
-      std::vector<std::string> tokens;
-      std::string token;
-      while (std::getline(iss, token, ':')) {
-        tokens.push_back(token);
-      }
-      assert(4 == tokens.size());
-      name_   = tokens[0];
-      file_   = tokens[1];
-      line_   = std::stoi(tokens[2]);
-      column_ = std::stoi(tokens[3]);
-    }   
-     
-  }
-  explicit source_info(const char* file, int line, int column)
+
+  explicit source_location(const std::string& file = "", int line = 0, int column = 0)
     : file_(file)
     , line_(line)
     , column_(column)
   {}
 
-  source_info(const source_info& other)
-    : name_(other.name_)
-    , file_(other.file_)
+  source_location(const source_location& other)
+    : file_(other.file_)
     , line_(other.line_)
+    , column_(other.column_)
   {}
 
-  source_info(source_info&& other)
-    : name_(std::move(other.name_))
-    , file_(std::move(other.file_))
+  source_location(source_location&& other)
+    : file_(std::move(other.file_))
     , line_(std::move(other.line_))
+    , column_(std::move(other.column_))
   {}
 
-  source_info& operator=(const source_info& other) {
-    name_ = other.name_;
+  source_location& operator=(const source_location& other) {
     file_ = other.file_;
     line_ = other.line_;
+    column_ = other.column_;
     return *this;
   }
 
-  source_info& operator=(source_info&& other) {
-    name_ = std::move(other.name_);
+  source_location& operator=(source_location&& other) {
     file_ = std::move(other.file_);
     line_ = std::move(other.line_);
+    column_ = std::move(other.column_);
     return *this;
-  }
-
-  const std::string& name() const {
-    return name_;
   }
 
   const std::string& file() const {
@@ -750,32 +729,33 @@ public:
 
 private:
 
-  friend std::ostream& operator<<(std::ostream& out, const source_info& sloc) {
-    out << sloc.file() << ":" << sloc.line();
+  friend std::ostream& operator<<(std::ostream& out, const source_location& sloc) {
+    out << sloc.file() << ":" << sloc.line() << ":" << sloc.column();
     return out;
   }
 
-  std::string name_;
   std::string file_;
   int line_;
   int column_;
 };
 
-#if defined(__builtin_VARINFO)
-  #define CH_CUR_SLOC ch::internal::source_info(__builtin_VARINFO())
-#elif defined(__builtin_FILE) && defined(__builtin_FILE) && defined(__builtin_COLUMN)
-  #define CH_CUR_SLOC ch::internal::source_info(__builtin_FILE(), __builtin_LINE(), __builtin_COLUMN())
-#elif defined(__builtin_FILE) && defined(__builtin_FILE)
-  #define CH_CUR_SLOC ch::internal::source_info(__builtin_FILE(), __builtin_LINE(), 0)
+#if defined(__has_builtin) 
+  #if __has_builtin(__builtin_FILE) && __has_builtin(__builtin_FILE) && __has_builtin(__builtin_COLUMN)
+    #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE(), __builtin_COLUMN())
+  #else
+    #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__, 0)
+  #endif
+#elif defined(__GNUC__) || defined(__GNUG__)
+  #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE(), 0)
 #else
-  #define CH_CUR_SLOC ch::internal::source_info(__FILE__, __LINE__, 0)
+  #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__, 0)
 #endif
 
-#define CH_SLOC const ch::internal::source_info& sloc = CH_CUR_SLOC
+#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
 
 template <typename T>
 struct sloc_proxy {
-  sloc_proxy(const T& p_data, const source_info& p_sloc = CH_CUR_SLOC) 
+  sloc_proxy(const T& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
     : data(p_data)
     , sloc(p_sloc) 
   {}  
@@ -786,9 +766,102 @@ struct sloc_proxy {
     : data(other.data)
     , sloc(other.sloc) 
   {}
+  const T& data;
+  source_location sloc;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class source_info {
+public:
+  explicit source_info(const char* varinfo = nullptr) {
+    if (varinfo && *varinfo) {
+      std::istringstream iss(varinfo);
+      std::vector<std::string> tokens;
+      std::string token;
+      while (std::getline(iss, token, ':')) {
+        tokens.push_back(token);
+      }
+      assert(4 == tokens.size());
+      name_ = tokens[0];
+      sloc_ = source_location(tokens[1], std::stoi(tokens[2]), std::stoi(tokens[3]));
+    }     
+  }
+
+  explicit source_info(const char* name, const source_location& sloc)
+    : name_(name)
+    , sloc_(sloc)
+  {}
+
+  source_info(const source_info& other)
+    : name_(other.name_)
+    , sloc_(other.sloc_)
+  {}
+
+  source_info(source_info&& other)
+    : name_(std::move(other.name_))
+    , sloc_(std::move(other.sloc_))
+  {}
+
+  source_info& operator=(const source_info& other) {
+    name_ = other.name_;
+    sloc_ = other.sloc_;
+    return *this;
+  }
+
+  source_info& operator=(source_info&& other) {
+    name_ = std::move(other.name_);
+    sloc_ = std::move(other.sloc_);
+    return *this;
+  }
+
+  const std::string& name() const {
+    return name_;
+  }
+
+  const source_location& sloc() const {
+    return sloc_;
+  }
+
+  bool empty() const {
+    return name_.empty();
+  }
+
+private:
+
+  friend std::ostream& operator<<(std::ostream& out, const source_info& srcinfo) {
+    out << "'" << srcinfo.name() << "' in " << srcinfo.sloc();
+    return out;
+  }
+
+  std::string name_;
+  source_location sloc_;
+};
+
+#if defined(__builtin_VARINFO)
+  #define CH_CUR_SRC_INFO ch::internal::source_info(__builtin_VARINFO())
+#else
+  #define CH_CUR_SRC_INFO ch::internal::source_info("", CH_CUR_SLOC)
+#endif
+
+#define CH_SRC_INFO const ch::internal::source_info& srcinfo = CH_CUR_SRC_INFO
+
+template <typename T>
+struct srcinfo_proxy {
+  srcinfo_proxy(const T& p_data, const source_info& p_srcinfo = CH_CUR_SRC_INFO) 
+    : data(p_data)
+    , srcinfo(p_srcinfo) 
+  {}  
+  
+  template <typename U,
+            CH_REQUIRE(std::is_convertible_v<U, T>)>
+  srcinfo_proxy(const srcinfo_proxy<U>& other) 
+    : data(other.data)
+    , srcinfo(other.srcinfo) 
+  {}
 
   const T& data;
-  source_info sloc;
+  source_info srcinfo;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

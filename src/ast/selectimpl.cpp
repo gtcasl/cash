@@ -10,12 +10,12 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch(const lnode& key, const source_info& sloc) {
-  ctx_curr()->begin_branch(key.impl(), sloc);
+void ch::internal::begin_branch(const lnode& key, const source_info& srcinfo) {
+  ctx_curr()->begin_branch(key.impl(), srcinfo);
 }
 
-void ch::internal::begin_branch(const source_info& sloc) {
-  ctx_curr()->begin_branch(nullptr, sloc);
+void ch::internal::begin_branch(const source_info& srcinfo) {
+  ctx_curr()->begin_branch(nullptr, srcinfo);
 }
 
 void ch::internal::end_branch() {
@@ -43,8 +43,8 @@ void ch::internal::cond_block(fvoid_t func) {
 selectimpl::selectimpl(context* ctx,
                        uint32_t size,
                        lnodeimpl* key,
-                       const source_info& sloc)
-  : lnodeimpl(ctx->node_id(), type_sel, size, ctx, "", sloc)
+                       const source_info& srcinfo)
+  : lnodeimpl(ctx->node_id(), type_sel, size, ctx, "", srcinfo)
   , has_key_(false) {
   if (key) {
     this->add_src(key);
@@ -57,7 +57,7 @@ lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
   if (this->has_key()) {
     key = cloned_nodes.at(this->key().id());
   }
-  auto node = ctx->create_node<selectimpl>(this->size(), key, sloc_);
+  auto node = ctx->create_node<selectimpl>(this->size(), key, srcinfo_);
   for (uint32_t i = (has_key_ ? 1 : 0); i < this->num_srcs(); ++i) {
     auto src = cloned_nodes.at(this->src(i).id());
     node->add_src(src);
@@ -94,7 +94,7 @@ void selectimpl::print(std::ostream& out) const {
 lnode select_impl::emit(const lnode& def_value) {
   auto& stmts = stmts_;
   auto key  = key_.empty() ? nullptr : key_.impl();
-  auto sel  = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc_);
+  auto sel  = ctx_curr()->create_node<selectimpl>(def_value.size(), key, srcinfo_);
   if (key) {
     // insert switch cases in ascending order
     for (auto& stmt : stmts) {

@@ -95,8 +95,6 @@ public:
 
   void print_operator(std::ostream& out, ch_op op);
 
-  void print_sloc(std::ostream& out, const source_info& sloc);
-
 protected:
 
   context* ctx_;

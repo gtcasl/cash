@@ -2,8 +2,8 @@
 #include <string>
 
 template <typename T>
-struct sloc_proxy {
-  sloc_proxy(const T& p_data, const char* p_varinfo = __builtin_VARINFO()) 
+struct srcinfo_proxy {
+  srcinfo_proxy(const T& p_data, const char* p_varinfo = __builtin_VARINFO()) 
     : data(p_data)
     , varinfo(p_varinfo) 
   {}  
@@ -46,7 +46,7 @@ public:
     return Object(lhs.data() + rhs.data(), lhs.varinfo().c_str());
   }
 
-  friend Object operator-(const sloc_proxy<Object>& lhs, const Object& rhs) {
+  friend Object operator-(const srcinfo_proxy<Object>& lhs, const Object& rhs) {
     return Object(lhs.data.data() + rhs.data(), lhs.varinfo.c_str());
   }
 
@@ -148,6 +148,7 @@ void program1() {
 
 template <typename T>
 void program2() {      
+  ObjectX<int> qq[2];
   ObjectX<int> obj5, obj6;  
   auto obj7 = obj0.copy();
   auto obj8 = obj1.copy();
@@ -155,7 +156,7 @@ void program2() {
   auto obj10 = fooX<T>(10);
   auto obj11 = obj0 + obj7;
   auto obj12 = obj1 + obj8;
-  std::cout << "program2=" << obj5.varinfo() << ", " << obj6.varinfo() << ", " << obj7.varinfo() << ", " 
+  std::cout << "program2=" << qq[1].varinfo() << ", " << obj5.varinfo() << ", " << obj6.varinfo() << ", " << obj7.varinfo() << ", " 
             << obj8.varinfo() << ", " << obj9.varinfo() << ", " << obj10.varinfo() << ", " << obj11.varinfo() << ", " << obj12.varinfo() << std::endl;
 }
 

@@ -18,13 +18,13 @@ lnodeimpl::lnodeimpl(uint32_t id,
                      uint32_t size,                     
                      context* ctx,
                      const std::string& name,
-                     const source_info& sloc)
+                     const source_info& srcinfo)
   : id_(id)
   , type_(type)
   , size_(size)
   , ctx_(ctx)
   , name_(name)
-  , sloc_(sloc)
+  , srcinfo_(srcinfo)
   , hash_(0)
   , prev_(nullptr)
   , next_(nullptr)
@@ -95,12 +95,12 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_info& sloc) const {
+lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_info& srcinfo) const {
   assert(length <= size_);
   auto self = const_cast<lnodeimpl*>(this);
   if (size_ == length)
     return self;
-  return ctx_->create_node<proxyimpl>(self, offset, length, "slice", sloc);
+  return ctx_->create_node<proxyimpl>(self, offset, length, "slice", srcinfo);
 }
 
 bool lnodeimpl::has_user(lnode* user) const {
@@ -162,21 +162,22 @@ void lnodeimpl::print(std::ostream& out) const {
 
 std::string lnodeimpl::debug_info() const {
   std::string name;
-  if (!sloc_.name().empty())  {
-    name = sloc_.name();
+  if (!srcinfo_.name().empty())  {
+    name = srcinfo_.name();
   } else {
     name = to_string(type_);
     if (!name_.empty()) {
       name += "-" + name_;
     }
   }
-  return stringf("'%s (%d)' in module '%s (%d)' (%s:%d)",
+  return stringf("'%s (%d)' in module '%s (%d)' (%s:%d:%d)",
                  name.c_str(),
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),
-                 sloc_.file().c_str(),
-                 sloc_.line());
+                 srcinfo_.sloc().file().c_str(),
+                 srcinfo_.sloc().line(),
+                 srcinfo_.sloc().column());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

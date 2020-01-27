@@ -272,13 +272,13 @@ public:
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
-      auto sloc = logic_accessor::sloc(*self);
+      auto srcinfo = logic_accessor::srcinfo(*self);
       ch_bit<ch_width_v<T>> tmp(make_logic_buffer(
           createOpNode(ch_op::pad,
                        ch_width_v<T>,
                        is_signed_v<U>,
                        get_lnode(reinterpret_cast<const U&>(other)),
-                       sloc)));
+                       srcinfo)));
       logic_accessor::assign(*self, tmp);
     } else {
       logic_accessor::assign(*self, reinterpret_cast<const U&>(other));
@@ -288,23 +288,23 @@ public:
 
   // subscript operators
 
-  auto at(const sloc_proxy<std::size_t>& index) const {
+  auto at(const srcinfo_proxy<std::size_t>& index) const {
     assert(index.data < ch_width_v<T>);
     auto self = reinterpret_cast<const T*>(this);
-    return logic_accessor::slice<ch_bool>(*self, index.data, index.sloc);
+    return logic_accessor::slice<ch_bool>(*self, index.data, index.srcinfo);
   }
 
-  auto at(const sloc_proxy<std::size_t>& index) {
+  auto at(const srcinfo_proxy<std::size_t>& index) {
     assert(index.data < ch_width_v<T>);
     auto self = reinterpret_cast<T*>(this);
-    return logic_accessor::sliceref<ch_bool>(*self, index.data, index.sloc);
+    return logic_accessor::sliceref<ch_bool>(*self, index.data, index.srcinfo);
   }
 
-  auto operator[](const sloc_proxy<std::size_t>& index) const {
+  auto operator[](const srcinfo_proxy<std::size_t>& index) const {
     return this->at(index);
   }
 
-  auto operator[](const sloc_proxy<std::size_t>& index) {
+  auto operator[](const srcinfo_proxy<std::size_t>& index) {
     return this->at(index);
   }
 
@@ -359,85 +359,85 @@ protected:
   }
 
   template <typename U>
-  auto do_eq(const U& other, const source_info& sloc) const {
+  auto do_eq(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::eq>(*self, other, sloc);
+    return make_logic_op<ch_op::eq>(*self, other, srcinfo);
   }
 
   template <typename U>
-  auto do_ne(const U& other, const source_info& sloc) const {
+  auto do_ne(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ne>(*self, other, sloc);
+    return make_logic_op<ch_op::ne>(*self, other, srcinfo);
   }
 
-  auto do_not(const source_info& sloc) const {
+  auto do_not(const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::notl>(*self, sloc);
-  }
-
-  template <typename U>
-  auto do_andl(const U& other, const source_info& sloc) const {
-    auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andl>(*self, other, sloc);
+    return make_logic_op<ch_op::notl>(*self, srcinfo);
   }
 
   template <typename U>
-  auto do_orl(const U& other, const source_info& sloc) const {
+  auto do_andl(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orl>(*self, other, sloc);
+    return make_logic_op<ch_op::andl>(*self, other, srcinfo);
+  }
+
+  template <typename U>
+  auto do_orl(const U& other, const source_info& srcinfo) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::orl>(*self, other, srcinfo);
   }
 
   template <typename R>
-  auto do_inv(const source_info& sloc) const {
+  auto do_inv(const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::inv>(*self, sloc);
+    return make_logic_op<R, ch_op::inv>(*self, srcinfo);
   }
 
   template <typename R, typename U>
-  auto do_and(const U& other, const source_info& sloc) const {
+  auto do_and(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::andb>(*self, other, sloc);
+    return make_logic_op<R, ch_op::andb>(*self, other, srcinfo);
   }
 
   template <typename R, typename U>
-  auto do_or(const U& other, const source_info& sloc) const {
+  auto do_or(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::orb>(*self, other, sloc);
+    return make_logic_op<R, ch_op::orb>(*self, other, srcinfo);
   }
 
   template <typename R, typename U>
-  auto do_xor(const U& other, const source_info& sloc) const {
+  auto do_xor(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<R, ch_op::xorb>(*self, other, sloc);
+    return make_logic_op<R, ch_op::xorb>(*self, other, srcinfo);
   }
 
   template <typename R, typename U>
-  auto do_shl(const U& other, const source_info& sloc) const {
+  auto do_shl(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 64, "invalid size");
-    return make_logic_op<R, ch_op::shl>(*self, other, sloc);
+    return make_logic_op<R, ch_op::shl>(*self, other, srcinfo);
   }
 
   template <typename R, typename U>
-  auto do_shr(const U& other, const source_info& sloc) const {
+  auto do_shr(const U& other, const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 64, "invalid size");
-    return make_logic_op<R, ch_op::shr>(*self, other, sloc);
+    return make_logic_op<R, ch_op::shr>(*self, other, srcinfo);
   }
 
-  auto do_andr(const source_info& sloc) const {
+  auto do_andr(const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andr>(*self, sloc);
+    return make_logic_op<ch_op::andr>(*self, srcinfo);
   }
 
-  auto do_orr(const source_info& sloc) const {
+  auto do_orr(const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orr>(*self, sloc);
+    return make_logic_op<ch_op::orr>(*self, srcinfo);
   }
 
-  auto do_xorr(const source_info& sloc) const {
+  auto do_xorr(const source_info& srcinfo) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::xorr>(*self, sloc);
+    return make_logic_op<ch_op::xorr>(*self, srcinfo);
   }
 
   void do_print(ch_ostream& out) const {

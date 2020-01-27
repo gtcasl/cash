@@ -38,7 +38,7 @@ struct MatMul {
 
   void describe() {
     // systolic array of MAC units
-    std::array<std::array<ch_module<MAC<I, O>>, P>, N> macs;
+    ch_vec<ch_vec<ch_module<MAC<I, O>>, P>, N> macs;
     ch_counter<N+P+M> ctr(io.valid_in); // valid counter
 
     // MAC array connections

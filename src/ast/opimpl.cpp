@@ -12,8 +12,8 @@ opimpl::opimpl(context* ctx,
                uint32_t size,
                bool is_signed,
                lnodeimpl* in,
-               const source_info& sloc)
-  : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), sloc) {
+               const source_info& srcinfo)
+  : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), srcinfo) {
   this->init(op, is_signed, in);
 }
 
@@ -23,8 +23,8 @@ opimpl::opimpl(context* ctx,
                bool is_signed,
                lnodeimpl* lhs,
                lnodeimpl* rhs,
-               const source_info& sloc)
-  : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), sloc) {
+               const source_info& srcinfo)
+  : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), srcinfo) {
   this->init(op, is_signed, lhs, rhs);
 }
 
@@ -49,9 +49,9 @@ lnodeimpl* opimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src0 = cloned_nodes.at(this->src(0).id());
   if (this->num_srcs() == 2) {
     auto src1 = cloned_nodes.at(this->src(1).id());
-    return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, src1, sloc_);
+    return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, src1, srcinfo_);
   } else {
-    return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, sloc_);
+    return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, srcinfo_);
   }
 }
 
@@ -97,9 +97,9 @@ lnodeimpl* ch::internal::createOpNode(
     uint32_t size,
     bool is_signed,
     const lnode& in,
-    const source_info& sloc) {
+    const source_info& srcinfo) {
   is_signed &= CH_OP_IS_SIGNED(op);
-  return ctx_curr()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
+  return ctx_curr()->create_node<opimpl>(op, size, is_signed, in.impl(), srcinfo);
 }
 
 lnodeimpl* ch::internal::createOpNode(
@@ -108,6 +108,6 @@ lnodeimpl* ch::internal::createOpNode(
     bool is_signed,
     const lnode& lhs,
     const lnode& rhs,
-    const source_info& sloc) {
-  return ctx_curr()->create_node<opimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
+    const source_info& srcinfo) {
+  return ctx_curr()->create_node<opimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), srcinfo);
 }

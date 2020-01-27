@@ -40,8 +40,8 @@ public:
                    uint32_t size,
                    context* ctx,
                    const std::string& name,
-                   const source_info& sloc)
-    : lnodeimpl(id, type_none, size, ctx, name, sloc)
+                   const source_info& srcinfo)
+    : lnodeimpl(id, type_none, size, ctx, name, srcinfo)
   {}
 
   lnodeimpl* clone(context*, const clone_map&) const override {
@@ -753,10 +753,10 @@ bool compiler::constant_folding() {
         return src0;
       } else
       if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
-        return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
+        return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src1, node->srcinfo());
       } else
       if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
-        return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
+        return ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src0, node->srcinfo());
       }
       break;
     case ch_op::mul:
@@ -794,16 +794,16 @@ bool compiler::constant_folding() {
       break;
     case ch_op::eq:
       if (src0_is_zero) {
-        return ctx_->create_node<opimpl>(ch_op::notl, node->size(), node->is_signed(), src1, node->sloc());
+        return ctx_->create_node<opimpl>(ch_op::notl, node->size(), node->is_signed(), src1, node->srcinfo());
       } else if (src1_is_zero) {
-        return ctx_->create_node<opimpl>(ch_op::notl, node->size(), node->is_signed(), src0, node->sloc());
+        return ctx_->create_node<opimpl>(ch_op::notl, node->size(), node->is_signed(), src0, node->srcinfo());
       }
       break;
     case ch_op::ne:
       if (src0_is_zero) {
-        return ctx_->create_node<opimpl>(ch_op::orr, node->size(), node->is_signed(), src1, node->sloc());
+        return ctx_->create_node<opimpl>(ch_op::orr, node->size(), node->is_signed(), src1, node->srcinfo());
       } else if (src1_is_zero) {
-        return ctx_->create_node<opimpl>(ch_op::orr, node->size(), node->is_signed(), src0, node->sloc());
+        return ctx_->create_node<opimpl>(ch_op::orr, node->size(), node->is_signed(), src0, node->srcinfo());
       }
       break;
     default:
@@ -1302,7 +1302,7 @@ bool compiler::branch_coalescing() {
         if (value == df_value) {
           if (!has_key) {
             if (skip_pred) {
-              skip_pred = ctx_->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, pred, sel->sloc());
+              skip_pred = ctx_->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, pred, sel->srcinfo());
             } else {
               skip_pred = pred;
             }
@@ -1310,8 +1310,8 @@ bool compiler::branch_coalescing() {
           deleted.push_back(i);
         } else {
           if (skip_pred) {
-            skip_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, sel->sloc());
-            pred = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred, skip_pred, sel->sloc());
+            skip_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, sel->srcinfo());
+            pred = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred, skip_pred, sel->srcinfo());
             sel->set_src(i+0, pred);
             skip_pred = nullptr;
           }
@@ -1347,19 +1347,19 @@ bool compiler::branch_coalescing() {
 
             auto pred2 = sel->src(j+0).impl();
             if (skip_pred) {
-              skip_pred = ctx_->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, pred2, sel->sloc());
+              skip_pred = ctx_->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, pred2, sel->srcinfo());
             } else {
               skip_pred = pred2;
             }
           }
 
           for (auto dup : dups) {
-            pred1 = ctx_->create_node<opimpl>(ch_op::orb, 1, false, pred1, sel->src(dup).impl(), sel->sloc());
+            pred1 = ctx_->create_node<opimpl>(ch_op::orb, 1, false, pred1, sel->src(dup).impl(), sel->srcinfo());
           }
 
           if (skip_pred) {
-            skip_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, sel->sloc());
-            pred1 = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred1, skip_pred, sel->sloc());
+            skip_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, sel->srcinfo());
+            pred1 = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred1, skip_pred, sel->srcinfo());
           }
 
           sel->set_src(i+0, pred1);
@@ -1392,14 +1392,14 @@ bool compiler::branch_coalescing() {
           // combine predicates
           auto pred0 = sel->src(sel_num_srcs-3).impl();
           if (has_key) {
-            pred0 = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->key().impl(), pred0, sel->sloc());
+            pred0 = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->key().impl(), pred0, sel->srcinfo());
           }
           auto pred1 = _true->src(true_num_srcs-3).impl();
           if (true_has_key) {
             // create predicate
-            pred1 = ctx_->create_node<opimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), sel->sloc());
+            pred1 = ctx_->create_node<opimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), sel->srcinfo());
           }
-          auto pred = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred0, pred1, sel->sloc());
+          auto pred = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred0, pred1, sel->srcinfo());
           if (true_has_key) {
             _true->remove_key();
           }
@@ -1412,7 +1412,7 @@ bool compiler::branch_coalescing() {
 
     // convert tenary switches to branches
     if (has_key && 4 == sel->num_srcs()) {
-      auto pred = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->src(0).impl(), sel->src(1).impl(), sel->sloc());
+      auto pred = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->src(0).impl(), sel->src(1).impl(), sel->srcinfo());
       sel->remove_key();
       sel->set_src(0, pred);
       changed = true;
@@ -1428,7 +1428,7 @@ bool compiler::branch_coalescing() {
         return sel->src(0).impl();
       } else {
         auto pred = sel->src(0).impl();
-        auto inv_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, pred, sel->sloc());
+        auto inv_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, pred, sel->srcinfo());
         return inv_pred;
       }
     }
@@ -1527,7 +1527,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
       }
 
       // create new placeholder
-      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size(), curr, src.name(), src.sloc());
+      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size(), curr, src.name(), src.srcinfo());
       auto& user = placeholder->users.emplace_back(src_idx);
       unresolved_nodes[node->id()].emplace_back(&user.node);
 
@@ -1609,7 +1609,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
           if (verbose_tracing) {
             auto name = full_name(input);
             auto target = map.at(input->id());
-            auto tap = ctx_->create_node<tapimpl>(target, name, input->sloc());
+            auto tap = ctx_->create_node<tapimpl>(target, name, input->srcinfo());
             if (type_none == target->type()) {
               reinterpret_cast<placeholder_node*>(target)->users.emplace_back(tap, 0);
             }
@@ -1617,9 +1617,9 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
         } else {
           lnodeimpl* eval_node;
           if (input->name() == "clk") {
-            eval_node = ctx_->current_clock(input->sloc());
+            eval_node = ctx_->current_clock(input->srcinfo());
           } else if (input->name() == "reset") {
-            eval_node = ctx_->current_reset(input->sloc());
+            eval_node = ctx_->current_reset(input->srcinfo());
           } else {
             eval_node = input->clone(ctx_, map);
             eval_node->set_name(full_name(eval_node));
@@ -1634,7 +1634,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
           if (verbose_tracing) {
             auto name = full_name(output);
             auto target = map.at(output->src(0).id());
-            auto tap = ctx_->create_node<tapimpl>(target, name, output->sloc());
+            auto tap = ctx_->create_node<tapimpl>(target, name, output->srcinfo());
             if (type_none == target->type()) {
               reinterpret_cast<placeholder_node*>(target)->users.emplace_back(tap, 0);
             }

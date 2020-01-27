@@ -12,15 +12,15 @@ using namespace ch::internal;
 cdimpl::cdimpl(context* ctx,
                lnodeimpl* clk,
                bool pos_edge,
-               const source_info& sloc)
-  : ioimpl(ctx, type_cd, 1, "", sloc)
+               const source_info& srcinfo)
+  : ioimpl(ctx, type_cd, 1, "", srcinfo)
   , pos_edge_(pos_edge) {
   this->add_src(clk);
 }
 
 lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto clk = cloned_nodes.at(this->clk().id());
-  return ctx->create_node<cdimpl>(clk, pos_edge_, sloc_);
+  return ctx->create_node<cdimpl>(clk, pos_edge_, srcinfo_);
 }
 
 bool cdimpl::equals(const lnodeimpl& other) const {
@@ -99,19 +99,19 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::getCurrentClockNode(const source_info& sloc) {
-  return ctx_curr()->current_clock(sloc);
+lnodeimpl* ch::internal::getCurrentClockNode(const source_info& srcinfo) {
+  return ctx_curr()->current_clock(srcinfo);
 }
 
-lnodeimpl* ch::internal::getCurrentResetNode(const source_info& sloc) {
-  return ctx_curr()->current_reset(sloc);
+lnodeimpl* ch::internal::getCurrentResetNode(const source_info& srcinfo) {
+  return ctx_curr()->current_reset(srcinfo);
 }
 
 void ch::internal::pushClockDomain(const lnode& clock,
                                    const lnode& reset,
                                    bool pos_edge,
-                                   const source_info& sloc) {
-  ctx_curr()->push_cd(clock, reset, pos_edge, sloc);
+                                   const source_info& srcinfo) {
+  ctx_curr()->push_cd(clock, reset, pos_edge, srcinfo);
 }
 
 void ch::internal::ch_popcd() {

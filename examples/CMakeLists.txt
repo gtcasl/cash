@@ -21,9 +21,15 @@ foreach(EXAMPLE ${EXAMPLES})
 
     # build executable
     add_executable(${EXAMPLE} ${EXAMPLE}.cpp)
-
+    
     # define dependent libraries
     target_link_libraries(${EXAMPLE} PRIVATE ${PROJECT_NAME})
+
+    if (PLUGIN)
+        # enable clang-plugin
+        add_dependencies(${EXAMPLE} cashpp)
+        set_target_properties(${EXAMPLE} PROPERTIES COMPILE_FLAGS "-Xclang -load -Xclang ${CMAKE_BINARY_DIR}/lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp")
+    endif()
 
     # register test
     add_test(NAME ${EXAMPLE} COMMAND ${EXECUTABLE_OUTPUT_PATH}/${EXAMPLE})

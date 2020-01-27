@@ -1422,7 +1422,7 @@ public:
     throw std::domain_error(sstreamf() << "assertion failure at tick " 
                                        << tick << ", " 
                                        << msg_ << "(" 
-                                       << sloc_ << ")");
+                                       << srcinfo_ << ")");
   }
 
 private:
@@ -1432,14 +1432,14 @@ private:
     , time_(map.at(node->time().id()))
     , pred_(node->has_pred() ? map.at(node->pred().id()) : nullptr)
     , msg_(node->msg())
-    , sloc_(node->sloc())
+    , srcinfo_(node->srcinfo())
   {}
 
   const block_type* cond_;
   const block_type* time_;
   const block_type* pred_;
   std::string msg_;
-  source_info sloc_;
+  source_info srcinfo_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

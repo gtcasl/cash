@@ -255,30 +255,38 @@ private:
   
     if (auto CE = llvm::dyn_cast<clang::CallExpr>(init)) {
       auto callee = CE->getDirectCallee();
-      CH_DBG("@@ CallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
-      for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        this->FindToken(CE, callee, i, CE->getArg(i), context);
+      if (callee) {
+        CH_DBG("@@ CallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
+        for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
+          this->FindToken(CE, callee, i, CE->getArg(i), context);
+        }
       }
     } else
     if (auto CE = llvm::dyn_cast<clang::CXXConstructExpr>(init)) {
       auto callee = CE->getConstructor();
-      CH_DBG("@@ CXXConstructExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");          
-      for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        this->FindToken(CE, callee, i, CE->getArg(i), context);
+      if (callee) {
+        CH_DBG("@@ CXXConstructExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");          
+        for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
+          this->FindToken(CE, callee, i, CE->getArg(i), context);
+        }
       }            
     } else
     if (auto CE = llvm::dyn_cast<clang::CXXMemberCallExpr>(init)) {
       auto callee = CE->getDirectCallee();
-      CH_DBG("@@ CXXMemberCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
-      for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        this->FindToken(CE, callee, i, CE->getArg(i), context);
+      if (callee) {
+        CH_DBG("@@ CXXMemberCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
+        for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
+          this->FindToken(CE, callee, i, CE->getArg(i), context);
+        }
       }
     } else
     if (auto CE = llvm::dyn_cast<clang::CXXOperatorCallExpr>(init)) {
       auto callee = CE->getDirectCallee();
-      CH_DBG("@@ CXXOperatorCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
-      for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
-        this->FindToken(CE, i, context);
+      if (callee) {
+        CH_DBG("@@ CXXOperatorCallExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");
+        for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
+          this->FindToken(CE, i, context);
+        }
       }
     }
   }
@@ -472,16 +480,17 @@ public:
   bool ParseArgs(const clang::CompilerInstance &compiler,
                  const std::vector<std::string> &args) override {
     for (int i = 0, e = args.size(); i != e; ++i) {
-      if (args[i] == "help" || args[i] == "-help" || args[i] == "--help") {
+      if (args[i] == "help") {
         this->PrintHelp(llvm::errs());
+        return false;
       } else 
-      if (args[i] == "debug" || args[i] == "-debug" || args[i] == "--debug") {
+      if (args[i] == "debug") {
         g_debug = true;
       } else 
-      if (args[i] == "dump-ast" || args[i] == "-dump-ast" || args[i] == "--dump-ast") {
+      if (args[i] == "dump-ast") {
         g_dump_ast = true;
-      }else {
-        clang::DiagnosticsEngine &D = compiler.getDiagnostics();
+      } else {
+        auto &D = compiler.getDiagnostics();
         D.Report(D.getCustomDiagID(clang::DiagnosticsEngine::Error, "invalid argument '%0'"));
         return false;
       }      
@@ -492,9 +501,9 @@ public:
   void PrintHelp(llvm::raw_ostream &ros) {
     ros << "Cash Preprocessor Clang Plugin\n";
     ros << "Options:\n";
-    ros << "-debug : Enable debug mode.\n";
-    ros << "-dump-ast : Dump updated AST.\n";
-    ros << "-help : Show usage.\n";
+    ros << "debug : Enable debug mode.\n";
+    ros << "dump-ast : Dump updated AST.\n";
+    ros << "help : Show usage.\n";
   }
 };
 

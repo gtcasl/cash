@@ -6,9 +6,26 @@ set(JIT "LLVM" CACHE STRING "JIT library to use")
 set(JITs "LLVM;LIBJIT;OFF")
 set_property(CACHE JIT PROPERTY STRINGS ${JITs})
 
+option(PLUGIN "Enable clang plugin." ON)
+
 option(CODECOV "Enable code coverage." OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")
+
+if (PLUGIN)
+  find_program(CLANG clang)
+  if (NOT CLANG)
+    message(FATAL_ERROR "Clang compiler is required to use the plugin")
+  endif ()
+  # check Clang version
+  execute_process(COMMAND clang --version OUTPUT_VARIABLE clang_full_version_string )
+  string(REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
+  if (CLANG_VERSION_STRING VERSION_LESS 9.0)
+    message(FATAL_ERROR "Clang version 9.0 or higher is required")
+  endif ()
+  set(CMAKE_C_COMPILER "clang")
+  set(CMAKE_CXX_COMPILER "clang++")
+endif()
 
 # use C++17 compiler
 add_compile_options(-std=c++17)
@@ -135,7 +152,9 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAM
 export(TARGETS ${PROJECT_NAME} FILE ${PROJECT_CONFIG}.cmake)
 
 # sub-projects
+if (PLUGIN)
+  add_subdirectory(clang)  
+endif()
 enable_testing()
 add_subdirectory(examples)
 add_subdirectory(tests)
-add_subdirectory(clang)

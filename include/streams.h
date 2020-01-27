@@ -31,10 +31,10 @@ private:
 
   int sync() override;
 
-  void write(const lnode& node, char format, const source_info& sloc);
+  void write(const lnode& node, char format, const source_info& srcinfo);
 
   std::vector<lnode> nodes_;
-  source_info sloc_;
+  source_info srcinfo_;
 
   ch_streambuf(const ch_streambuf&) = delete;
 
@@ -255,11 +255,11 @@ public:
     return *this;
   }
 
-  ch_ostream& write(const lnode& node, char format, CH_SLOC) {
+  ch_ostream& write(const lnode& node, char format, CH_SRC_INFO) {
   #ifndef NDEBUG    
-    buf_.write(node, format, sloc);    
+    buf_.write(node, format, srcinfo);    
   #else
-    CH_UNUSED(node, format, sloc);
+    CH_UNUSED(node, format, srcinfo);
   #endif
     return *this;
   }

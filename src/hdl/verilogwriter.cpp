@@ -386,9 +386,9 @@ bool verilogwriter::print_decl(std::ostream& out,
     if (!ref) {      
       if (platform::self().cflags() & cflags::codegen_sloc) {
         out << ";";
-        auto& sloc = node->sloc();
-        if (!sloc.empty()) {
-          out << " // @sloc=" << sloc;
+        auto& srcinfo = node->srcinfo();
+        if (!srcinfo.empty()) {
+          out << " // @srcinfo=" << srcinfo.sloc();
         }
       } else {        
         for (auto other : node->ctx()->nodes()) {
@@ -1003,8 +1003,8 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
-    if (!node->sloc().name().empty()) {
-      out << node->sloc().name();
+    if (!node->srcinfo().name().empty()) {
+      out << node->srcinfo().name();
     } else {
       out << node->type();
       if (!node->name().empty()) {

@@ -61,16 +61,16 @@ void registerEnumString(const lnode& node, void* callback);
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), CH_CUR_SLOC)) \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), CH_CUR_SRC_INFO)) \
     : buffer_(buffer) { \
     ch::internal::registerEnumString(ch::internal::get_lnode(*this), reinterpret_cast<void*>(to_string)); \
   } \
-  enum_name(type __other, CH_SLOC) \
-    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), sloc)) { \
+  enum_name(type __other, CH_SRC_INFO) \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), srcinfo)) { \
     this->operator=(__other); \
   } \
-  enum_name(const enum_name& __other, CH_SLOC) \
-    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), sloc)) { \
+  enum_name(const enum_name& __other, CH_SRC_INFO) \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), srcinfo)) { \
     this->operator=(__other); \
   } \
   enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) { \

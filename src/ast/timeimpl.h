@@ -12,7 +12,7 @@ public:
 
 protected:
 
-  timeimpl(context* ctx, const source_info& sloc);
+  timeimpl(context* ctx, const source_info& srcinfo);
 
   friend class context;
 };

@@ -368,13 +368,13 @@ void context::reset_system_node(lnodeimpl* node) {
   }
 }
 
-void context::create_binding(context* ctx, const source_info& sloc) {
-  this->create_node<bindimpl>(ctx, sloc);
+void context::create_binding(context* ctx, const source_info& srcinfo) {
+  this->create_node<bindimpl>(ctx, srcinfo);
 }
 
 inputimpl* context::create_input(uint32_t size,
                                  const std::string& name,
-                                 const source_info& sloc) {
+                                 const source_info& srcinfo) {
   for (auto node : inputs_) {
     auto input = reinterpret_cast<inputimpl*>(node);
     if (input->name() == name) {
@@ -382,7 +382,7 @@ inputimpl* context::create_input(uint32_t size,
     }
   }
   auto value = smart_ptr<sdata_type>::make(size);
-  return this->create_node<inputimpl>(size, value, name, sloc);
+  return this->create_node<inputimpl>(size, value, name, srcinfo);
 }
 
 outputimpl* context::get_output(const std::string& name) {
@@ -397,13 +397,13 @@ outputimpl* context::get_output(const std::string& name) {
 
 outputimpl* context::create_output(uint32_t size,
                                    const std::string& name,
-                                   const source_info& sloc) {
+                                   const source_info& srcinfo) {
   auto output = this->get_output(name);
   if (output)
     return output;
-  auto src = this->create_node<proxyimpl>(size, name, sloc);
+  auto src = this->create_node<proxyimpl>(size, name, srcinfo);
   auto value = smart_ptr<sdata_type>::make(size);
-  return this->create_node<outputimpl>(size, src, value, name, sloc);
+  return this->create_node<outputimpl>(size, src, value, name, srcinfo);
 }
 
 litimpl* context::create_literal(const sdata_type& value) {
@@ -417,16 +417,16 @@ litimpl* context::create_literal(const sdata_type& value) {
   return this->create_node<litimpl>(value);
 }
 
-timeimpl* context::create_time(const source_info& sloc) {
+timeimpl* context::create_time(const source_info& srcinfo) {
   if (nullptr == sys_time_) {
-    sys_time_ = this->create_node<timeimpl>(sloc);
+    sys_time_ = this->create_node<timeimpl>(srcinfo);
   }
   return sys_time_;
 }
 
 cdimpl* context::create_cd(const lnode& clk,
                            bool pos_edge,
-                           const source_info& sloc) {
+                           const source_info& srcinfo) {
   // return existing match
   for (auto node : cdomains_) {
     auto cd = reinterpret_cast<cdimpl*>(node);
@@ -434,14 +434,14 @@ cdimpl* context::create_cd(const lnode& clk,
       return cd;
   }
   // allocate new cdomain
-  return this->create_node<cdimpl>(clk.impl(), pos_edge, sloc);
+  return this->create_node<cdimpl>(clk.impl(), pos_edge, srcinfo);
 }
 
 void context::push_cd(const lnode& clk,
                       const lnode& reset,
                       bool pos_edge,
-                      const source_info& sloc) {
-  auto cd = this->create_cd(clk, pos_edge, sloc);
+                      const source_info& srcinfo) {
+  auto cd = this->create_cd(clk, pos_edge, srcinfo);
   cd_stack_.emplace(cd, reset.impl());
 }
 
@@ -449,34 +449,34 @@ void context::pop_cd() {
   cd_stack_.pop();
 }
 
-cdimpl* context::current_cd(const source_info& sloc) {
+cdimpl* context::current_cd(const source_info& srcinfo) {
   if (!cd_stack_.empty())
     return cd_stack_.top().first;
 
   if (nullptr == sys_clk_) {
     auto value = smart_ptr<sdata_type>::make(1);
-    sys_clk_ = this->create_node<inputimpl>(1, value, "clk", sloc);
+    sys_clk_ = this->create_node<inputimpl>(1, value, "clk", srcinfo);
   }
-  return this->create_cd(sys_clk_, true, sloc);
+  return this->create_cd(sys_clk_, true, srcinfo);
 }
 
-lnodeimpl* context::current_clock(const source_info& sloc) {
-  return this->current_cd(sloc)->clk().impl();
+lnodeimpl* context::current_clock(const source_info& srcinfo) {
+  return this->current_cd(srcinfo)->clk().impl();
 }
 
-lnodeimpl* context::current_reset(const source_info& sloc) {
+lnodeimpl* context::current_reset(const source_info& srcinfo) {
   if (!cd_stack_.empty())
     return cd_stack_.top().second;
 
   if (nullptr == sys_reset_) {
     auto value = smart_ptr<sdata_type>::make(1);
-    sys_reset_ = this->create_node<inputimpl>(1, value, "reset", sloc);
+    sys_reset_ = this->create_node<inputimpl>(1, value, "reset", srcinfo);
   }
   return sys_reset_;
 }
 
-void context::begin_branch(lnodeimpl* key, const source_info& sloc) {
-  branchconv_->begin_branch(key, sloc);
+void context::begin_branch(lnodeimpl* key, const source_info& srcinfo) {
+  branchconv_->begin_branch(key, srcinfo);
 }
 
 void context::end_branch() {
@@ -505,12 +505,12 @@ void context::conditional_write(
     uint32_t offset,
     uint32_t length,
     lnodeimpl* src,
-    const source_info& sloc) {
-  return branchconv_->write(dst, offset, length, src, sloc);
+    const source_info& srcinfo) {
+  return branchconv_->write(dst, offset, length, src, srcinfo);
 }
 
-lnodeimpl* context::get_predicate(const source_info& sloc) {
-  return branchconv_->get_predicate(sloc);
+lnodeimpl* context::get_predicate(const source_info& srcinfo) {
+  return branchconv_->get_predicate(srcinfo);
 }
 
 bindimpl* context::current_binding() {
@@ -519,7 +519,7 @@ bindimpl* context::current_binding() {
 
 void context::register_tap(const lnode& target,
                            const std::string& name,
-                           const source_info& sloc) {
+                           const source_info& srcinfo) {
   auto sid = identifier_from_string(name);
   auto num_dups = dup_tap_names_.insert(sid);
   if (num_dups) {
@@ -527,7 +527,7 @@ void context::register_tap(const lnode& target,
   } else {
     sid = stringf("tap_%s", sid.c_str());
   }
-  this->create_node<tapimpl>(target.impl(), sid, sloc);
+  this->create_node<tapimpl>(target.impl(), sid, srcinfo);
 }
 
 lnodeimpl* context::create_bypass(lnodeimpl* target) {
@@ -543,13 +543,13 @@ lnodeimpl* context::create_bypass(lnodeimpl* target) {
 void context::create_udf_node(udf_iface* udf,
                               bool is_seq,
                               const std::string& name,
-                              const source_info& sloc) {
+                              const source_info& srcinfo) {
   if (is_seq) {
-    auto cd = this->current_cd(sloc);
-    auto reset = this->current_reset(sloc);
-    curr_udf_ = this->create_node<udfsimpl>(udf, cd, reset, name, sloc);
+    auto cd = this->current_cd(srcinfo);
+    auto reset = this->current_reset(srcinfo);
+    curr_udf_ = this->create_node<udfsimpl>(udf, cd, reset, name, srcinfo);
   } else {
-    curr_udf_ = this->create_node<udfcimpl>(udf, name, sloc);
+    curr_udf_ = this->create_node<udfcimpl>(udf, name, srcinfo);
   }
 }
 
@@ -722,8 +722,8 @@ void context::dump_stats(std::ostream& out) {
 
 void ch::internal::registerTap(const lnode& node, 
                                const std::string& name,
-                              const source_info& sloc) {
-  ctx_curr()->register_tap(node, name, sloc);
+                              const source_info& srcinfo) {
+  ctx_curr()->register_tap(node, name, srcinfo);
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
