@@ -49,7 +49,8 @@ lnodeimpl* createRegNext(const lnode& next,
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<ch_width_v<T>, is_signed_v<T>, T, ch_system_t<T>>;
+  static_assert(is_logic_only_v<T>, "invalid type");
+  using traits = reg_traits<ch_width_v<T>, is_signed_v<T>, T, ch_system_t<T>>;
   using base = T;
 
   ch_reg_impl(CH_SRC_INFO)

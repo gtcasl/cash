@@ -649,6 +649,17 @@ void bar() {
     sd2_t h{2_h, {1_b2, {2_h}}};
     sd3_t i{1_h, {1_b2, {2_h4}}};
   }
-  ch_reg<s2_4_t> h{0101_b, 01_b};
-  ch_reg<u2_4_t> i{0101_b};
+  
+  {
+    ch_reg<s2_4_t> h{0101_b, 01_b};
+    ch_reg<u2_4_t> i{0101_b};
+  }
+
+  {
+    ch_vec<ch_reg<ch_bit4>, 2> a;
+    ch_vec<ch_reg<ch_bit4>, 2> b{0};
+    ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> bb{0};
+    ch_vec<ch_reg<ch_bit4>, 2> c{0, 1};
+    ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> cc{0, 1};
+  }
 }

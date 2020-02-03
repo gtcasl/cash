@@ -412,17 +412,6 @@ auto ch_map(const T& obj, const F& f) {
 }
 
 template <typename T, std::size_t N, typename F>
-auto ch_map(const ch_vec<T, N>& obj, const F& f) {
-  using ret_t = std::result_of_t<F(T)>;
-  static_assert(is_data_type_v<ret_t>, "invalid type");
-  ch_vec<ret_t, N> ret;
-  for (std::size_t i = 0; i < N; ++i) {
-    ret[i] = f(obj[i]);
-  }
-  return ret;
-}
-
-template <typename T, std::size_t N, typename F>
 auto ch_map(const std::array<T, N>& obj, const F& f) {
   using ret_t = std::result_of_t<F(T)>;
   static_assert(is_data_type_v<ret_t>, "invalid type");
@@ -448,23 +437,6 @@ auto ch_fold(const T& obj, const F& f, const I& init) {
     }
   } else {
     for (unsigned i = 0; i < N; ++i) {
-      ret = f(ret, obj[i]);
-    }
-  }
-  return ret;
-}
-
-template <typename T, std::size_t N, typename F, typename I>
-auto ch_fold(const ch_vec<T, N>& obj, const F& f, const I& init) {
-  using ret_t = std::result_of_t<F(I, T)>;
-  static_assert(is_data_type_v<ret_t>, "invalid type");
-  ret_t ret(init);
-  if constexpr (is_logic_type_v<T>) {
-    for (std::size_t i = 0; i < N; ++i) {
-      ret = f(ch_clone(ret), obj[i]);
-    }
-  } else {
-    for (std::size_t i = 0; i < N; ++i) {
       ret = f(ret, obj[i]);
     }
   }
@@ -510,24 +482,7 @@ auto ch_zip(const T& obj1, const U& obj2, const F& f) {
 }
 
 template <typename T, typename U, std::size_t N, typename F>
-auto ch_zip(const ch_vec<T, N>& obj1, const ch_vec<U, N>& obj2, const F& f) {
-  using ret_t = std::result_of_t<F(T, U)>;
-  static_assert(is_data_type_v<ret_t>, "invalid type");
-  ch_vec<ret_t, N> ret;
-  if constexpr (is_logic_type_v<T> || is_logic_type_v<U>) {
-    for (std::size_t i = 0; i < N; ++i) {
-      ret[i] = f(obj1[i], obj2[i]);
-    }
-  } else {    
-    for (std::size_t i = 0; i < N; ++i) {
-      ret[i] = f(obj1[i], obj2[i]);
-    }
-  }
-  return ret;
-}
-
-template <typename T, typename U, std::size_t N, typename F>
-auto ch_zip(const std::array<T, N>& obj1, const ch_vec<U, N>& obj2, const F& f) {
+auto ch_zip(const std::array<T, N>& obj1, const std::array<U, N>& obj2, const F& f) {
   using ret_t = std::result_of_t<F(T, U)>;
   static_assert(is_data_type_v<ret_t>, "invalid type");
   ch_vec<ret_t, N> ret;
@@ -564,26 +519,6 @@ auto ch_scan(const T& obj, const F& f, const I& init) {
       ret[i] = tmp;
     }
   }
-  return ret;
-}
-
-template <typename T, std::size_t N, typename F, typename I>
-auto ch_scan(const ch_vec<T, N>& obj, const F& f, const I& init) {
-  using ret_t = std::result_of_t<F(I, T)>;
-  static_assert(is_data_type_v<ret_t>, "invalid type");
-  ch_vec<ret_t, N> ret;
-  ret_t tmp(init);  
-  if constexpr (is_logic_type_v<T>) {
-    for (std::size_t i = 0; i < N; ++i) {
-      tmp = f(ch_clone(tmp), obj[i]);
-      ret[i] = ch_clone(tmp);
-    }    
-  } else {    
-    for (std::size_t i = 0; i < N; ++i) {
-      tmp = f(tmp, obj[i]);
-      ret[i] = tmp;
-    }
-  }  
   return ret;
 }
 

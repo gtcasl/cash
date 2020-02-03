@@ -23,6 +23,9 @@ namespace {
 bool g_debug = false;
 bool g_dump_ast = false;
 
+unsigned int g_replace_count = -1;
+unsigned int g_replace_id = 0;
+
 static const char Injected_Source[] = R"-(  
   #define __builtin_VARINFO() __builtin_VARINFO_TOKEN()
   inline const char* __builtin_VARINFO_TOKEN() { return ""; }
@@ -216,13 +219,17 @@ public:
 
     if (!updates_.empty()) {     
       TokenTransform transform(compiler_.getSema()); 
-      for (auto& upd : updates_) {                          
-        auto res = transform.Transform(upd.arg, upd.value, token_);
-        
-        CH_DBG("@@ transform: " << upd.value << "\n");
+      for (auto& upd : updates_) {      
+
+        auto res = transform.Transform(upd.arg, upd.value, token_);       
 
       #ifndef NDEBUG
         if (g_debug) {
+          if (g_replace_id < g_replace_count) {
+            CH_DBG("@@ transform#" << g_replace_id++ << ": " << upd.value << "\n");
+          } else {
+            break;
+          }        
           res.get()->dump(llvm::outs());  
           llvm::outs().flush();
         }
@@ -361,19 +368,6 @@ private:
       }
       auto e = updates_.size();
       if (s != e) {
-        /*
-        const ASTContext &Ctx, 
-        CXXConstructorDecl *Cons, 
-        QualType Ty,
-        TypeSourceInfo *TSI, 
-        ArrayRef<Expr *> Args,
-        SourceRange ParenOrBraceRange, 
-        bool HadMultipleCandidates,
-        bool ListInitialization, 
-        bool StdInitListInitialization,
-        bool ZeroInitialization);
-        */
-
         auto &sema = compiler_.getSema();
         auto constructor = CE->getConstructor();
         
@@ -470,6 +464,11 @@ class MyPlugin : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &compiler,
                                                         llvm::StringRef /*inFile*/) override {
+    auto rc = std::getenv("CASHPP_REPLACE_COUNT");
+    if (rc) {
+      g_replace_count = atoi(rc);
+      llvm::outs() << "CASHPP_REPLACE_COUNT=" << g_replace_count << "\n";      
+    }
     return std::make_unique<MyASTConsumer>(compiler);
   }
 

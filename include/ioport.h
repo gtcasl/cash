@@ -16,11 +16,11 @@ template <typename T> class ch_system_out;
 
 template <typename T>
 using ch_in = std::add_const_t<
-                std::conditional_t<is_logic_type_v<T>,
+                std::conditional_t<is_logic_only_v<T>,
                                    ch_logic_in<T>, ch_system_in<T>>>;
 
 template <typename T>
-using ch_out = std::conditional_t<is_logic_type_v<T>,
+using ch_out = std::conditional_t<is_logic_only_v<T>,
                                   ch_logic_out<T>, ch_system_out<T>>;
 
 using io_value_t = smart_ptr<sdata_type>;
@@ -93,7 +93,7 @@ protected:
 template <typename T>
 class ch_logic_in final : public T {
 public:
-  static_assert(is_logic_type_v<T>, "invalid type");
+  static_assert(is_logic_only_v<T>, "invalid type");
   using traits = base_logic_io_traits<ch_direction::in,
                                       ch_in<T>,
                                       ch_out<T>,
@@ -152,7 +152,7 @@ protected:
 template <typename T>
 class ch_logic_out final : public T {
 public:
-  static_assert(is_logic_type_v<T>, "invalid type");
+  static_assert(is_logic_only_v<T>, "invalid type");
   using traits = base_logic_io_traits<ch_direction::out,
                                       ch_out<T>,
                                       ch_in<T>,
@@ -219,7 +219,7 @@ protected:
 template <typename T>
 class ch_system_in final : public T {
 public:
-  static_assert(is_system_type_v<T>, "invalid type");
+  static_assert(is_system_only_v<T>, "invalid type");
   using traits = base_system_io_traits<ch_direction::out,
                                        ch_in<T>,
                                        ch_out<T>,
@@ -266,7 +266,7 @@ protected:
 template <typename T>
 class ch_system_out final : public T {
 public:
-  static_assert(is_system_type_v<T>, "invalid type");
+  static_assert(is_system_only_v<T>, "invalid type");
   using traits = base_system_io_traits<ch_direction::in,
                                        ch_out<T>,
                                        ch_in<T>,

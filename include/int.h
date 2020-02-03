@@ -98,7 +98,6 @@ protected:
 template <unsigned N = 32>
 class ch_int : public ch_numbase<ch_int<N>> {
 public:  
-  static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, true, ch_int, ch_sint<N>>;
   using base = ch_numbase<ch_int<N>>;
   using base::operator=;

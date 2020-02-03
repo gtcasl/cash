@@ -13,7 +13,7 @@ public:
   using base = std::array<T, N>;  
   using base::operator [];
 
-protected: 
+protected:
 
   template <typename... Us,
             CH_REQUIRE(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
@@ -330,7 +330,12 @@ public:
 
   template <typename U>
   friend auto operator==(const std::array<U, N>& lhs, const ch_vec& rhs) {
-    return (rhs == lhs);
+    static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
+    auto ret = (lhs[0] != rhs[0]);
+    for (std::size_t i = 1; i < N; ++i) {
+      ret = ret && (lhs[i] != rhs[i]);
+    }
+    return ret;
   }
 
   template <typename U>
@@ -504,21 +509,44 @@ protected:
   }
 };
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, std::size_t N>
-class ch_vec<T, N, std::enable_if_t<is_logic_io_v<typename T::io_type>>> : public vec_base<T, N> {
+class ch_vec<T, N, std::enable_if_t<is_reg_type_v<T> 
+                                 || is_mem_type_v<T> 
+                                 || is_module_type_v<T> 
+                                 || is_udf_type_v<T>>> : public vec_base<T, N> {
 public:
   using base = vec_base<T, N>;
   using base::operator [];
-  using value_type = typename T::value_type;
-  using io_type = typename T::io_type;
-  
+  using traits = typename T::traits;
+
   explicit ch_vec(CH_SRC_INFO)
     : ch_vec(srcinfo, std::make_index_sequence<N>())
   {}
+
+  template <typename Arg>
+  ch_vec(Arg&& arg, CH_SRC_INFO)
+    : ch_vec(std::forward<Arg>(arg), srcinfo, std::make_index_sequence<N>())
+  {}
+
+#define CH_VEC_GEN_TMPL(a, i, x) typename Arg##i
+#define CH_VEC_GEN_TYPE(a, i, x) Arg##i
+#define CH_VEC_GEN_DECL(a, i, x) Arg##i&& arg##i
+#define CH_VEC_GEN_ARG(a, i, x)  std::forward<Arg##i>(arg##i)
+#define CH_VEC_GEN(...) \
+  template <CH_FOR_EACH(CH_VEC_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
+            CH_REQUIRE(std::is_constructible_v<T, std::common_type_t<CH_FOR_EACH(CH_VEC_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>> \
+                    && (N > 1 && N == CH_NARG(__VA_ARGS__)))> \
+  ch_vec(CH_FOR_EACH(CH_VEC_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
+    : ch_vec(srcinfo, std::make_index_sequence<N>(), CH_FOR_EACH(CH_VEC_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)) \
+  {}
+CH_VA_ARGS_MAP(CH_VEC_GEN)
+#undef CH_VEC_GEN_TMPL
+#undef CH_VEC_GEN_TYPE
+#undef CH_VEC_GEN_DECL
+#undef CH_VEC_GEN_ARG
+#undef CH_VEC_GEN
 
   ch_vec(const ch_vec& other)
     : ch_vec(other, std::make_index_sequence<N>())
@@ -533,46 +561,14 @@ protected:
     : base(source_info(stringf("%s_%d", srcinfo.name().c_str(), Is).c_str(), srcinfo.sloc())...)
   {}
 
-  template <typename U, std::size_t... Is>
-  ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(other.at(Is)...)
-  {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, std::size_t N>
-class ch_vec<T, N, std::enable_if_t<is_system_io_v<typename T::io_type>>> : public vec_base<T, N> {
-public:
-  using base = vec_base<T, N>;
-  using base::operator [];
-  using value_type = typename T::value_type;
-  using io_type = typename T::io_type;
-
-  explicit ch_vec()
-    : ch_vec(std::make_index_sequence<N>())
+  template <typename Arg, std::size_t... Is>
+  ch_vec(Arg&& arg, const source_info& srcinfo, std::index_sequence<Is...>)
+    : base((std::forward<Arg>(arg), source_info(stringf("%s_%d", srcinfo.name().c_str(), Is).c_str(), srcinfo.sloc()))...)
   {}
 
-  explicit ch_vec(const std::string& name)
-    : ch_vec(name, std::make_index_sequence<N>())
-  {}
-
-  ch_vec(const ch_vec& other)
-    : ch_vec(other, std::make_index_sequence<N>())
-  {}
-
-  ch_vec(ch_vec&& other) : base(std::move(other)) {}
-
-protected:
-
-  template <std::size_t... Is>
-  ch_vec(std::index_sequence<Is...>)
-    : base(source_info(stringf("%s_%d", idname<T::value_type>(true).c_str(), Is).c_str())...)
-  {}
-
-  template <std::size_t... Is>
-  ch_vec(const std::string& name, std::index_sequence<Is...>)
-    : base(source_info(stringf("%s_%d", name.c_str(), Is).c_str())...)
+  template <typename... Args, std::size_t... Is>
+  ch_vec(const source_info& srcinfo, std::index_sequence<Is...>, Args&&... args)
+    : base((std::forward<Args>(args), source_info(stringf("%s_%d", srcinfo.name().c_str(), Is).c_str(), srcinfo.sloc()))...)
   {}
 
   template <typename U, std::size_t... Is>

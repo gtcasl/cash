@@ -28,11 +28,16 @@ using block_type = std::conditional_t<CASH_BLOCK_SIZE == 1, uint8_t,
 using sdata_type = bitvector<block_type>;
 
 enum traits_type {
-  traits_none      = 0x00,
-  traits_logic     = 0x01,
-  traits_system    = 0x02,
-  traits_logic_io  = 0x04,
-  traits_system_io = 0x08,
+  traits_none      = 0x000,
+  traits_logic     = 0x001,
+  traits_system    = 0x002,
+  traits_logic_io  = 0x004,
+  traits_system_io = 0x008,
+  traits_reg       = 0x010,
+  traits_mem       = 0x020,
+  traits_module    = 0x040,
+  traits_device    = 0x080,
+  traits_udf       = 0x100,
 };
 
 enum class ch_direction {
@@ -244,8 +249,8 @@ struct logic_io_traits {
   using flip_io        = FlipIO;
   using system_io      = SystemIO;
   using system_flip_io = SystemFlipIO;
-  using system_type    = SystemType;
   using logic_type     = LogicType;
+  using system_type    = SystemType;
 };
 
 template <ch_direction Direction,
@@ -261,6 +266,7 @@ struct base_system_io_traits {
   using system_io   = SystemIO;
   using flip_io     = FlipIO;
   using logic_io    = LogicIO;
+  using value_type  = SystemType;
   using system_type = SystemType;
   using logic_type  = ch_logic_t<SystemType>;
 };
@@ -278,6 +284,7 @@ struct base_logic_io_traits {
   using logic_io    = LogicIO;
   using flip_io     = FlipIO;
   using system_io   = SystemIO;
+  using value_type  = LogicType;
   using logic_type  = LogicType;
   using system_type = ch_system_t<LogicType>;
 };
@@ -294,6 +301,84 @@ using ch_flip_io = typename std::decay_t<T>::traits::flip_io;
 CH_DEF_SFINAE_CHECK(is_system_io, 0 != (T::traits::type & traits_system_io));
 
 CH_DEF_SFINAE_CHECK(is_logic_io, 0 != (T::traits::type & traits_logic_io));
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <unsigned Bitwidth,
+          bool Signed,
+          typename LogicType,
+          typename SystemType>
+struct reg_traits {
+  static_assert(Bitwidth != 0, "invalid size");
+  static constexpr int type = traits_logic | traits_reg;
+  static constexpr unsigned bitwidth  = Bitwidth;
+  static constexpr unsigned is_signed = Signed;
+  using value_type  = LogicType;
+  using logic_type  = LogicType;
+  using system_type = SystemType;
+};
+
+CH_DEF_SFINAE_CHECK(is_reg_type, 0 != (T::traits::type & traits_reg));
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ValueType,
+          unsigned NumEntries>
+struct mem_traits {
+  static_assert(is_logic_only_v<ValueType>, "invalid type");
+  static_assert(NumEntries != 0, "invalid size");
+  static constexpr int type = traits_mem;
+  static constexpr unsigned num_entries = NumEntries;
+  static constexpr unsigned data_width = ch_width_v<ValueType>;
+  static constexpr unsigned addr_width = log2up(NumEntries);
+  using value_type = ValueType;
+};
+
+CH_DEF_SFINAE_CHECK(is_mem_type, 0 != (T::traits::type & traits_mem));
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+using detect_describe_t = decltype(std::declval<T&>().describe());
+
+template <typename T>
+struct module_traits {
+  static_assert(is_logic_io_v<decltype(T::io)>, "missing logic io port");
+  static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
+  static constexpr int type = traits_module;
+  using value_type = T;
+  using io_type = ch_flip_io<decltype(T::io)>;
+};
+
+template <typename T>
+struct device_traits {
+  static_assert(is_logic_io_v<decltype(T::io)>, "missing logic io port");
+  static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
+  static constexpr int type = traits_device;  
+  using value_type = T;
+  using io_type = ch_flip_io<ch_system_io<decltype(T::io)>>;
+};
+
+CH_DEF_SFINAE_CHECK(is_module_type, 0 != (T::traits::type & traits_module));
+
+CH_DEF_SFINAE_CHECK(is_device_type, 0 != (T::traits::type & traits_device));
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+using detect_eval_t = decltype(std::declval<T&>().eval());
+
+template <typename T, bool IsSequential>
+struct udf_traits {
+  static_assert(is_system_io_v<decltype(T::io)>, "missing system io port");
+  static_assert(is_detected_v<detect_eval_t, T>, "missing eval() method");
+  static constexpr int type = traits_udf;
+  static constexpr bool is_sequential = IsSequential;
+  using value_type = T;
+  using io_type = ch_flip_io<ch_logic_io<decltype(T::io)>>;
+};
+
+CH_DEF_SFINAE_CHECK(is_udf_type, 0 != (T::traits::type & traits_udf));
 
 ///////////////////////////////////////////////////////////////////////////////
 

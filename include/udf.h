@@ -56,9 +56,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-using detect_eval_t = decltype(std::declval<T&>().eval());
-
-template<typename T>
 using detect_reset_t = decltype(std::declval<T&>().reset());
 
 template<typename T>
@@ -107,12 +104,8 @@ protected:
 template <typename T>
 class ch_udf_comb {
 public:
-  static_assert(is_system_io_v<decltype(T::io)>, "missing io port");
-  static_assert(is_detected_v<detect_eval_t, T>, "missing eval() method");
-  using value_type = T;
-  using io_type = ch_flip_io<ch_logic_io<decltype(T::io)>>;
-
-  io_type io;
+  using traits = udf_traits<T, false>;
+  typename traits::io_type io;
 
   ch_udf_comb(CH_SRC_INFO)
     : io(create(new udf_wrapper<T>(), srcinfo)->io(), srcinfo)
@@ -135,6 +128,10 @@ CH_VA_ARGS_MAP(CH_UDF_GEN)
 #undef CH_UDF_GEN_DECL
 #undef CH_UDF_GEN_ARG
 #undef CH_UDF_GEN
+
+  ch_udf_comb(ch_udf_comb& other)
+    : io(other.io)
+  {}
 
   ch_udf_comb(ch_udf_comb&& other)
     : io(std::move(other.io))
@@ -159,12 +156,8 @@ protected:
 template <typename T>
 class ch_udf_seq {
 public:
-  static_assert(is_system_io_v<decltype(T::io)>, "missing io port");
-  static_assert(is_detected_v<detect_eval_t, T>, "missing eval() method");
-  using value_type = T;
-  using io_type = ch_flip_io<ch_logic_io<decltype(T::io)>>;
-
-  io_type io;
+  using traits = udf_traits<T, true>;
+  typename traits::io_type io;
 
   ch_udf_seq(CH_SRC_INFO)
     : io(create(new udf_wrapper<T>(), srcinfo)->io(), srcinfo)
@@ -187,6 +180,10 @@ CH_VA_ARGS_MAP(CH_UDF_GEN)
 #undef CH_UDF_GEN_DECL
 #undef CH_UDF_GEN_ARG
 #undef CH_UDF_GEN
+
+  ch_udf_seq(ch_udf_seq& other)
+    : io(other.io)
+  {}
 
   ch_udf_seq(ch_udf_seq&& other)
     : io(std::move(other.io))

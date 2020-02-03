@@ -70,12 +70,13 @@ protected:
 
 template <typename T, unsigned N, bool ForceLogicRAM = false>
 class ch_rom {
-public:
-  static constexpr unsigned size = N;
-  static constexpr unsigned data_width = ch_width_v<T>;
-  static constexpr unsigned addr_width = log2up(N);
-  using value_type = T;
-
+public:  
+  using traits = mem_traits<T, N>;
+  using value_type = typename traits::value_type;
+  static constexpr unsigned num_entries = traits::num_entries;
+  static constexpr unsigned data_width = traits::data_width;
+  static constexpr unsigned addr_width = traits::addr_width;
+  
   explicit ch_rom(const std::string& init_file, CH_SRC_INFO)
     : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), ForceLogicRAM, idname<T>(), srcinfo)
   {}
@@ -116,10 +117,11 @@ protected:
 template <typename T, unsigned N, bool SyncRead = false>
 class ch_mem {
 public:
-  static constexpr unsigned size = N;
-  static constexpr unsigned data_width = ch_width_v<T>;
-  static constexpr unsigned addr_width = log2up(N);
-  using value_type = T;
+  using traits = mem_traits<T, N>;
+  using value_type = typename traits::value_type;
+  static constexpr unsigned num_entries = traits::num_entries;
+  static constexpr unsigned data_width = traits::data_width;
+  static constexpr unsigned addr_width = traits::addr_width;
 
   ch_mem(CH_SRC_INFO) : mem_(ch_width_v<T>, N, {}, false, idname<T>(), srcinfo) {}
 

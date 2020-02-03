@@ -8,7 +8,6 @@ namespace internal {
 template <unsigned N>
 class ch_sbit : public ch_sbitbase<ch_sbit<N>> {
 public:
-  static_assert(N != 0, "invalid size");
   using traits = system_traits<N, false, ch_sbit, ch_bit<N>>;
   using base = ch_sbitbase<ch_sbit<N>>;
   using base::operator=;
@@ -99,7 +98,6 @@ protected:
 template <unsigned N>
 class ch_bit : public ch_bitbase<ch_bit<N>> {
 public:
-  static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_bit, ch_sbit<N>>;
   using base = ch_bitbase<ch_bit<N>>;
   using base::operator=;

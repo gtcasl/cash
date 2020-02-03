@@ -78,7 +78,9 @@ private:
 
   ch_bit<log2ceil(Cfg::num_ways)> get_replace_index(const data_t& state, unsigned tree_idx) {
     if (2 * tree_idx >= Cfg::num_ways) {
-      return ch_sel(state[tree_idx], get_replace_index(state, tree_idx - 2), get_replace_index(state, tree_idx - 1));
+      auto a = get_replace_index(state, tree_idx - 2);
+      auto b = get_replace_index(state, tree_idx - 1);
+      return ch_sel(state[tree_idx], a, b);
     } else {
       int k = Cfg::num_ways - 2 * tree_idx - 1;
       return ch_sel<ch_bit<log2ceil(Cfg::num_ways)>>(state[tree_idx], k, k - 1);

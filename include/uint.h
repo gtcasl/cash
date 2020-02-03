@@ -8,7 +8,6 @@ namespace internal {
 template <unsigned N = 32>
 class ch_suint : public ch_snumbase<ch_suint<N>> {
 public:
-  static_assert(N != 0, "invalid size");
   using traits = system_traits<N, false, ch_suint, ch_uint<N>>;
   using base = ch_snumbase<ch_suint<N>>;
   using base::operator=;
@@ -99,7 +98,6 @@ protected:
 template <unsigned N = 32>
 class ch_uint : public ch_numbase<ch_uint<N>> {
 public:  
-  static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_uint, ch_suint<N>>;
   using base = ch_numbase<ch_uint<N>>;
   using base::operator=;

@@ -63,9 +63,6 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename T>
-using detect_describe_t = decltype(std::declval<T&>().describe());
-
 template <typename T, typename... Args>
 inline constexpr bool is_pod_module_v = (0 == sizeof...(Args))
                                      && (sizeof(T) == sizeof(decltype(T::io)));
@@ -84,13 +81,9 @@ protected:
 
 public:
 
-  static_assert(is_logic_io_v<decltype(T::io)>, "missing io port");
-  static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
   using base = device_base;
-  using value_type = T;
-  using io_type = ch_flip_io<ch_system_io<decltype(T::io)>>;
-
-  io_type io;
+  using traits = device_traits<T>;
+  typename traits::io_type io;
 
   template <typename... Args,
             CH_REQUIRE(std::is_constructible_v<T, Args...>)>

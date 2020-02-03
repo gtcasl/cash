@@ -17,13 +17,9 @@ protected:
 
 public:
 
-  static_assert(is_logic_io_v<decltype(T::io)>, "missing io port");
-  static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
   using base = device_base;
-  using value_type = T;
-  using io_type = ch_flip_io<decltype(T::io)>;
-
-  io_type io;
+  using traits = module_traits<T>;
+  typename traits::io_type io;
 
   ch_module(CH_SRC_INFO)
     : base(std::type_index(typeid(T)), is_pod_module_v<T>, idname<T>())
@@ -67,7 +63,7 @@ CH_VA_ARGS_MAP(CH_MODULE_GEN)
   }
 };
 
-template <>
+/*template <>
 class ch_module<void> : public device_base {
 public:
   using base = device_base;
@@ -87,7 +83,7 @@ public:
     base::operator=(std::move(other));
     return *this;
   }
-};
+};*/
 
 }
 }
