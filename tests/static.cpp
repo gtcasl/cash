@@ -662,4 +662,12 @@ void bar() {
     ch_vec<ch_reg<ch_bit4>, 2> c{0, 1};
     ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> cc{0, 1};
   }
+
+  {
+    ch_vec<ch_mem<ch_bit4, 4>, 2> a;
+    ch_vec<ch_mem<ch_bit4, 4>, 2> b{0};
+    ch_vec<ch_vec<ch_mem<ch_bit4, 4>, 2>, 2> bb{0};
+    ch_vec<ch_mem<ch_bit4, 4>, 2> c{0, 1};
+    ch_vec<ch_vec<ch_mem<ch_bit4, 4>, 2>, 2> cc{0, 1};
+  }
 }
