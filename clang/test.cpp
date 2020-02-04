@@ -154,7 +154,7 @@ void program2() {
   auto obj8 = obj1.copy();
   auto obj9 = foo<T>(9);
   auto obj10 = fooX<T>(10);
-  auto obj11 = obj0 + obj7;
+  auto obj11 = foo<T>(9) + obj7;
   auto obj12 = obj1 + obj8;
   std::cout << "program2=" << qq[1].varinfo() << ", " << obj5.varinfo() << ", " << obj6.varinfo() << ", " << obj7.varinfo() << ", " 
             << obj8.varinfo() << ", " << obj9.varinfo() << ", " << obj10.varinfo() << ", " << obj11.varinfo() << ", " << obj12.varinfo() << std::endl;

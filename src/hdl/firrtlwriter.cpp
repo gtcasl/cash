@@ -669,7 +669,7 @@ void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
   }
 }
 
-void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
+void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
     out << node->type();
@@ -689,7 +689,7 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     print_unique_name(node);
     break;
   case type_lit:
-    if (!force && is_inline_literal(node)) {
+    if (!noinline && is_inline_literal(node)) {
       auto& value = reinterpret_cast<litimpl*>(node)->value();
       print_value(out, value, true);
     } else {

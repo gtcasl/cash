@@ -388,7 +388,7 @@ bool verilogwriter::print_decl(std::ostream& out,
         out << ";";
         auto& srcinfo = node->srcinfo();
         if (!srcinfo.empty()) {
-          out << " // @srcinfo=" << srcinfo.sloc();
+          out << " // " << srcinfo.sloc();
         }
       } else {        
         for (auto other : node->ctx()->nodes()) {
@@ -1000,7 +1000,7 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
   return changed;
 }
 
-void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
+void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
     if (!node->srcinfo().name().empty()) {
@@ -1022,14 +1022,14 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     out << identifier_from_string(node->name());
     break;
   case type_proxy:    
-    if (!force && this->is_inline_subscript(node)) {
+    if (!noinline && this->is_inline_subscript(node)) {
       this->print_proxy_value(out, reinterpret_cast<proxyimpl*>(node));
     } else {
       print_unique_name(node);
     }
     break;
   case type_lit:
-    if (!force && is_inline_literal(node)) {
+    if (!noinline && is_inline_literal(node)) {
       auto& value = reinterpret_cast<litimpl*>(node)->value();
       print_value(out, value, true);
     } else {

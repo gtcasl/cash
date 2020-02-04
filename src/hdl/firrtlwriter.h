@@ -47,7 +47,7 @@ public:
 
   bool print_logic(std::ostream& out, lnodeimpl* node);
 
-  void print_name(std::ostream& out, lnodeimpl* node, bool force = false);
+  void print_name(std::ostream& out, lnodeimpl* node, bool noinline = false);
 
   void print_type(std::ostream& out, lnodeimpl* node);
 

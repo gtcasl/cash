@@ -28,7 +28,7 @@ lnodeimpl::lnodeimpl(uint32_t id,
   , hash_(0)
   , prev_(nullptr)
   , next_(nullptr)
-  , users_(nullptr)
+  , users_(nullptr) 
 {}
 
 lnodeimpl::~lnodeimpl() {
