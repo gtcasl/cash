@@ -272,7 +272,6 @@ private:
     if (auto CE = llvm::dyn_cast<clang::CXXConstructExpr>(init)) {
       auto callee = CE->getConstructor();
       if (callee) {        
-        callee->getASTContext();
         CH_DBG("@@ CXXConstructExpr=" << callee->getDeclName() << ", " <<  CE->getID(context) << "\n");          
         for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {
           this->FindToken(CE, callee, i, CE->getArg(i), context);

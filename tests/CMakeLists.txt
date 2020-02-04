@@ -22,10 +22,14 @@ set(SOURCE_FILES
     complex.cpp    
     jitregress.cpp    
     errors.cpp
-    router.cpp
-    cache.cpp
+    router.cpp    
     main.cpp
 )
+
+if (NOT ${CMAKE_CXX_COMPILER} MATCHES "clang")
+    # cache.cpp fails on Clang (TODO: investigate why)
+    set(SOURCE_FILES ${SOURCE_FILES} cache.cpp)
+endif()
 
 # copy resource directory
 file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
