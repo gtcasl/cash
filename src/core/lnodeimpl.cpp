@@ -24,14 +24,13 @@ lnodeimpl::lnodeimpl(uint32_t id,
   , type_(type)
   , size_(size)
   , ctx_(ctx)
+  , name_(name)
   , sloc_(sloc)
   , hash_(0)
   , prev_(nullptr)
   , next_(nullptr)
   , users_(nullptr) 
-{
-  this->set_name(name);
-}
+{}
 
 lnodeimpl::~lnodeimpl() {
   for (lnode *curr = users_; curr;) {
@@ -151,16 +150,15 @@ void lnodeimpl::replace_uses(lnodeimpl* node) {
   users_ = nullptr;
 }
 
-void lnodeimpl::set_name(const std::string& name) {
+std::string lnodeimpl::resolve_name() const {
   if (name_.empty()) {    
-    name_ += '_';
     if (type_ == type_op) {
-      name_ = to_string(reinterpret_cast<const opimpl*>(this)->op());
+      return '_' + to_string(reinterpret_cast<const opimpl*>(this)->op());
     } else {
-      name_ = to_string(type_);
+      return '_' + to_string(type_);
     }
   } else {
-    name_ = name;
+    return name_;
   }
 }
 
@@ -177,7 +175,7 @@ void lnodeimpl::print(std::ostream& out) const {
 
 std::string lnodeimpl::debug_info() const {  
   return stringf("'%s (%d)' in module '%s (%d)' (%s:%d:%d)",
-                 name_.c_str(),
+                 this->resolve_name().c_str(),
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),

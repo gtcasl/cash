@@ -1000,24 +1000,39 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
   return changed;
 }
 
-void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline) {
-  //--
-  auto print_unique_name = [&](lnodeimpl* node) {
-    out << identifier_from_string(node->name()) << "_" << node->id();
-  };
-
-  auto type = node->type();
-  switch (type) {
+void verilogwriter::print_node_name(std::ostream& out, lnodeimpl* node) {
+  switch (node->type()) {  
   case type_input:
   case type_output:
   case type_tap:
     out << identifier_from_string(node->name());
     break;
+  case type_bindin:
+  case type_bindout: {
+    auto bp = reinterpret_cast<bindportimpl*>(node);
+    out << bp->binding()->name() << "_"
+        << bp->binding()->id() << "_" << identifier_from_string(bp->name());
+    break;
+  }
+  case type_time:
+    out << "$time";
+    break;
+  default: {
+    auto name = node->resolve_name();
+    out << identifier_from_string(name) << "_" << node->id();
+    break;
+  }
+  }
+}
+
+void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline) {
+  auto type = node->type();
+  switch (type) {
   case type_proxy:    
     if (!noinline && this->is_inline_subscript(node)) {
       this->print_proxy_value(out, reinterpret_cast<proxyimpl*>(node));
     } else {
-      print_unique_name(node);
+      print_node_name(out, node);
     }
     break;
   case type_lit:
@@ -1025,34 +1040,11 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline
       auto& value = reinterpret_cast<litimpl*>(node)->value();
       print_value(out, value, true);
     } else {
-      print_unique_name(node);
+      print_node_name(out, node);
     }
     break;
-  case type_sel:
-  case type_op:
-  case type_reg:
-  case type_mem:
-  case type_msrport:
-  case type_marport:
-  case type_mwport:
-  case type_udfout:
-  case type_bypass:
-    print_unique_name(node);
-    break;
-  case type_time:
-    out << "$time";
-    break;
-  case type_bind:
-    out << identifier_from_string(node->name()) << "_" << node->id();
-    break;
-  case type_bindin:
-  case type_bindout: {
-    auto bindport = reinterpret_cast<bindportimpl*>(node);
-    print_name(out, bindport->binding());
-    out << "_" << identifier_from_string(bindport->name());
-  } break;
   default:
-    assert(false);
+    print_node_name(out, node);
   }
 }
 

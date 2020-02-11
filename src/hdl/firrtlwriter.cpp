@@ -672,11 +672,8 @@ void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
 void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
-    out << node->type();
-    if (!node->name().empty()) {
-      out << "_" << node->name();
-    }
-    out << "_" << node->id();
+    auto name = node->resolve_name();
+    out << identifier_from_string(name) << "_" << node->id();
   };
 
   auto type = node->type();

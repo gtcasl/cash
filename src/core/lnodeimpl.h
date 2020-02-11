@@ -60,7 +60,9 @@ public:
     return name_;
   }
 
-  void set_name(const std::string& name);
+  void set_name(const std::string& name) {
+    name_ = name;
+  }
 
   const source_location& sloc() const {
     return sloc_;
@@ -122,6 +124,8 @@ public:
   void replace_uses(lnodeimpl* node);
 
   void remove_user(lnode* user);
+
+  std::string resolve_name() const;
 
   virtual void print(std::ostream& out) const;
 

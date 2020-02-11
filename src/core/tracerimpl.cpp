@@ -3,13 +3,14 @@
 #include "ioimpl.h"
 #include "bindimpl.h"
 #include "context.h"
+#include "verilogwriter.h"
 
 using namespace ch::internal;
 
 #define NUM_TRACES 100
 
 struct vcd_signal_compare_t {
-  bool operator()(lnodeimpl* lhs, lnodeimpl* rhs) {
+  bool operator()(ioportimpl* lhs, ioportimpl* rhs) {
     auto lhs_pos  = lhs->name().find_last_of('/');
     auto rhs_pos  = rhs->name().find_last_of('/');
     auto lhs_path = (lhs_pos != std::string::npos) ? lhs->name().substr(0, lhs_pos) : "";
@@ -213,7 +214,7 @@ void tracerimpl::toVCD(std::ofstream& out) const {
   dup_tracker<std::string> dup_mod_names;
   std::list<std::string> mod_stack;
 
-  std::set<lnodeimpl*, vcd_signal_compare_t> sorted_signals;
+  std::set<ioportimpl*, vcd_signal_compare_t> sorted_signals;
   for (auto node : signals_) {
     sorted_signals.emplace(node);
   }
@@ -320,29 +321,9 @@ void tracerimpl::toVerilog(std::ofstream& out,
                            bool passthru) const {
   //--
   auto netlist_name = [&](lnodeimpl* node)->std::string {
-    switch (node->type()) {
-    case type_bindin:
-    case type_bindout: {
-      std::stringstream ss;
-      auto bp = reinterpret_cast<bindportimpl*>(node);
-      ss << bp->binding()->name() << "_"
-         << bp->binding()->id() << "_" << identifier_from_string(bp->name());
-      return ss.str();
-    }
-    case type_time:
-      return "$time";
-    case type_tap:
-      return identifier_from_string(node->name());
-    default: {
-      std::stringstream ss;
-      ss << node->type();
-      if (!node->name().empty()) {
-        ss << "_" << identifier_from_string(node->name());
-      }
-      ss << "_" << node->id();
-      return ss.str();
-    }
-    }
+    std::stringstream ss;
+    verilogwriter::print_node_name(ss, node);
+    return ss.str();
   };
 
   //--
@@ -1363,29 +1344,9 @@ void tracerimpl::toVPI_c(std::ofstream& out) const {
 void tracerimpl::toVPI_v(std::ofstream& out, const std::string& moduleFileName) const {
   //--
   auto netlist_name = [&](lnodeimpl* node)->std::string {
-    switch (node->type()) {
-    case type_bindin:
-    case type_bindout: {
-      std::stringstream ss;
-      auto bp = reinterpret_cast<bindportimpl*>(node);
-      ss << bp->binding()->name() << "_"
-         << bp->binding()->id() << "_" << identifier_from_string(bp->name());
-      return ss.str();
-    }
-    case type_time:
-      return "$time";
-    case type_tap:
-      return identifier_from_string(node->name());
-    default: {
-      std::stringstream ss;
-      ss << node->type();
-      if (!node->name().empty()) {
-        ss << "_" << identifier_from_string(node->name());
-      }
-      ss << "_" << node->id();
-      return ss.str();
-    }
-    }
+    std::stringstream ss;
+    verilogwriter::print_node_name(ss, node);
+    return ss.str();
   };
 
   //--
@@ -1394,8 +1355,8 @@ void tracerimpl::toVPI_v(std::ofstream& out, const std::string& moduleFileName) 
       auto sname = netlist_name(node);
       return stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), sname.c_str());
     } else {
-      auto pos   = node->name().find_last_of('/');
-      auto path  = node->name().substr(0, pos);
+      auto pos  = node->name().find_last_of('/');
+      auto path = node->name().substr(0, pos);
       std::replace(path.begin(), path.end(), '/', '.');
       auto sname = identifier_from_string(node->name().substr(pos+1));
       return stringf("%s.%s", path.c_str(), sname.c_str());;

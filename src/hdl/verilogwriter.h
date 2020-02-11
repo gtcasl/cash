@@ -95,6 +95,8 @@ public:
 
   void print_operator(std::ostream& out, ch_op op);
 
+  static void print_node_name(std::ostream& out, lnodeimpl* node);
+
 protected:
 
   context* ctx_;

@@ -43,7 +43,7 @@ system_buffer_impl::system_buffer_impl(uint32_t size,
   : source_(buffer)
   , offset_(offset)
   , size_(size)
-  , name_(name) {
+  , name_(((!buffer->name().empty() && !name.empty()) ? (buffer->name() + '.' + name) : name)) {
   assert(offset_ + size_ <= buffer->size());
 }
 

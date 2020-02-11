@@ -457,6 +457,6 @@ namespace extension {
 #define __sio      CH_SCIO
 #define __flip     CH_FLIP
 
-#define __require  CH_REQUIRES
+#define __requires  CH_REQUIRES
 
 #define __unused   CH_UNUSED

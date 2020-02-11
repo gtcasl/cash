@@ -6,7 +6,7 @@ set(JIT "LLVM" CACHE STRING "JIT library to use")
 set(JITs "LLVM;LIBJIT;OFF")
 set_property(CACHE JIT PROPERTY STRINGS ${JITs})
 
-option(PLUGIN "Enable clang plugin." ON)
+option(PLUGIN "Enable clang plugin." OFF)
 
 option(CODECOV "Enable code coverage." OFF)
 

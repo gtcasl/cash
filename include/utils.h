@@ -747,14 +747,6 @@ struct sloc_arg {
     : data(p_data)
     , sloc(p_sloc) 
   {}
-
-  template <typename U,
-            CH_REQUIRES(std::is_constructible_v<T, U>)>
-  sloc_arg(const U& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
-    : tmp_(std::make_shared<T>(p_data))
-    , data(*tmp_)
-    , sloc(p_sloc) 
-  {}
   
   template <typename U,
             CH_REQUIRES(std::is_convertible_v<U, T>)>
@@ -763,7 +755,6 @@ struct sloc_arg {
     , sloc(other.sloc) 
   {}
   
-  std::shared_ptr<T> tmp_;
   const T& data;
   source_location sloc;
 };
@@ -850,14 +841,6 @@ struct srcinfo_arg {
     : data(p_data)
     , srcinfo(p_srcinfo) 
   {}
-
-  template <typename U,
-            CH_REQUIRES(std::is_constructible_v<T, U>)>
-  srcinfo_arg(const U& p_data, const source_info& p_srcinfo = CH_CUR_SRC_INFO) 
-    : tmp_(std::make_shared<T>(p_data))
-    , data(*tmp_)
-    , srcinfo(p_srcinfo) 
-  {}  
   
   template <typename U,
             CH_REQUIRES(std::is_convertible_v<U, T>)>
@@ -866,7 +849,6 @@ struct srcinfo_arg {
     , srcinfo(other.srcinfo) 
   {}
 
-  std::shared_ptr<T> tmp_;
   const T& data;
   source_info srcinfo;
 };
