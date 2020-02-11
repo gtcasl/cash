@@ -22,7 +22,7 @@ class udfimpl;
 class udfportimpl;
 class tapimpl;
 class bypassimpl;
-class source_info;
+class source_location;
 enum class ch_op;
 enum class udf_verilog;
 

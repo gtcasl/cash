@@ -9,14 +9,16 @@ lnodeimpl* createOpNode(ch_op op,
                         uint32_t size, 
                         bool is_signed, 
                         const lnode& in,
-                        const source_info& srcinfo);
+                        const std::string& name,
+                        const source_location& sloc);
 
 lnodeimpl* createOpNode(ch_op op,
                         uint32_t size,
                         bool is_signed,
                         const lnode& lhs,
                         const lnode& rhs,
-                        const source_info& srcinfo);
+                        const std::string& name,
+                        const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,9 +76,12 @@ public:
              uint32_t src_offset,
              uint32_t length);
 
-  lnodeimpl* clone(const source_info& srcinfo) const;
+  lnodeimpl* clone(const std::string& name, const source_location& sloc) const;
 
-  lnodeimpl* sliceref(size_t size, size_t start, const source_info& srcinfo) const;  
+  lnodeimpl* sliceref(size_t size, 
+                      size_t start, 
+                      const std::string& name, 
+                      const source_location& sloc) const;  
 
 protected:
 
@@ -85,14 +90,14 @@ protected:
   logic_buffer(const sdata_type& value) : lnode(value)  {}
 
   logic_buffer(uint32_t size, 
-               const std::string& name, 
-               const source_info& srcinfo);
+               const std::string& name,
+               const source_location& sloc);
 
   logic_buffer(uint32_t size,
                const logic_buffer& src,
                uint32_t src_offset,
-               const std::string& name, 
-               const source_info& srcinfo);  
+               const std::string& name,
+               const source_location& sloc);  
   
   void ensure_proxy() const;
 
@@ -100,17 +105,13 @@ protected:
 
   friend auto make_logic_buffer(const sdata_type& value);
 
-  template <typename A0> 
-  friend auto make_logic_buffer(A0&& arg0, const source_info& srcinfo);
-  
-  template <typename A0, typename A1> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& srcinfo); 
+  friend auto make_logic_buffer(uint32_t size, 
+                                const source_info& srcinfo);
 
-  template <typename A0, typename A1, typename A2> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& srcinfo);
-
-  template <typename A0, typename A1, typename A2, typename A3> 
-  friend auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& srcinfo);
+  friend auto make_logic_buffer(uint32_t size,
+                                const logic_buffer& src,
+                                uint32_t src_offset, 
+                                const source_info& srcinfo);
 };
 
 inline auto make_logic_buffer(lnodeimpl* impl) {
@@ -121,24 +122,16 @@ inline auto make_logic_buffer(const sdata_type& value) {
   return logic_buffer(value);
 }
 
-template <typename A0>
-auto make_logic_buffer(A0&& arg0, const source_info& srcinfo) {
-  return logic_buffer(std::forward<A0>(arg0), srcinfo);
+inline auto make_logic_buffer(uint32_t size, 
+                              const source_info& srcinfo) {
+  return logic_buffer(size, srcinfo.name(), srcinfo.sloc());
 }
 
-template <typename A0, typename A1>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, const source_info& srcinfo) {
-  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), srcinfo);
-}
-
-template <typename A0, typename A1, typename A2>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, const source_info& srcinfo) {
-  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), srcinfo);
-}
-
-template <typename A0, typename A1, typename A2, typename A3>
-auto make_logic_buffer(A0&& arg0, A1&& arg1, A2&& arg2, A3&& arg3, const source_info& srcinfo) {
-  return logic_buffer(std::forward<A0>(arg0), std::forward<A1>(arg1), std::forward<A2>(arg2), std::forward<A3>(arg3), srcinfo);
+inline auto make_logic_buffer(uint32_t size,
+                              const logic_buffer& src,
+                              uint32_t src_offset, 
+                              const source_info& srcinfo) {
+  return logic_buffer(size, src, src_offset, srcinfo.name(), srcinfo.sloc());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,7 +197,7 @@ public:
   template <typename T>
   static auto clone(const T& obj, const source_info& srcinfo) {
     assert(ch_width_v<T> == obj.__buffer().size());
-    auto data = obj.__buffer().clone(srcinfo);
+    auto data = obj.__buffer().clone(srcinfo.name(), srcinfo.sloc());
     return T(make_logic_buffer(data));
   }
 
@@ -213,7 +206,7 @@ public:
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    auto buffer = make_logic_buffer(ch_width_v<R>, "slice", srcinfo);
+    auto buffer = make_logic_buffer(ch_width_v<R>, srcinfo);
     buffer.write(0, obj.__buffer(), start, ch_width_v<R>);
     return std::add_const_t<R>(buffer);
   }
@@ -223,7 +216,7 @@ public:
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    auto data = obj.__buffer().sliceref(ch_width_v<R>, start, srcinfo);
+    auto data = obj.__buffer().sliceref(ch_width_v<R>, start, srcinfo.name(), srcinfo.sloc());
     return R(make_logic_buffer(data));
   }
 
@@ -240,8 +233,8 @@ public:
   }
 
   template <typename T>
-  static const auto& srcinfo(const T& obj) {
-    return obj.__buffer().srcinfo();
+  static auto srcinfo(const T& obj) {
+    return source_info(obj.__buffer().sloc(), obj.__buffer().name());
   }
 
   template <typename T, typename U>
@@ -448,25 +441,25 @@ auto make_logic_type(const lnode& node) {
 
 template <ch_op op, typename A>
 auto make_logic_op(const A& a, const source_info& srcinfo) {
-  auto node = createOpNode(op, 1, false, get_lnode(a), srcinfo);
+  auto node = createOpNode(op, 1, false, get_lnode(a), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A>
 auto make_logic_op(const A& a, const source_info& srcinfo) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), srcinfo);
+  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<R>(node);
 }
 
 template <ch_op op, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
-  auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b), srcinfo);
+  auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b), srcinfo);
+  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<R>(node);
 }
 
@@ -525,108 +518,108 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
   }
 
 #define CH_LOGIC_OPERATOR1B_IMPL(base, op, method) \
-  friend auto op(const srcinfo_proxy<base>& self) { \
+  friend auto op(const srcinfo_arg<base>& self) { \
     auto& _self = reinterpret_cast<const T&>(self.data); \
     return logic_accessor::method<T>(_self, self.srcinfo); \
   }
 
 #define CH_LOGIC_OPERATOR1X_IMPL(base, op, method) \
-  friend auto op(const srcinfo_proxy<base>& self) { \
+  friend auto op(const srcinfo_arg<base>& self) { \
     auto& _self = reinterpret_cast<const T&>(self.data); \
     return logic_accessor::method<T>(_self, self.srcinfo); \
   }
 
 #define CH_LOGIC_OPERATOR2B_IMPL(base, op, method) \
-  friend auto op(const srcinfo_proxy<base>& lhs, const base& rhs) { \
+  friend auto op(const srcinfo_arg<base>& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const srcinfo_proxy<base>& lhs, const U& rhs) { \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
+  friend auto op(const srcinfo_arg<base>& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _rhs = logic_op_cast<T>(rhs, lhs.srcinfo); \
       return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
     } else { \
-      return op(_lhs, srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.srcinfo)); \
+      return op(_lhs, srcinfo_arg(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.srcinfo)); \
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const U& lhs, const srcinfo_proxy<base>& rhs) { \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
+  friend auto op(const U& lhs, const srcinfo_arg<base>& rhs) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs, rhs.srcinfo); \
       return logic_accessor::method<T>(_lhs, _rhs, rhs.srcinfo); \
     } else { \
-      return op(srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.srcinfo), _rhs); \
+      return op(srcinfo_arg(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.srcinfo), _rhs); \
     } \
   }
 
 #define CH_LOGIC_OPERATOR2X_IMPL(base, op, method) \
-  friend auto op(const srcinfo_proxy<base>& lhs, const base& rhs) { \
+  friend auto op(const srcinfo_arg<base>& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const srcinfo_proxy<base>& lhs, const U& rhs) { \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
+  friend auto op(const srcinfo_arg<base>& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _rhs = logic_op_cast<T>(rhs, lhs.srcinfo); \
       return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
     } else { \
-      auto _rhs = srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.srcinfo); \
+      auto _rhs = srcinfo_arg(ch_size_cast_t<T, ch_width_v<U>>(rhs), lhs.srcinfo); \
       return op(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
-  friend auto op(const U& lhs, const srcinfo_proxy<base>& rhs) { \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
+  friend auto op(const U& lhs, const srcinfo_arg<base>& rhs) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs, rhs.srcinfo); \
       return logic_accessor::method<T>(_lhs, _rhs, rhs.srcinfo); \
     } else { \
-      return op(srcinfo_proxy(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.srcinfo), _rhs); \
+      return op(srcinfo_arg(ch_size_cast_t<T, ch_width_v<U>>(lhs), rhs.srcinfo), _rhs); \
     } \
   }
 
 #define CH_LOGIC_OPERATOR2Y_IMPL(base, op, method) \
-  friend auto op(const srcinfo_proxy<base>& lhs, const base& rhs) { \
+  friend auto op(const srcinfo_arg<base>& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto op(const srcinfo_proxy<base>& lhs, const U& rhs) { \
+            CH_REQUIRES(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
+  friend auto op(const srcinfo_arg<base>& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs.data); \
     auto _rhs = ch_logic_t<U>(rhs); \
     return logic_accessor::method<T>(_lhs, _rhs, lhs.srcinfo); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
-  friend auto op(const U& lhs, const srcinfo_proxy<base>& rhs) { \
+            CH_REQUIRES(is_sbitbase_v<U> || std::is_integral_v<U>)> \
+  friend auto op(const U& lhs, const srcinfo_arg<base>& rhs) { \
     auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
     return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, rhs.srcinfo); \
   }
   
 #define CH_LOGIC_OPERATOR2Z_IMPL(base, op, method) \
-  T& op(const srcinfo_proxy<base>& rhs) { \
+  T& op(const srcinfo_arg<base>& rhs) { \
     auto& self = reinterpret_cast<T&>(*this); \
     auto& _rhs = reinterpret_cast<const T&>(rhs.data); \
-    self = logic_accessor::method<T>(ch_clone(self), _rhs, rhs.srcinfo); \
+    self = logic_accessor::method<T>(ch_clone(self, rhs.srcinfo), _rhs, rhs.srcinfo); \
     return self; \
   } \
   T& op(T rhs) { \
     auto& self = reinterpret_cast<T&>(*this); \
     auto srcinfo = logic_accessor::srcinfo(rhs); \
-    self = logic_accessor::method<T>(ch_clone(self), rhs, srcinfo); \
+    self = logic_accessor::method<T>(ch_clone(self, srcinfo), rhs, srcinfo); \
     return self; \
   }
 
@@ -638,24 +631,24 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
 
 #define CH_LOGIC_FUNCTION2B_DECL(base, func) \
   template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SRC_INFO); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
+  template <typename T, typename U, CH_REQUIRES(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRES(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION2X_DECL(base, func) \
   template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
   template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SRC_INFO); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
-  template <typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
+  template <typename T, typename U, CH_REQUIRES(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& , CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRES(is_logic_op_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRES(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRES(is_logic_op_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION2Y_DECL(base, func) \
   template <typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
   template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs, CH_SRC_INFO); \
-  template <typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
-  template <typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO); \
-  template <unsigned R, typename T, typename U, CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
+  template <typename T, typename U, CH_REQUIRES(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRES(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const base<T>& lhs, const U& rhs, CH_SRC_INFO); \
+  template <typename T, typename U, CH_REQUIRES(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO); \
+  template <unsigned R, typename T, typename U, CH_REQUIRES(is_sbitbase_v<U> || std::is_integral_v<U>)> auto func(const U& lhs, const base<T>& rhs, CH_SRC_INFO);
 
 #define CH_LOGIC_FUNCTION1B_IMPL(base, func, method) \
   friend auto func(const base& self, CH_SRC_INFO) { \
@@ -686,7 +679,7 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
@@ -697,7 +690,7 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
@@ -726,7 +719,7 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
@@ -737,7 +730,7 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
@@ -753,7 +746,7 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
@@ -764,7 +757,7 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
+            CH_REQUIRES(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
@@ -798,14 +791,14 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
+            CH_REQUIRES(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_logic_t<U>(rhs); \
     return logic_accessor::method<T>(_lhs, _rhs, srcinfo); \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
+            CH_REQUIRES(is_bitbase_v<U> || is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const base& lhs, const U& rhs, CH_SRC_INFO) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_logic_t<U>(rhs); \
@@ -817,14 +810,14 @@ auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
     } \
   } \
   template <typename U, \
-            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
+            CH_REQUIRES(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return logic_accessor::method<ch_logic_t<U>>(_lhs, _rhs, srcinfo); \
   } \
   template <unsigned R, typename U, \
-            CH_REQUIRE(is_sbitbase_v<U> || std::is_integral_v<U>)> \
+            CH_REQUIRES(is_sbitbase_v<U> || std::is_integral_v<U>)> \
   friend auto func(const U& lhs, const base& rhs, CH_SRC_INFO) { \
     auto _lhs = ch_logic_t<U>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \

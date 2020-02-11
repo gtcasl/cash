@@ -12,56 +12,55 @@ public:
   using base = ch_snumbase<ch_suint<N>>;
   using base::operator=;
 
-  ch_suint(const system_buffer& buffer
-           = make_system_buffer(N, idname<ch_suint>()))
+  explicit ch_suint(const system_buffer& buffer = make_system_buffer(N))
     : buffer_(buffer) {
     assert(N == buffer->size());
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_suint(const U& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
+    : ch_suint(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(is_bitvector_extended_type_v<U>)>
+            CH_REQUIRES(is_bitvector_extended_type_v<U>)>
   explicit ch_suint(U&& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
-    this->operator=(make_system_buffer(sdata_type(N , std::forward<U>(other))));
+    : ch_suint(make_system_buffer(N)) {
+    this->operator=(ch_suint(make_system_buffer(sdata_type(N , std::forward<U>(other)))));
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_suint(const ch_sbitbase<U>& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
+    : ch_suint(make_system_buffer(N)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_suint(const ch_sbool& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
+    : ch_suint(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_suint(const ch_sbit<M>& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
+    : ch_suint(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_suint(const ch_sint<M>& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
+    : ch_suint(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_suint(const ch_suint<M>& other)
-    : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
+    : ch_suint(make_system_buffer(N)) {
     this->operator=(other);
   }
 
@@ -102,87 +101,87 @@ public:
   using base = ch_numbase<ch_uint<N>>;
   using base::operator=;
 
-  ch_uint(const logic_buffer& buffer 
-    = make_logic_buffer(N, idname<ch_uint>(), CH_CUR_SRC_INFO))
+  explicit ch_uint(const logic_buffer& buffer 
+    = make_logic_buffer(N, CH_CUR_SRC_INFO))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_uint(const U& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_uint(const ch_sbitbase<U>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_uint(const ch_sbool& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_uint(const ch_sbit<M>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_uint(const ch_sint<M>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_uint(const ch_suint<M>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_uint(const ch_bitbase<U>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_uint(const ch_bool& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_uint(const ch_bit<M>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_uint(const ch_int<M>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_uint(const ch_uint<M>& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   ch_uint(const ch_uint& other, CH_SRC_INFO)
-    : ch_uint(make_logic_buffer(N, idname<ch_uint>(), srcinfo)) {
+    : ch_uint(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 

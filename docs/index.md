@@ -25,25 +25,23 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 [![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
 [![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
 
-# System Setup (Ubuntu Trusty)
+# System Setup (Ubuntu Bionic)
 
-C++17 Install:
+Cash requires C++17 compiler to build with support for inline variables.
 
-    $ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-    $ sudo apt-get update
-    $ sudo apt-get install gcc-7 g++-7
-    $ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+Other dependencies include:
+
+  - [LLVM] (https://www.llvm.org)
+  - [iVerilog] (http://iverilog.icarus.com/)
+  - [Catch] (https://github.com/catchorg/Catch2)
     
-LLVM 8.0 Install:
-
-    $ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-    $ sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
-    $ sudo apt-get update
-    $ sudo apt-get install llvm-8-dev
-
 IVerilog Install:
 
     $ sudo apt-get install iverilog
+    
+LLVM 9.0 Install:
+
+    $ sudo apt-get install llvm-9-dev
 
 # Installation
 

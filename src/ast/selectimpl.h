@@ -36,7 +36,8 @@ protected:
   selectimpl(context* ctx,
              uint32_t size,
              lnodeimpl* key,
-             const source_info& srcinfo);
+             const std::string& name,
+             const source_location& sloc);
 
   bool has_key_;
 

@@ -8,8 +8,8 @@ namespace internal {
 class switch_t {
 public:
 
-  switch_t(const lnode& key, const source_info& srcinfo) {
-    begin_branch(key.impl(), srcinfo);
+  switch_t(const lnode& key, const source_location& sloc) {
+    begin_branch(key.impl(), sloc);
   }
 
   ~switch_t() {
@@ -47,7 +47,7 @@ public:
   switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
 
   template <typename P,
-            CH_REQUIRE(!std::is_convertible_v<P, fvoid_t>)>
+            CH_REQUIRES(!std::is_convertible_v<P, fvoid_t>)>
   switch_body_t<K> operator,(const P& pred) {
     static_assert(is_equality_comparable_v<K, P>, "invalid type");
     static_assert(!is_logic_type_v<P>, "invalid type");
@@ -76,9 +76,9 @@ switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
 }
 
 template <typename K>
-auto ch_switch(const K& key, CH_SRC_INFO) {
+auto ch_switch(const K& key, CH_SLOC) {
   static_assert(is_bitbase_v<K>, "invalid type");
-  return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key), srcinfo));
+  return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key), sloc));
 }
 
 }

@@ -31,7 +31,8 @@ protected:
          uint32_t size,
          bool is_signed,
          lnodeimpl* lhs,
-         const source_info& srcinfo);
+         const std::string& name,
+         const source_location& sloc);
 
   opimpl(context* ctx,
          ch_op op,
@@ -39,7 +40,8 @@ protected:
          bool is_signed,
          lnodeimpl* lhs,
          lnodeimpl* rhs,
-         const source_info& srcinfo);
+         const std::string& name,
+         const source_location& sloc);
 
   void init(ch_op op,
             bool is_signed,

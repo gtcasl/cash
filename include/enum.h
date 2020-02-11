@@ -29,16 +29,16 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_STRING(a, i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
 #define CH_ENUM_SYSTEM_IMPL(enum_name) \
-  enum_name(const ch::internal::system_buffer& buffer = \
-    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
+  explicit enum_name(const ch::internal::system_buffer& buffer = \
+    ch::internal::make_system_buffer(traits::bitwidth)) \
     : buffer_(buffer) { \
   } \
   enum_name(type __other) \
-    : enum_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    : enum_name(ch::internal::make_system_buffer(traits::bitwidth)) { \
     this->operator=(__other); \
   } \
   enum_name(const enum_name& __other) \
-    : enum_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    : enum_name(ch::internal::make_system_buffer(traits::bitwidth)) { \
     this->operator=(__other); \
   } \
   enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) { \
@@ -60,17 +60,17 @@ void registerEnumString(const lnode& node, void* callback);
   }
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
-  enum_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), CH_CUR_SRC_INFO)) \
+  explicit enum_name(const ch::internal::logic_buffer& buffer = \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_CUR_SRC_INFO)) \
     : buffer_(buffer) { \
     ch::internal::registerEnumString(ch::internal::get_lnode(*this), reinterpret_cast<void*>(to_string)); \
   } \
   enum_name(type __other, CH_SRC_INFO) \
-    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), srcinfo)) { \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, srcinfo)) { \
     this->operator=(__other); \
   } \
   enum_name(const enum_name& __other, CH_SRC_INFO) \
-    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name), srcinfo)) { \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, srcinfo)) { \
     this->operator=(__other); \
   } \
   enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) { \

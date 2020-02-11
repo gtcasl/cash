@@ -75,6 +75,21 @@ struct TestModule {
   }
 };
 
+struct TestModule2 {
+  __io (
+    __in (ch_bit4)  in,
+    __out (ch_bit4) out
+  );
+
+  TestModule2(float v) : v_(v) {}
+  
+  void describe() {
+    io.out = io.in;
+  }
+
+  float v_;
+};
+
 struct QQ {
   __io (
     __in (ch_bool) w,
@@ -88,6 +103,26 @@ struct QQ {
   }
 };
 
+struct PP {
+  __inout (io_ab_t, (
+    __in (ch_uint2) a,
+    __out (ch_uint2) b
+  ));
+
+  __io (
+    (ch_vec<io_ab_t, 2>) x,
+    (ch_vec<ch_in<ch_uint2>, 2>) y,
+    (ch_vec<ch_out<ch_uint2>, 2>) z
+  );
+
+  void describe() {
+    for (int i = 0; i < 2; ++i) {
+      io.x[i].b = io.y[i] + io.x[i].a;
+      io.z[i] = io.x[i].b;
+    }
+  }
+};
+
 void foo() {
   {
     ch_module<QQ> q;
@@ -96,6 +131,9 @@ void foo() {
     auto b = q2.io.x.valid;        
     q2.io.x.valid = true;
     q2.io.y.ready = true;
+  }
+  {
+    ch_module<PP> p;
   }
   {
     ch_device<QQ> q;
@@ -489,6 +527,13 @@ void foo() {
   }
 
   {
+    ch_uint4 a(0x1);
+    ch_bit4 b(0x2);
+    auto c = a + b;
+    auto d = a | b;
+  }
+
+  {
     ch_uint4 a(0);
     ch_int2 b(0);
     auto c = a + b;
@@ -597,6 +642,24 @@ void foo() {
   }
 
   {
+    std::array<ch_sbit2, 2> a{11_b, 00_b};
+    std::array<std::array<ch_sbit2, 2>, 2> b{{ {0, 1}, {1, 0} }};
+    std::array<std::array<std::array<ch_sbit2, 3>, 2>, 2> c{{ {{ {11_b, 00_b, 0}, {10_b, 00_b, 0} }}, {{ {11_b, 0, 00_b}, {0, 10_b, 00_b} }} }};
+  }
+
+  {
+    ch_vec<ch_sbit2, 2> a{11_b, 00_b};
+    ch_vec<ch_vec<ch_sbit2, 2>, 2> b{{ {0, 1}, {1, 0} }};
+    ch_vec<ch_vec<ch_vec<ch_sbit2, 3>, 2>, 2> c{{ {{ {11_b, 00_b, 0}, {10_b, 00_b, 0} }}, {{ {11_b, 0, 00_b}, {0, 10_b, 00_b} }} }};
+  }
+
+  {
+    ch_vec<ch_int2, 2> a{11_b, 00_b};
+    ch_vec<ch_vec<ch_int2, 2>, 2> b{{ {0, 1}, {1, 0} }};
+    ch_vec<ch_vec<ch_vec<ch_int2, 3>, 2>, 2> c{{ {{ {11_b, 00_b, 0}, {10_b, 00_b, 0} }}, {{ {11_b, 0, 00_b}, {0, 10_b, 00_b} }} }};
+  }
+
+  {
     ch_vec<ch_bit2, 2> a{11_b, 00_b};
     ch_reg<ch_vec<ch_bit2, 2>> b{11_b, 00_b};
     ch_vec<ch_vec<ch_bit2, 2>, 2> c{{11_b, 00_b}, {11_b, 00_b}};
@@ -656,18 +719,36 @@ void bar() {
   }
 
   {
+    std::array<ch_reg<ch_bit4>, 2> a;
+    std::array<ch_reg<ch_bit4>, 2> b{0, 0};
+    std::array<std::array<ch_reg<ch_bit4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
+  }
+
+  {
+    std::array<ch_mem<ch_bit4, 4>, 2> a;
+    std::array<ch_mem<ch_bit4, 4>, 2> b{0, 0};
+    std::array<std::array<ch_mem<ch_bit4, 4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
+  }
+
+  {
     ch_vec<ch_reg<ch_bit4>, 2> a;
-    ch_vec<ch_reg<ch_bit4>, 2> b{0};
-    ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> bb{0};
-    ch_vec<ch_reg<ch_bit4>, 2> c{0, 1};
-    ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> cc{0, 1};
+    ch_vec<ch_reg<ch_bit4>, 2> b{0, 0};
+    ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
   }
 
   {
     ch_vec<ch_mem<ch_bit4, 4>, 2> a;
-    ch_vec<ch_mem<ch_bit4, 4>, 2> b{0};
-    ch_vec<ch_vec<ch_mem<ch_bit4, 4>, 2>, 2> bb{0};
-    ch_vec<ch_mem<ch_bit4, 4>, 2> c{0, 1};
-    ch_vec<ch_vec<ch_mem<ch_bit4, 4>, 2>, 2> cc{0, 1};
+    ch_vec<ch_mem<ch_bit4, 4>, 2> b{0, 0};
+    ch_vec<ch_vec<ch_mem<ch_bit4, 4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
+  }
+
+  {
+    std::array<ch_module<TestModule>, 2> a;
+    std::array<ch_module<TestModule2>, 2> b{0.1f, 0.8f};
+  }
+
+  {
+    ch_vec<ch_module<TestModule>, 2> a;
+    ch_vec<ch_module<TestModule2>, 2> b{0.1f, 0.8f};
   }
 }

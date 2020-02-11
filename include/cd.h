@@ -5,32 +5,32 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* getCurrentClockNode(const source_info& srcinfo);
+lnodeimpl* getCurrentClockNode(const source_location& sloc);
 
-lnodeimpl* getCurrentResetNode(const source_info& srcinfo);
+lnodeimpl* getCurrentResetNode(const source_location& sloc);
 
 void pushClockDomain(const lnode& clock, 
                      const lnode& reset, 
                      bool pos_edge,
-                     const source_info& srcinfo);
+                     const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline auto ch_clock(CH_SRC_INFO) {
-  return make_logic_type<ch_bool>(getCurrentClockNode(srcinfo));
+inline auto ch_clock(CH_SLOC) {
+  return make_logic_type<ch_bool>(getCurrentClockNode(sloc));
 }
 
-inline auto ch_reset(CH_SRC_INFO) {
-  return make_logic_type<ch_bool>(getCurrentResetNode(srcinfo));
+inline auto ch_reset(CH_SLOC) {
+  return make_logic_type<ch_bool>(getCurrentResetNode(sloc));
 }
 
 template <typename C, typename R = ch_bool>
-void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true, CH_SRC_INFO) {
+void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true, CH_SLOC) {
   static_assert(is_bitbase_v<C>, "invalid type");
   static_assert(ch_width_v<C> == 1, "invalid size");
   static_assert(is_bitbase_v<R>, "invalid type");
   static_assert(ch_width_v<R> == 1, "invalid size");
-  pushClockDomain(get_lnode(clk), get_lnode(reset), pos_edge, srcinfo);
+  pushClockDomain(get_lnode(clk), get_lnode(reset), pos_edge, sloc);
 }
 
 void ch_popcd();

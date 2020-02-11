@@ -7,15 +7,15 @@ using namespace ch::internal;
 
 assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
-                       const std::string& msg,
-                       const source_info& srcinfo)
-  : ioimpl(ctx, type_assert, 0, "", srcinfo)
-  , msg_(msg)
+                       const std::string& message,
+                       const source_location& sloc)
+  : ioimpl(ctx, type_assert, 0, "", sloc)
+  , message_(message)
   , pred_idx_(-1) {
   this->add_src(cond);
-  auto sys_time = ctx->create_time(srcinfo);
+  auto sys_time = ctx->create_time(sloc);
   this->add_src(sys_time);
-  auto pred = ctx_->get_predicate(srcinfo);
+  auto pred = ctx_->get_predicate(sloc);
   if (pred) {
     pred_idx_ = this->add_src(pred);
   }
@@ -24,13 +24,13 @@ assertimpl::assertimpl(context* ctx,
 assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
                        lnodeimpl* pred,
-                       const std::string& msg,
-                       const source_info& srcinfo)
-  : ioimpl(ctx, type_assert, 0, "", srcinfo)
-  , msg_(msg)
+                       const std::string& message,
+                       const source_location& sloc)
+  : ioimpl(ctx, type_assert, 0, "", sloc)
+  , message_(message)
   , pred_idx_(-1) {
   this->add_src(cond);
-  auto sys_time = ctx->create_time(srcinfo);
+  auto sys_time = ctx->create_time(sloc);
   this->add_src(sys_time);
   if (pred) {
     pred_idx_ = this->add_src(pred);
@@ -43,13 +43,13 @@ lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
   if (this->has_pred()) {
     pred = cloned_nodes.at(this->pred().id());
   }
-  return ctx->create_node<assertimpl>(cond, pred, msg_, srcinfo_);
+  return ctx->create_node<assertimpl>(cond, pred, message_, sloc_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::createAssertNode(const lnode& cond, 
-                                    const std::string& msg,
-                                    const source_info& srcinfo) {
-  ctx_curr()->create_node<assertimpl>(cond.impl(), msg, srcinfo);
+                                    const std::string& message,
+                                    const source_location& sloc) {
+  ctx_curr()->create_node<assertimpl>(cond.impl(), message, sloc);
 }

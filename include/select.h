@@ -8,11 +8,13 @@ namespace internal {
 class select_impl {
 public:
   
-  select_impl(const source_info& srcinfo) : srcinfo_(srcinfo) {}
+  select_impl(const source_info& srcinfo) 
+    : srcinfo_(srcinfo) 
+    {}
 
   select_impl(const lnode& key, const source_info& srcinfo) 
     : key_(key)
-    , srcinfo_(srcinfo)  
+    , srcinfo_(srcinfo) 
   {}
 
   select_impl(select_impl& other) 
@@ -22,9 +24,9 @@ public:
   {}
 
   auto operator=(select_impl&& other) {
-    stmts_ = std::move(other.stmts_);
-    key_   = std::move(other.key_);
-    srcinfo_  = std::move(other.srcinfo_);
+    stmts_   = std::move(other.stmts_);
+    key_     = std::move(other.key_);
+    srcinfo_ = std::move(other.srcinfo_);
     return *this;
   }
   
@@ -54,7 +56,9 @@ protected:
 template <typename T>
 class select_t {
 public:    
-  select_t(const lnode& pred, const lnode& value, const source_info& srcinfo) 
+  select_t(const lnode& pred, 
+           const lnode& value, 
+           const source_info& srcinfo) 
     : impl_(srcinfo) {
     impl_.push(pred, value);
   }
@@ -116,14 +120,17 @@ public:
   case_t& operator()(const P& pred, const T& value) {    
     static_assert(std::is_constructible_v<V, T>, "invalid type");
     static_assert(is_equality_comparable_v<P, K>, "invalid type");
-    impl_.push(to_lnode<K>(pred, impl_.srcinfo()), to_lnode<V>(value, impl_.srcinfo()));
+    auto lpred = to_lnode<K>(pred, impl_.srcinfo());
+    auto lvalue = to_lnode<V>(value, impl_.srcinfo());
+    impl_.push(lpred, lvalue);
     return *this;
   }
 
   template <typename T>
   auto operator()(const T& def_value) {
     static_assert(std::is_constructible_v<V, T>, "invalid type");
-    return make_logic_type<V>(impl_.emit(to_lnode<V>(def_value, impl_.srcinfo())));
+    auto lvalue = to_lnode<V>(def_value, impl_.srcinfo());
+    return make_logic_type<V>(impl_.emit(lvalue));
   }
   
 protected:
@@ -162,6 +169,8 @@ auto ch_sel(const P& pred, const U& _true, const V& _false, CH_SRC_INFO) {
   static_assert(ch_width_v<deduce_type_t<true, U, V>> != 0, "invalid type");
   return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V, P>(pred, _true, _false, srcinfo);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename V, typename K, typename P>
 auto ch_case(const K& key, const P& pred, const V& value, CH_SRC_INFO) {

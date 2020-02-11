@@ -25,21 +25,21 @@ using ch_out = std::conditional_t<is_logic_only_v<T>,
 
 using io_value_t = smart_ptr<sdata_type>;
 
-lnodeimpl* createInputNode(const std::string& name, 
-                           uint32_t size,
-                           const source_info& srcinfo);
+lnodeimpl* createInputNode(uint32_t size, 
+                           const std::string& name, 
+                           const source_location& sloc);
 
-lnodeimpl* createOutputNode(const std::string& name, 
-                            uint32_t size,
-                            const source_info& srcinfo);
+lnodeimpl* createOutputNode(uint32_t size, 
+                            const std::string& name, 
+                            const source_location& sloc);
 
-lnodeimpl* bindInputNode(const lnode& input, const source_info& srcinfo);
+lnodeimpl* bindInputNode(const lnode& input, const source_location& sloc);
 
-lnodeimpl* bindOutputNode(const lnode& ouptut, const source_info& srcinfo);
+lnodeimpl* bindOutputNode(const lnode& ouptut, const source_location& sloc);
 
-lnodeimpl* bindInputNode(system_io_buffer* input, const source_info& srcinfo);
+lnodeimpl* bindInputNode(system_io_buffer* input, const source_location& sloc);
 
-lnodeimpl* bindOutputNode(system_io_buffer* output, const source_info& srcinfo);
+lnodeimpl* bindOutputNode(system_io_buffer* output, const source_location& sloc);
 
 lnodeimpl* getOutputNode(const std::string& name);
 
@@ -101,21 +101,21 @@ public:
                                       T>;
   using base = T;
 
-  ch_logic_in(const std::string& name = "io", CH_SRC_INFO)
-     : base(make_logic_buffer(createInputNode(name, ch_width_v<T>, srcinfo))) {
+  explicit ch_logic_in(const std::string& name = "io", CH_SLOC)
+     : base(make_logic_buffer(createInputNode(ch_width_v<T>, name, sloc))) {
     input_ = get_lnode(*this);
   }
 
   template <typename U>
-  explicit ch_logic_in(const ch_logic_out<U>& other, CH_SRC_INFO)
-    : base(make_logic_buffer(bindOutputNode(other.output_, srcinfo))) {
+  explicit ch_logic_in(const ch_logic_out<U>& other, CH_SLOC)
+    : base(make_logic_buffer(bindOutputNode(other.output_, sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
-  explicit ch_logic_in(const ch_system_out<U>& other, CH_SRC_INFO)
+  explicit ch_logic_in(const ch_system_out<U>& other, CH_SLOC)
      : base(make_logic_buffer(bindOutputNode(
-        reinterpret_cast<system_io_buffer*>(system_accessor::buffer(other).get()), srcinfo))) {
+        reinterpret_cast<system_io_buffer*>(system_accessor::buffer(other).get()), sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
@@ -161,21 +161,21 @@ public:
   using base = T;
   using base::operator=;
 
-  ch_logic_out(const std::string& name = "io", CH_SRC_INFO)
-    : base(make_logic_buffer(createOutputNode(name, ch_width_v<T>, srcinfo))) {
+  explicit ch_logic_out(const std::string& name = "io", CH_SLOC)
+    : base(make_logic_buffer(createOutputNode(ch_width_v<T>, name, sloc))) {
     output_ = getOutputNode(name);
   }
 
   template <typename U>
-  explicit ch_logic_out(const ch_logic_in<U>& other, CH_SRC_INFO)
-    : base(make_logic_buffer(bindInputNode(other.input_, srcinfo))) {
+  explicit ch_logic_out(const ch_logic_in<U>& other, CH_SLOC)
+    : base(make_logic_buffer(bindInputNode(other.input_, sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
-  explicit ch_logic_out(const ch_system_in<U>& other, CH_SRC_INFO)
+  explicit ch_logic_out(const ch_system_in<U>& other, CH_SLOC)
      : base(make_logic_buffer(bindInputNode(
-        reinterpret_cast<system_io_buffer*>(system_accessor::buffer(other).get()), srcinfo))) {
+        reinterpret_cast<system_io_buffer*>(system_accessor::buffer(other).get()), sloc))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
@@ -227,7 +227,7 @@ public:
                                        T>;
   using base = T;
 
-  ch_system_in(const std::string& name = "io")
+  explicit ch_system_in(const std::string& name = "io")
      : base(std::make_shared<system_io_buffer>(ch_width_v<T>, name))
   {}
 
@@ -275,7 +275,7 @@ public:
   using base = T;
   using base::operator=;
 
-  ch_system_out(const std::string& name = "io")
+  explicit ch_system_out(const std::string& name = "io")
      : base(std::make_shared<system_io_buffer>(ch_width_v<T>, name))
   {}
 

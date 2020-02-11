@@ -450,13 +450,13 @@ void bv_copy(T* w_dst, uint32_t dst_offset,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename U, typename T,
-          CH_REQUIRE(std::is_integral_v<U>)>
+          CH_REQUIRES(std::is_integral_v<U>)>
 void bv_assign_scalar(T* dst, U value) {
   dst[0] = value;
 }
 
 template <typename U, typename T,
-          CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+          CH_REQUIRES(std::is_integral_v<U> && std::is_unsigned_v<U>)>
 void bv_assign_vector(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
@@ -476,7 +476,7 @@ void bv_assign_vector(T* dst, uint32_t size, U value) {
 }
 
 template <typename U, typename T,
-          CH_REQUIRE(std::is_integral_v<U> && std::is_signed_v<U>)>
+          CH_REQUIRES(std::is_integral_v<U> && std::is_signed_v<U>)>
 void bv_assign_vector(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
@@ -494,7 +494,7 @@ void bv_assign_vector(T* dst, uint32_t size, U value) {
 }
 
 template <typename U, typename T,
-          CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+          CH_REQUIRES(std::is_integral_v<U> && std::is_unsigned_v<U>)>
 void bv_assign(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   if constexpr (std::numeric_limits<U>::digits > 1) {
@@ -508,7 +508,7 @@ void bv_assign(T* dst, uint32_t size, U value) {
 }
 
 template <typename U, typename T,
-          CH_REQUIRE(std::is_integral_v<U> && std::is_signed_v<U>)>
+          CH_REQUIRES(std::is_integral_v<U> && std::is_signed_v<U>)>
 void bv_assign(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static_assert(std::numeric_limits<U>::digits > 1, "inavlid size");

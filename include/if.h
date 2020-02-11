@@ -7,9 +7,9 @@ namespace internal {
 
 using fvoid_t = std::function<void ()>;
 
-void begin_branch(const source_info& srcinfo);
+void begin_branch(const source_location& sloc);
 
-void begin_branch(const lnode& key, const source_info& srcinfo);
+void begin_branch(const lnode& key, const source_location& sloc);
 
 void end_branch();
 
@@ -20,8 +20,8 @@ void cond_block(fvoid_t func);
 class if_t {
 public:
 
-  if_t(const source_info& srcinfo) {
-    begin_branch(srcinfo);
+  if_t(const source_location& sloc) {
+    begin_branch(sloc);
   }
 
   ~if_t() {
@@ -75,10 +75,10 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
 }
 
 template <typename P>
-inline if_body_t ch_if(const P& pred, CH_SRC_INFO) {
+inline if_body_t ch_if(const P& pred, CH_SLOC) {
   static_assert(is_bitbase_v<P>, "invalid type");
   static_assert(ch_width_v<P> == 1, "invalid size");
-  return if_body_t(std::make_shared<if_t>(srcinfo), get_lnode(pred));
+  return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));
 }
 
 }

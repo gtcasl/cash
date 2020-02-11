@@ -28,13 +28,13 @@
   CH_PAIR_R(x)(__other.CH_PAIR_R(x))
 
 #define CH_INOUT_LOGIC_COPY_CTOR2(a, i, x) \
-  CH_PAIR_R(x)(__other.CH_PAIR_R(x), srcinfo)
+  CH_PAIR_R(x)(__other.CH_PAIR_R(x), sloc)
 
 #define CH_INOUT_LOGIC_CTOR_BODY(a, i, x) \
-  CH_PAIR_R(x)(ch::internal::stringf("%s.%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str(), srcinfo)
+  CH_PAIR_R(x)(ch::internal::stringf("%s.%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))), sloc)
 
-  #define CH_INOUT_SYSTEM_CTOR_BODY(a, i, x) \
-  CH_PAIR_R(x)(ch::internal::stringf("%s.%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str())
+#define CH_INOUT_SYSTEM_CTOR_BODY(a, i, x) \
+  CH_PAIR_R(x)(ch::internal::stringf("%s.%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_INOUT_BIND_BODY(a, i, x) \
   this->CH_PAIR_R(x)(__other.CH_PAIR_R(x))
@@ -62,7 +62,7 @@
   explicit type_name(const typename traits::logic_flip_io& __other) \
     : CH_FOR_EACH(CH_INOUT_SYSTEM_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const type_name& __other) \
+  type_name(const type_name& __other) \
     : CH_FOR_EACH(CH_INOUT_SYSTEM_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   type_name(type_name&& __other) \
@@ -85,16 +85,16 @@ protected: \
 
 #define CH_BASIC_INOUT_LOGIC_IMPL(type_name, inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit type_name(const std::string& name = "io", CH_SRC_INFO) \
+  explicit type_name(const std::string& name = "io", CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_LOGIC_CTOR_BODY, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const typename traits::flip_io& __other, CH_SRC_INFO) \
+  explicit type_name(const typename traits::flip_io& __other, CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_LOGIC_COPY_CTOR2, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const typename traits::system_flip_io& __other, CH_SRC_INFO) \
+  explicit type_name(const typename traits::system_flip_io& __other, CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_LOGIC_COPY_CTOR2, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const type_name& __other) \
+  type_name(const type_name& __other) \
     : CH_FOR_EACH(CH_INOUT_LOGIC_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   type_name(type_name&& __other) \
@@ -125,7 +125,7 @@ protected: \
     : base(__other) \
     , CH_FOR_EACH(CH_INOUT_SYSTEM_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const type_name& __other) \
+  type_name(const type_name& __other) \
     : base(__other) \
     , CH_FOR_EACH(CH_INOUT_SYSTEM_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
@@ -152,19 +152,19 @@ protected: \
 
 #define CH_DERIVED_INOUT_LOGIC_IMPL(type_name, inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit type_name(const std::string& name = "io", CH_SRC_INFO) \
-    : base(name, srcinfo) \
+  explicit type_name(const std::string& name = "io", CH_SLOC) \
+    : base(name, sloc) \
     , CH_FOR_EACH(CH_INOUT_LOGIC_CTOR_BODY, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const typename traits::flip_io& __other, CH_SRC_INFO) \
-    : base(__other, srcinfo) \
+  explicit type_name(const typename traits::flip_io& __other, CH_SLOC) \
+    : base(__other, sloc) \
     , CH_FOR_EACH(CH_INOUT_LOGIC_COPY_CTOR2, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const typename traits::system_flip_io& __other, CH_SRC_INFO) \
-    : base(__other, srcinfo) \
+  explicit type_name(const typename traits::system_flip_io& __other, CH_SLOC) \
+    : base(__other, sloc) \
     , CH_FOR_EACH(CH_INOUT_LOGIC_COPY_CTOR2, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
-  explicit type_name(const type_name& __other) \
+  type_name(const type_name& __other) \
     : base(__other) \
     , CH_FOR_EACH(CH_INOUT_LOGIC_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \

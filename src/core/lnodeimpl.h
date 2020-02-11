@@ -37,7 +37,7 @@ namespace internal {
   
 class context;
 class cdimpl;
-struct srcinfo_ctx_t;
+struct sloc_ctx_t;
 
 enum lnodetype {
   CH_LNODE_ENUM(CH_LNODE_TYPE)
@@ -55,21 +55,19 @@ public:
   lnodetype type() const {
     return type_;
   }
-
+  
   const std::string& name() const {
     return name_;
   }
 
-  void set_name(const std::string& name) {
-    name_ = name;
+  void set_name(const std::string& name);
+
+  const source_location& sloc() const {
+    return sloc_;
   }
 
-  const source_info& srcinfo() const {
-    return srcinfo_;
-  }
-
-  void set_srcinfo(const source_info& srcinfo) {
-    srcinfo_ = srcinfo;
+  void set_sloc(const source_location& sloc) {
+    sloc_ = sloc;
   }
 
   context* ctx() const {
@@ -111,10 +109,10 @@ public:
 
   virtual lnodeimpl* slice(uint32_t offset,
                            uint32_t length,
-                           const source_info& srcinfo) const;
+                           const source_location& sloc) const;
 
   auto users() const {
-   return users_;
+    return users_;
   }
 
   bool has_user(lnode* user) const;
@@ -136,13 +134,13 @@ protected:
             uint32_t size,
             context* ctx,
             const std::string& name,
-            const source_info& srcinfo);
+            const source_location& sloc);
 
   virtual ~lnodeimpl();
 
   const uint32_t id_;
   const lnodetype type_;
-
+  
 private:
 
   uint32_t size_;
@@ -151,7 +149,7 @@ protected:
 
   context* ctx_;
   std::string name_;
-  source_info srcinfo_;
+  source_location sloc_;
   mutable size_t hash_;
 
 private:

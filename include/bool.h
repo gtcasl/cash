@@ -12,34 +12,34 @@ public:
   using base::operator=;
 
   ch_sbool(const system_buffer& buffer 
-    = make_system_buffer(1, idname<ch_sbool>()))
+    = make_system_buffer(1))
     : buffer_(buffer) {
     assert(1 == buffer->size());
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_sbool(const U& other)
-    : ch_sbool(make_system_buffer(1, idname<ch_sbool>())) {
+    : ch_sbool(make_system_buffer(1)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(is_bitvector_extended_type_v<U>)>
+            CH_REQUIRES(is_bitvector_extended_type_v<U>)>
   explicit ch_sbool(U&& other)
-    : ch_sbool(make_system_buffer(1, idname<ch_sbool>())) {
+    : ch_sbool(make_system_buffer(1)) {
     this->operator=(make_system_buffer(sdata_type(1 , std::forward<U>(other))));
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> == 1)>
+            CH_REQUIRES(ch_width_v<U> == 1)>
   explicit ch_sbool(const ch_sbitbase<U>& other)
-    : ch_sbool(make_system_buffer(1, idname<ch_sbool>())) {
+    : ch_sbool(make_system_buffer(1)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_sbool(const ch_sbool& other)
-    : ch_sbool(make_system_buffer(1, idname<ch_sbool>())) {
+    : ch_sbool(make_system_buffer(1)) {
     this->operator=(other);
   }
 
@@ -82,54 +82,54 @@ public:
   using base::operator=;
 
   ch_bool(const logic_buffer& buffer 
-    = make_logic_buffer(1, idname<ch_bool>(), CH_CUR_SRC_INFO))
+    = make_logic_buffer(1, CH_CUR_SRC_INFO))
     : buffer_(buffer) {
     assert(1 == buffer.size());
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_bool(const U& other, CH_SRC_INFO) 
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> == 1)>
+            CH_REQUIRES(ch_width_v<U> == 1)>
   explicit ch_bool(const ch_sbitbase<U>& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_bool(const ch_sbool& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(other);
   }
 
   ch_bool(const ch_sbit<1>& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(other);
   }
 
   ch_bool(const ch_sint<1>& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(other);
   }
 
   ch_bool(const ch_suint<1>& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> == 1)>
+            CH_REQUIRES(ch_width_v<U> == 1)>
   explicit ch_bool(const ch_bitbase<U>& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_bool(const ch_bool& other, CH_SRC_INFO)
-    : ch_bool(make_logic_buffer(1, idname<ch_bool>(), srcinfo)) {
+    : ch_bool(make_logic_buffer(1, srcinfo)) {
     this->operator=(other);
   }
 

@@ -23,7 +23,7 @@ public:
 
   void end_build();
 
-  void end(const source_info& srcinfo);
+  void end(const std::string& name, const source_location& sloc);
 
   context* ctx() const {
     return ctx_;
@@ -36,7 +36,6 @@ protected:
   context* ctx_;
   context* old_ctx_;
   uint32_t instance_;
-  bool is_opened_;
 };
 
 }

@@ -58,18 +58,20 @@ public:
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   memportimpl* create_arport(lnodeimpl* addr,
-                             const source_info& srcinfo);
+                             const std::string& name,
+                             const source_location& sloc);
 
   memportimpl* create_srport(lnodeimpl* cd,
                              lnodeimpl* addr,
                              lnodeimpl* enable,
-                             const source_info& srcinfo);
+                             const std::string& name,
+                             const source_location& sloc);
 
   mwportimpl* create_wport(lnodeimpl* cd,
                            lnodeimpl* addr,
                            lnodeimpl* wdata,
                            lnodeimpl* enable,
-                           const source_info& srcinfo);
+                           const source_location& sloc);
 
   void add_rdport(marportimpl* port) {
     rdports_.emplace_back(port);
@@ -95,7 +97,7 @@ protected:
           const sdata_type& init_data,
           bool force_logic_ram,
           const std::string& name,
-          const source_info& srcinfo);
+          const source_location& sloc);
   
   std::vector<memportimpl*> rdports_;
   std::vector<mwportimpl*> wrports_;
@@ -147,7 +149,8 @@ protected:
               lnodeimpl* cd,
               lnodeimpl* addr,
               lnodeimpl* enable,
-              const source_info& srcinfo);
+              const std::string& name,
+              const source_location& sloc);
 
   ~memportimpl() override;
 
@@ -169,7 +172,8 @@ protected:
   marportimpl(context* ctx,
               memimpl* mem,
               lnodeimpl* addr,
-              const source_info& srcinfo);
+              const std::string& name,
+              const source_location& sloc);
 
   ~marportimpl() override;
 
@@ -190,7 +194,8 @@ protected:
               lnodeimpl* cd,
               lnodeimpl* addr,
               lnodeimpl* enable,
-              const source_info& srcinfo);
+              const std::string& name,
+              const source_location& sloc);
 
   ~msrportimpl() override;
 
@@ -218,9 +223,9 @@ protected:
              lnodeimpl* addr,
              lnodeimpl* wdata,
              lnodeimpl* enable,
-             const source_info& srcinfo);
+             const source_location& sloc);
 
-  mwportimpl(context* ctx, uint32_t size, const source_info& srcinfo);
+  mwportimpl(context* ctx, uint32_t size, const source_location& sloc);
 
   ~mwportimpl() override;
 

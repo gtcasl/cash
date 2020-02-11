@@ -22,9 +22,9 @@ public:
 
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
-  void bind_input(lnodeimpl* src, inputimpl* ioport, const source_info& srcinfo);
+  void bind_input(lnodeimpl* src, inputimpl* ioport, const source_location& sloc);
 
-  void bind_output(lnodeimpl* dst, outputimpl* ioport,const source_info& srcinfo);
+  void bind_output(lnodeimpl* dst, outputimpl* ioport,const source_location& sloc);
 
   void remove_port(lnodeimpl* port);
 
@@ -32,7 +32,10 @@ public:
 
 protected:
 
-  bindimpl(context* ctx, context* module, const source_info& srcinfo);
+  bindimpl(context* ctx, 
+           context* module, 
+           const std::string& name,
+           const source_location& sloc);
 
   ~bindimpl() override;
 
@@ -65,12 +68,12 @@ protected:
                bindimpl* bind,
                lnodeimpl* src,
                inputimpl* ioport,
-               const source_info& srcinfo);
+               const source_location& sloc);
 
   bindportimpl(context* ctx,
               bindimpl* bind,
               outputimpl* ioport,
-              const source_info& srcinfo);
+              const source_location& sloc);
 
   ~bindportimpl() override;
 

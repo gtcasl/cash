@@ -27,8 +27,8 @@ unsigned int g_replace_count = -1;
 unsigned int g_replace_id = 0;
 
 static const char Injected_Source[] = R"-(  
-  #define __builtin_VARINFO() __builtin_VARINFO_TOKEN()
-  inline const char* __builtin_VARINFO_TOKEN() { return ""; }
+  #define __builtin_VARNAME() __builtin_VARNAME_TOKEN()
+  inline const char* __builtin_VARNAME_TOKEN() { return ""; }
 )-";
 
 struct arg_update_t {
@@ -155,7 +155,7 @@ public:
       return true;
     auto id = FD->getIdentifier();
     if (id) {
-      if (id->getName() == "__builtin_VARINFO_TOKEN") {
+      if (id->getName() == "__builtin_VARNAME_TOKEN") {
         token_ = FD;
       }
     }
@@ -181,13 +181,11 @@ public:
       this->processArgs(init, member->getASTContext());
       auto n = updates_.size();
       if (s != n) {
-        std::ostringstream oss;
-        const auto& ploc = compiler_.getSourceManager().getPresumedLoc(member->getLocation());
-        oss << member->getName().str() << ":" << ploc.getFilename() << ":" << ploc.getLine() << ":" << ploc.getColumn();
         for (int i = s; i < n; ++i) {
-          updates_[i].value = oss.str();
+          updates_[i].value = member->getName();
         } 
       }
+
       CH_DBG("@@ end\n");
     } while(false);
 
@@ -211,13 +209,11 @@ public:
     this->processArgs(init, VD->getASTContext());
     auto e = updates_.size();
     if (s != e) {
-      std::ostringstream oss;
-      const auto& ploc = compiler_.getSourceManager().getPresumedLoc(VD->getLocation());
-      oss << VD->getName().str() << ":" << ploc.getFilename() << ":" << ploc.getLine() << ":" << ploc.getColumn();
       for (int i = s; i < e; ++i) {
-        updates_[i].value = oss.str();
+        updates_[i].value = VD->getName();
       }
     }
+
     CH_DBG("@@ end\n");
     return true;
   }
@@ -369,10 +365,10 @@ private:
         expr = ICE->getSubExpr();        
       }
 
-      assert(parent != nullptr);
-
       if (auto CE = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) {
         CH_DBG("@@ CXXConstructExpr=" << CE->getStmtClassName() << ", " << CE->getID(context) << "\n");
+
+        assert(parent != nullptr);
 
         auto s = updates_.size();
         for (int i = 0, n = CE->getNumArgs(); i < n; ++i) {

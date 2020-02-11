@@ -33,7 +33,7 @@ public:
   // assignment operators
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   T& operator=(const U& other) {
     auto self = reinterpret_cast<T*>(this);
     system_accessor::assign(*self, sdata_type(ch_width_v<T>, other));
@@ -247,7 +247,7 @@ public:
   // assignment operators
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   T& operator=(const U& other) {
     auto self = reinterpret_cast<T*>(this);
     logic_accessor::assign(*self, sdata_type(ch_width_v<T>, other));
@@ -278,7 +278,8 @@ public:
                        ch_width_v<T>,
                        is_signed_v<U>,
                        get_lnode(reinterpret_cast<const U&>(other)),
-                       srcinfo)));
+                       srcinfo.name(),
+                       srcinfo.sloc())));
       logic_accessor::assign(*self, tmp);
     } else {
       logic_accessor::assign(*self, reinterpret_cast<const U&>(other));
@@ -288,23 +289,23 @@ public:
 
   // subscript operators
 
-  auto at(const srcinfo_proxy<std::size_t>& index) const {
+  auto at(const srcinfo_arg<std::size_t>& index) const {
     assert(index.data < ch_width_v<T>);
     auto self = reinterpret_cast<const T*>(this);
     return logic_accessor::slice<ch_bool>(*self, index.data, index.srcinfo);
   }
 
-  auto at(const srcinfo_proxy<std::size_t>& index) {
+  auto at(const srcinfo_arg<std::size_t>& index) {
     assert(index.data < ch_width_v<T>);
     auto self = reinterpret_cast<T*>(this);
     return logic_accessor::sliceref<ch_bool>(*self, index.data, index.srcinfo);
   }
 
-  auto operator[](const srcinfo_proxy<std::size_t>& index) const {
+  auto operator[](const srcinfo_arg<std::size_t>& index) const {
     return this->at(index);
   }
 
-  auto operator[](const srcinfo_proxy<std::size_t>& index) {
+  auto operator[](const srcinfo_arg<std::size_t>& index) {
     return this->at(index);
   }
 

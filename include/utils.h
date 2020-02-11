@@ -9,14 +9,7 @@
 namespace ch {
 namespace internal {
 
-namespace detail {
-template <unsigned N>
-struct requires_t {
-  enum class type {};
-};
-}
-
-#define CH_REQUIRE(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::detail::requires_t<0>::type>* = nullptr
+#define CH_REQUIRES(...) std::enable_if_t<(__VA_ARGS__), int> = 0
 
 std::string stringf(const char* format, ...);
 
@@ -105,11 +98,6 @@ private:
   sstreamf(const sstreamf&);
   sstreamf& operator=(const sstreamf&);
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-using remove_cv_ref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -754,18 +742,28 @@ private:
 #define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
 
 template <typename T>
-struct sloc_proxy {
-  sloc_proxy(const T& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
+struct sloc_arg {
+  sloc_arg(const T& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
     : data(p_data)
     , sloc(p_sloc) 
-  {}  
+  {}
+
+  template <typename U,
+            CH_REQUIRES(std::is_constructible_v<T, U>)>
+  sloc_arg(const U& p_data, const source_location& p_sloc = CH_CUR_SLOC) 
+    : tmp_(std::make_shared<T>(p_data))
+    , data(*tmp_)
+    , sloc(p_sloc) 
+  {}
   
   template <typename U,
-            CH_REQUIRE(std::is_convertible_v<U, T>)>
-  sloc_proxy(const sloc_proxy<U>& other) 
+            CH_REQUIRES(std::is_convertible_v<U, T>)>
+  sloc_arg(const sloc_arg<U>& other) 
     : data(other.data)
     , sloc(other.sloc) 
   {}
+  
+  std::shared_ptr<T> tmp_;
   const T& data;
   source_location sloc;
 };
@@ -774,92 +772,101 @@ struct sloc_proxy {
 
 class source_info {
 public:
-  explicit source_info(const char* varinfo = nullptr) {
-    if (varinfo && *varinfo) {
-      std::istringstream iss(varinfo);
-      std::vector<std::string> tokens;
-      std::string token;
-      while (std::getline(iss, token, ':')) {
-        tokens.push_back(token);
-      }
-      assert(4 == tokens.size());
-      name_ = tokens[0];
-      sloc_ = source_location(tokens[1], std::stoi(tokens[2]), std::stoi(tokens[3]));
-    }     
-  }
 
-  explicit source_info(const char* name, const source_location& sloc)
-    : name_(name)
-    , sloc_(sloc)
+  explicit source_info(const source_location& sloc = source_location(), 
+                       const std::string& name = "")
+    : sloc_(sloc)
+    , name_(name)
   {}
 
   source_info(const source_info& other)
-    : name_(other.name_)
-    , sloc_(other.sloc_)
+    : sloc_(other.sloc_)
+    , name_(other.name_)
   {}
 
   source_info(source_info&& other)
-    : name_(std::move(other.name_))
-    , sloc_(std::move(other.sloc_))
+    : sloc_(std::move(other.sloc_))
+    , name_(std::move(other.name_))
   {}
 
   source_info& operator=(const source_info& other) {
-    name_ = other.name_;
     sloc_ = other.sloc_;
+    name_ = other.name_;
     return *this;
   }
 
   source_info& operator=(source_info&& other) {
-    name_ = std::move(other.name_);
     sloc_ = std::move(other.sloc_);
+    name_ = std::move(other.name_);
     return *this;
-  }
-
-  const std::string& name() const {
-    return name_;
   }
 
   const source_location& sloc() const {
     return sloc_;
   }
 
+  const std::string& name() const {
+    return name_;
+  }
+
+  bool hasName() const {
+    return !name_.empty();
+  }
+
+  bool hasLocation() const {
+    return !sloc_.empty();
+  }
+
   bool empty() const {
-    return name_.empty();
+    return sloc_.empty() && name_.empty();
   }
 
 private:
 
   friend std::ostream& operator<<(std::ostream& out, const source_info& srcinfo) {
-    out << "'" << srcinfo.name() << "' in " << srcinfo.sloc();
+    if (srcinfo.hasName()) {
+      out << "'" << srcinfo.name() << "' in " << srcinfo.sloc();
+    } else {
+      out << srcinfo.sloc();
+    }    
     return out;
   }
 
-  std::string name_;
   source_location sloc_;
+  std::string name_;
 };
 
-#if defined(__builtin_VARINFO)
-  #define CH_CUR_SRC_INFO ch::internal::source_info(__builtin_VARINFO())
+#if defined(__builtin_VARNAME)
+  #define CH_CUR_SRC_INFO ch::internal::source_info(CH_CUR_SLOC, __builtin_VARNAME())
 #else
-  #define CH_CUR_SRC_INFO ch::internal::source_info("", CH_CUR_SLOC)
+  #define CH_CUR_SRC_INFO ch::internal::source_info(CH_CUR_SLOC, "")
 #endif
 
 #define CH_SRC_INFO const ch::internal::source_info& srcinfo = CH_CUR_SRC_INFO
 
 template <typename T>
-struct srcinfo_proxy {
-  srcinfo_proxy(const T& p_data, const source_info& p_srcinfo = CH_CUR_SRC_INFO) 
+struct srcinfo_arg {
+  srcinfo_arg(const T& p_data, const source_info& p_srcinfo = CH_CUR_SRC_INFO) 
     : data(p_data)
+    , srcinfo(p_srcinfo) 
+  {}
+
+  template <typename U,
+            CH_REQUIRES(std::is_constructible_v<T, U>)>
+  srcinfo_arg(const U& p_data, const source_info& p_srcinfo = CH_CUR_SRC_INFO) 
+    : tmp_(std::make_shared<T>(p_data))
+    , data(*tmp_)
     , srcinfo(p_srcinfo) 
   {}  
   
   template <typename U,
-            CH_REQUIRE(std::is_convertible_v<U, T>)>
-  srcinfo_proxy(const srcinfo_proxy<U>& other) 
+            CH_REQUIRES(std::is_convertible_v<U, T>)>
+  srcinfo_arg(const srcinfo_arg<U>& other) 
     : data(other.data)
     , srcinfo(other.srcinfo) 
   {}
 
+  std::shared_ptr<T> tmp_;
   const T& data;
   source_info srcinfo;
 };
@@ -1024,7 +1031,7 @@ constexpr unsigned ceil2(T value) {
 }
 
 template <typename R, typename T, typename U,
-          CH_REQUIRE(!std::is_same_v<R, T>)>
+          CH_REQUIRES(!std::is_same_v<R, T>)>
 constexpr R ceildiv(T a, U b) {
   static_assert(std::is_integral_v<R>, "invalid type");
   static_assert(std::is_integral_v<T>, "invalid type");

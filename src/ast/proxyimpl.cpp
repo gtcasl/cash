@@ -7,15 +7,15 @@ using namespace ch::internal;
 proxyimpl::proxyimpl(context* ctx,
                      uint32_t size,
                      const std::string& name,
-                     const source_info& srcinfo)
-  : lnodeimpl(ctx->node_id(), type_proxy, size, ctx, name, srcinfo)
+                     const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type_proxy, size, ctx, name, sloc)
 {}
 
 proxyimpl::proxyimpl(context* ctx,
                      lnodeimpl* src,
                      const std::string& name,
-                     const source_info& srcinfo)
-  : lnodeimpl(ctx->node_id(), type_proxy, src->size(), ctx, name, srcinfo) {
+                     const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type_proxy, src->size(), ctx, name, sloc) {
   this->add_source(0, src, 0, src->size());
 }
 
@@ -24,13 +24,13 @@ proxyimpl::proxyimpl(context* ctx,
                      uint32_t offset,
                      uint32_t length,
                      const std::string& name,
-                     const source_info& srcinfo)
-  : lnodeimpl(ctx->node_id(), type_proxy, length, ctx, name, srcinfo) {
+                     const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type_proxy, length, ctx, name, sloc) {
   this->add_source(0, src, offset, length);
 }
 
 lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
-  auto node = ctx->create_node<proxyimpl>(this->size(), name_, srcinfo_);
+  auto node = ctx->create_node<proxyimpl>(this->size(), name_, sloc_);
   for (auto& src : this->srcs()) {
     node->add_src(cloned_nodes.at(src.id()));
   }
@@ -57,8 +57,8 @@ void proxyimpl::add_source(uint32_t dst_offset,
   assert(src_offset + length <= src->size());
 
   // update source location
-  if (srcinfo_.empty()) {
-    srcinfo_ = src->srcinfo();
+  if (sloc_.empty()) {
+    sloc_ = src->sloc();
   }
 
   // add new source
@@ -264,14 +264,14 @@ void proxyimpl::write(uint32_t dst_offset,
                       lnodeimpl* src,
                       uint32_t src_offset,
                       uint32_t length,
-                      const source_info& srcinfo) {
+                      const source_location& sloc) {
   assert(size() > dst_offset);
   assert(size() >= dst_offset + length);
   if (ctx_->conditional_enabled(this)) {
     if (src_offset != 0 || src->size() != length) {
-      src = ctx_->create_node<proxyimpl>(src, src_offset, length, src->name(), srcinfo);
+      src = ctx_->create_node<proxyimpl>(src, src_offset, length, src->name(), sloc);
     }
-    ctx_->conditional_write(this, dst_offset, length, src, srcinfo);
+    ctx_->conditional_write(this, dst_offset, length, src, sloc);
   } else {
     this->add_source(dst_offset, src, src_offset, length);
   }
@@ -287,7 +287,8 @@ bool proxyimpl::equals(const lnodeimpl& other) const {
 
 lnodeimpl* proxyimpl::source(uint32_t offset, 
                              uint32_t length, 
-                             const source_info& srcinfo) const {
+                             const std::string& name,
+                             const source_location& sloc) const {
   assert(length <= this->size());
   if (0 == this->num_srcs())
     return nullptr;
@@ -303,7 +304,7 @@ lnodeimpl* proxyimpl::source(uint32_t offset,
   }
 
   // return new slice
-  auto proxy = ctx_->create_node<proxyimpl>(length, name_, srcinfo);
+  auto proxy = ctx_->create_node<proxyimpl>(length, name, sloc);
   for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;
@@ -351,8 +352,8 @@ refimpl::refimpl(
     uint32_t offset,
     uint32_t length,
     const std::string& name,
-    const source_info& srcinfo)
-  : proxyimpl(ctx, src, offset, length, name, srcinfo) 
+    const source_location& sloc)
+  : proxyimpl(ctx, src, offset, length, name, sloc) 
 {}
 
 void refimpl::write(
@@ -360,7 +361,7 @@ void refimpl::write(
     lnodeimpl* src,
     uint32_t src_offset,
     uint32_t length,
-    const source_info& srcinfo) {
+    const source_location& sloc) {
   assert(1 == ranges_.size());
   assert(length <= ranges_[0].length);
   assert(type_proxy == this->src(0).impl()->type());
@@ -370,5 +371,5 @@ void refimpl::write(
     src,
     src_offset,
     length,
-    srcinfo);
+    sloc);
 }

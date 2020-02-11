@@ -93,7 +93,7 @@ auto ch_slice(T&& obj, size_t start = 0, CH_SRC_INFO) {
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRE(is_data_type_v<T>)>
+          CH_REQUIRES(is_data_type_v<T>)>
 auto ch_aslice(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
@@ -107,7 +107,7 @@ auto ch_aslice(T&& obj, size_t start = 0, CH_SRC_INFO) {
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRE(is_data_type_v<T>)>
+          CH_REQUIRES(is_data_type_v<T>)>
 auto ch_sliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
@@ -121,7 +121,7 @@ auto ch_sliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRE(is_data_type_v<T>)>
+          CH_REQUIRES(is_data_type_v<T>)>
 auto ch_asliceref(T&& obj, size_t start = 0, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
@@ -176,12 +176,12 @@ inline auto ch_rotl(const T& obj, uint32_t dist, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");  
   auto mod = dist % ch_width_v<T>;
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotl", srcinfo));
+    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, srcinfo));
     logic_accessor::write(out, 0, obj, ch_width_v<T> - mod, mod);
     logic_accessor::write(out, mod, obj, 0, ch_width_v<T> - mod);
     return out;
   } else {
-    ch_sbit<ch_width_v<T>> out(make_system_buffer(ch_width_v<T>, "rotl"));
+    ch_sbit<ch_width_v<T>> out(make_system_buffer(ch_width_v<T>));
     system_accessor::write(out, 0, obj, ch_width_v<T> - mod, mod);
     system_accessor::write(out, mod, obj, 0, ch_width_v<T> - mod);
     return out;
@@ -193,12 +193,12 @@ inline auto ch_rotr(const T& obj, uint32_t dist, CH_SRC_INFO) {
   static_assert(is_data_type_v<T>, "invalid type");  
   auto mod = dist % ch_width_v<T>;
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotr", srcinfo));
+    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, srcinfo));
     logic_accessor::write(out, 0, obj, mod, ch_width_v<T> - mod);
     logic_accessor::write(out, ch_width_v<T> - mod, obj, 0, mod);
     return out;
   } else {
-    ch_sbit<ch_width_v<T>> out(make_system_buffer(ch_width_v<T>, "rotr"));
+    ch_sbit<ch_width_v<T>> out(make_system_buffer(ch_width_v<T>));
     system_accessor::write(out, 0, obj, mod, ch_width_v<T> - mod);
     system_accessor::write(out, ch_width_v<T> - mod, obj, 0, mod);
     return out;
@@ -214,7 +214,7 @@ auto ch_shuffle(const T& obj, const std::array<size_t, N>& indices, CH_SRC_INFO)
   auto stride = ch_width_v<T> / N;
   CH_CHECK(stride * N == ch_width_v<T>, "invalid size");
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "shuffle", srcinfo));
+    ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, srcinfo));
     for (unsigned i = 0; i < N; ++i) {
       auto j = indices[N - 1 - i];
       CH_CHECK(j < N, "invalid index");
@@ -222,7 +222,7 @@ auto ch_shuffle(const T& obj, const std::array<size_t, N>& indices, CH_SRC_INFO)
     }
     return out;
   } else {
-    ch_sbit<ch_width_v<T>> out(make_system_buffer(ch_width_v<T>, "shuffle"));
+    ch_sbit<ch_width_v<T>> out(make_system_buffer(ch_width_v<T>));
     for (unsigned i = 0; i < N; ++i) {
       auto j = indices[N - 1 - i];
       CH_CHECK(j < N, "invalid index");
@@ -320,11 +320,11 @@ void cat_impl(O& inout, uint32_t dst_offset, const I0& arg0, const Is&... args) 
     static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     static_assert(ch_width_v<R> == N, "size mismatch"); \
     if constexpr (is_logic_type_v<R>) { \
-      R ret(make_logic_buffer(N, "cat", srcinfo)); \
+      R ret(make_logic_buffer(N, srcinfo)); \
       detail::cat_impl(ret, N, CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
       return ret; \
     } else { \
-      R ret(make_system_buffer(N, "cat")); \
+      R ret(make_system_buffer(N)); \
       detail::cat_impl(ret, N, CH_FOR_EACH(CH_CAT_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
       return ret; \
     } \
@@ -358,13 +358,13 @@ auto ch_dup(T&& obj, CH_SRC_INFO) {
     return std::move(obj);
   } else
   if constexpr (is_logic_type_v<T>) {
-    ch_bit<ch_width_v<T> * N> out(make_logic_buffer(ch_width_v<T> * N, "dup", srcinfo));
+    ch_bit<ch_width_v<T> * N> out(make_logic_buffer(ch_width_v<T> * N, srcinfo));
     for (unsigned i = 0; i < N; ++i) {
       logic_accessor::write(out, i * ch_width_v<T>, obj, 0, ch_width_v<T>);
     }
     return out;
   } else {
-    ch_sbit<ch_width_v<T> * N> out(make_system_buffer(ch_width_v<T> * N, "dup"));
+    ch_sbit<ch_width_v<T> * N> out(make_system_buffer(ch_width_v<T> * N));
     for (unsigned i = 0; i < N; ++i) {
       system_accessor::write(out, i * ch_width_v<T>, obj, 0, ch_width_v<T>);
     }
@@ -399,7 +399,7 @@ auto ch_clone(const T& obj, CH_SRC_INFO) {
 // map function
 
 template <typename T, typename F, 
-          CH_REQUIRE(is_data_type_v<T>)>
+          CH_REQUIRES(is_data_type_v<T>)>
 auto ch_map(const T& obj, const F& f) {
   using ret_t = std::result_of_t<F(decltype(obj[0]))>;
   static_assert(is_data_type_v<ret_t>, "invalid type");
@@ -425,7 +425,7 @@ auto ch_map(const std::array<T, N>& obj, const F& f) {
 // fold function
 
 template <typename T, typename F, typename I, 
-          CH_REQUIRE(is_data_type_v<T>)>
+          CH_REQUIRES(is_data_type_v<T>)>
 auto ch_fold(const T& obj, const F& f, const I& init) {
   using ret_t = std::result_of_t<F(I, decltype(obj[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;
@@ -463,7 +463,7 @@ auto ch_fold(const std::array<T, N>& obj, const F& f, const I& init) {
 // zip function
 
 template <typename T, typename U, typename F, 
-          CH_REQUIRE(is_data_type_v<T> || is_data_type_v<U>)>
+          CH_REQUIRES(is_data_type_v<T> || is_data_type_v<U>)>
 auto ch_zip(const T& obj1, const U& obj2, const F& f) {
   using ret_t = std::result_of_t<F(decltype(obj1[0]), decltype(obj2[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;
@@ -501,7 +501,7 @@ auto ch_zip(const std::array<T, N>& obj1, const std::array<U, N>& obj2, const F&
 // scan function
 
 template <typename T, typename F, typename I,
-          CH_REQUIRE(is_data_type_v<T>)>
+          CH_REQUIRES(is_data_type_v<T>)>
 auto ch_scan(const T& obj, const F& f, const I& init) {
   using ret_t = std::result_of_t<F(I, decltype(obj[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;

@@ -186,7 +186,7 @@ class RetCheck {
 public:
   RetCheck() : count_(0) {}
 
-  RetCheck& operator&=(const sloc_proxy<bool>& value);
+  RetCheck& operator&=(const sloc_arg<bool>& value);
 
   operator bool() const {
     return count_ > 0;

@@ -59,9 +59,9 @@ const std::string& lnode::name() const {
   return impl_->name();
 }
 
-const source_info& lnode::srcinfo() const {
+const source_location& lnode::sloc() const {
   assert(impl_);
-  return impl_->srcinfo();
+  return impl_->sloc();
 }
 
 uint32_t lnode::size() const {
@@ -73,9 +73,9 @@ void lnode::set_name(const std::string& name) {
   impl_->set_name(name);
 }
 
-void lnode::set_srcinfo(const source_info& srcinfo) {
+void lnode::set_sloc(const source_location& sloc) {
   assert(impl_);
-  impl_->set_srcinfo(srcinfo);
+  impl_->set_sloc(sloc);
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {

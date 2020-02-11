@@ -46,14 +46,14 @@ protected:
             const std::string& format,
             const std::vector<lnode>& args,
             const std::vector<enum_string_cb>& enum_strings,
-            const source_info& srcinfo);
+            const source_location& sloc);
 
   printimpl(context* ctx,
             const std::string& format,
             const std::vector<lnode>& args,
             const std::vector<enum_string_cb>& enum_strings,
             lnodeimpl* pred,
-            const source_info& srcinfo);
+            const source_location& sloc);
 
   std::vector<enum_string_cb> enum_strings_;
   std::string format_;

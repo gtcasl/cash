@@ -15,17 +15,8 @@ public:
 
 protected:
 
-  template <typename... Us,
-            CH_REQUIRE(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
-  vec_base(Us&&... values) 
-    : base{T(std::forward<Us>(values))...} 
-  {}
-
-  template <typename... Us,
-            CH_REQUIRE(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
-  vec_base(const source_info& srcinfo, Us&&... values) 
-    : base{T(std::forward<Us>(values), srcinfo)...} 
-  {}
+  template <typename... Us>
+  vec_base(Us&&... values) : base{std::forward<Us>(values)...} {}
 
   vec_base(const vec_base& other) : base(other) {}
 
@@ -47,27 +38,24 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  ch_vec(const logic_buffer& buffer 
-    = make_logic_buffer(traits::bitwidth, idname<ch_vec>(), CH_CUR_SRC_INFO))
+  explicit ch_vec(const logic_buffer& buffer 
+                    = make_logic_buffer(traits::bitwidth, CH_CUR_SRC_INFO))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const std::initializer_list<T>& values, CH_SRC_INFO)
-    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>(), srcinfo)) {
-    this->operator=(values);
-  }
-
-#define CH_VEC_GEN_TMPL(a, i, x) typename Arg##i
-#define CH_VEC_GEN_TYPE(a, i, x) Arg##i
-#define CH_VEC_GEN_DECL(a, i, x) Arg##i&& arg##i
-#define CH_VEC_GEN_ARG(a, i, x)  std::forward<Arg##i>(arg##i)
+#define CH_VEC_GEN_TMPL(a, i, x)  typename Arg##i
+#define CH_VEC_GEN_TYPE(a, i, x)  Arg##i
+#define CH_VEC_GEN_DECL(a, i, x)  Arg##i&& arg##i
+#define CH_VEC_GEN_ARG(a, i, x)   std::forward<Arg##i>(arg##i)
+#define CH_VEC_GEN_SINFO(a, i, x) !std::is_same_v<std::decay_t<Arg##i>, source_info>
 #define CH_VEC_GEN(...) \
   template <CH_FOR_EACH(CH_VEC_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
-            CH_REQUIRE(std::is_constructible_v<T, std::common_type_t<CH_FOR_EACH(CH_VEC_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>> \
-                    && (N >= CH_NARG(__VA_ARGS__)) \
-                    && !std::is_convertible_v<remove_cv_ref_t<Arg0>, logic_buffer>)> \
+            CH_REQUIRES(CH_FOR_EACH(CH_VEC_GEN_SINFO, , CH_SEP_ANDL, __VA_ARGS__) \
+                     && is_fold_constructible_v<T, CH_FOR_EACH(CH_VEC_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)> \
+                     && (N >= CH_NARG(__VA_ARGS__)) \
+                     && !std::is_convertible_v<std::decay_t<Arg0>, logic_buffer>)> \
   ch_vec(CH_FOR_EACH(CH_VEC_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
-    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>(), srcinfo)) { \
+    : ch_vec(make_logic_buffer(traits::bitwidth, srcinfo)) { \
     this->operator=({CH_FOR_EACH(CH_VEC_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)}); \
   }
 CH_VA_ARGS_MAP(CH_VEC_GEN)
@@ -75,24 +63,30 @@ CH_VA_ARGS_MAP(CH_VEC_GEN)
 #undef CH_VEC_GEN_TYPE
 #undef CH_VEC_GEN_DECL
 #undef CH_VEC_GEN_ARG
+#undef CH_VEC_GEN_SINFO
 #undef CH_VEC_GEN
 
+  ch_vec(const std::initializer_list<T>& values, CH_SRC_INFO)
+    : ch_vec(make_logic_buffer(traits::bitwidth, srcinfo)) {
+    this->operator=(values);
+  }
+
   template <typename U,
-            CH_REQUIRE(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const std::array<U, N>& other, CH_SRC_INFO)
-    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>(), srcinfo)) {
+            CH_REQUIRES(std::is_constructible_v<T, U>)>
+  ch_vec(const std::array<U, N>& other, CH_SRC_INFO)
+    : ch_vec(make_logic_buffer(traits::bitwidth, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const vec_base<U, N>& other, CH_SRC_INFO)
-    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>(), srcinfo)) {
+            CH_REQUIRES(std::is_constructible_v<T, U>)>
+  ch_vec(const vec_base<U, N>& other, CH_SRC_INFO)
+    : ch_vec(make_logic_buffer(traits::bitwidth, srcinfo)) {
     this->operator=(other);
   }
 
   ch_vec(const ch_vec& other, CH_SRC_INFO)
-    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>(), srcinfo)) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, srcinfo)) {
     this->operator=(other);
   }
 
@@ -105,6 +99,23 @@ CH_VA_ARGS_MAP(CH_VEC_GEN)
 
   ch_vec& operator=(ch_vec&& other) {
     logic_accessor::move(*this, std::move(other));
+    return *this;
+  }
+
+  ch_vec& operator=(const std::initializer_list<T>& values) {
+    CH_CHECK(values.size() <= N, "value out of range");
+    if (0 == values.size())
+      return *this;
+    auto it = values.begin();
+    auto last = *it++;
+    int i = N - 1;
+    for (std::size_t j = N - values.size(); j--;) {
+      (*this)[i--] = last;
+    }    
+    (*this)[i--] = last;
+    while (it != values.end()) {
+      (*this)[i--] = *it++;
+    }
     return *this;
   }
 
@@ -122,23 +133,6 @@ CH_VA_ARGS_MAP(CH_VEC_GEN)
     static_assert(std::is_constructible_v<T, U>, "invalid type");
     for (std::size_t i = 0; i < N; ++i) {
       (*this)[i] = other[i];
-    }
-    return *this;
-  }
-
-  ch_vec& operator=(const std::initializer_list<T>& values) {
-    assert(values.size() <= N);
-    if (0 == values.size())
-      return *this;
-    auto it = values.begin();
-    auto last = *it++;
-    int i = N - 1;
-    for (std::size_t j = N - values.size(); j--;) {
-      (*this)[i--] = last;
-    } 
-    (*this)[i--] = last;   
-    while (it != values.end()) {
-      (*this)[i--] = *it++;
     }
     return *this;
   }
@@ -191,7 +185,10 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>)
-    : base(make_logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is), buffer.srcinfo())...)
+    : base(T{make_logic_buffer(ch_width_v<T>, 
+                             buffer, 
+                             Is * ch_width_v<T>, 
+                             source_info(buffer.sloc(), stringf("%d", Is)))}...)
   {}
 
   const logic_buffer& __buffer() const {
@@ -225,41 +222,41 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  ch_vec(const system_buffer& buffer 
-    = make_system_buffer(traits::bitwidth, idname<ch_vec>()))
+  explicit ch_vec(const system_buffer& buffer 
+                    = make_system_buffer(traits::bitwidth))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
+  template <typename Arg0, typename... Args,
+            CH_REQUIRES(is_fold_constructible_v<T, Arg0, Args...>
+                     && (N >= (1 + sizeof...(Args)))
+                     && !std::is_convertible_v<std::decay_t<Arg0>, system_buffer>)>
+  ch_vec(Arg0&& arg0, Args&&... args)
+    : ch_vec(make_system_buffer(traits::bitwidth)) {    
+    this->operator=({std::forward<Arg0>(arg0), std::forward<Args>(args)...});   
+  }
+
   ch_vec(const std::initializer_list<T>& values)
-    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_system_buffer(traits::bitwidth)) {
     this->operator=(values);
   }
 
-  template <typename Arg0, typename... Args,
-            CH_REQUIRE(std::is_constructible_v<T, Arg0>
-                    && !std::is_convertible_v<remove_cv_ref_t<Arg0>, system_buffer>
-                    && (std::is_same_v<Arg0, Args> && ...))>
-  ch_vec(Arg0&& arg0, Args&&... args)
-    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
-    this->operator=({std::forward<Arg0>(arg0), std::forward<Args>(args)...});
-  }
-
   template <typename U,
-            CH_REQUIRE(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const std::array<U, N>& other)
-    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
+            CH_REQUIRES(std::is_constructible_v<T, U>)>
+  ch_vec(const std::array<U, N>& other)
+    : ch_vec(make_system_buffer(traits::bitwidth)) {
     base::operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const vec_base<U, N>& other)
-    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
+            CH_REQUIRES(std::is_constructible_v<T, U>)>
+  ch_vec(const vec_base<U, N>& other)
+    : ch_vec(make_system_buffer(traits::bitwidth)) {
     base::operator=(other);
   }
 
   ch_vec(const ch_vec& other)
-    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_system_buffer(traits::bitwidth)) {
     this->operator=(other);
   }
 
@@ -272,6 +269,23 @@ public:
 
   ch_vec& operator=(ch_vec&& other) {
     system_accessor::move(*this, std::move(other));
+    return *this;
+  }
+
+  ch_vec& operator=(const std::initializer_list<T>& values) {
+    CH_CHECK(values.size() <= N, "value out of range");
+    if (0 == values.size())
+      return *this;
+    auto it = values.begin();
+    auto last = *it++;
+    int i = N - 1;
+    for (std::size_t j = N - values.size(); j--;) {
+      (*this)[i--] = last;
+    } 
+    (*this)[i--] = last;   
+    while (it != values.end()) {
+      (*this)[i--] = *it++;
+    }
     return *this;
   }
 
@@ -289,23 +303,6 @@ public:
     static_assert(std::is_constructible_v<T, U>, "invalid type");
     for (std::size_t i = 0; i < N; ++i) {
       (*this)[i] = other[i];
-    }
-    return *this;
-  }
-
-  ch_vec& operator=(const std::initializer_list<T>& values) {
-    assert(values.size() <= N);
-    if (0 == values.size())
-      return *this;
-    auto it = values.begin();
-    auto last = *it++;
-    int i = N - 1;
-    for (std::size_t j = N - values.size(); j--;) {
-      (*this)[i--] = last;
-    }    
-    (*this)[i--] = last;
-    while (it != values.end()) {
-      (*this)[i--] = *it++;
     }
     return *this;
   }
@@ -354,7 +351,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const system_buffer& buffer, std::index_sequence<Is...>)
-    : base(make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
+    : base(T{make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))}...)
   {}
 
   const system_buffer& __buffer() const {
@@ -390,16 +387,16 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const std::string& name = "io", CH_SRC_INFO)
-    : ch_vec(srcinfo, name, std::make_index_sequence<N>())
+  explicit ch_vec(const std::string& name = "io", CH_SLOC)
+    : ch_vec(name, sloc, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const typename traits::flip_io& other, CH_SRC_INFO)
-    : ch_vec(srcinfo, other, std::make_index_sequence<N>())
+  explicit ch_vec(const typename traits::flip_io& other, CH_SLOC)
+    : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const typename traits::system_flip_io& other, CH_SRC_INFO)
-    : ch_vec(srcinfo, other, std::make_index_sequence<N>())
+  explicit ch_vec(const typename traits::system_flip_io& other, CH_SLOC)
+    : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
 
   ch_vec(const ch_vec& other)
@@ -421,18 +418,18 @@ protected:
   ch_vec& operator=(ch_vec&& other) = delete;
 
   template <std::size_t... Is>
-  ch_vec(const source_info& srcinfo, const std::string& name, std::index_sequence<Is...>)
-    : base(srcinfo, stringf("%s_%d", name.c_str(), Is)...)
+  ch_vec(const std::string& name, const source_location& sloc, std::index_sequence<Is...>)
+    : base(T{stringf("%s_%d", name.c_str(), Is), sloc}...)
   {}
 
   template <typename U, std::size_t... Is>
-  ch_vec(const source_info& srcinfo, const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(srcinfo, other.at(Is)...)
+  ch_vec(const vec_base<U, N>& other, const source_location& sloc, std::index_sequence<Is...>)
+    : base(T{other.at(Is), sloc}...)
   {}
   
   template <typename U, std::size_t... Is>
   ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(other.at(Is)...)
+    : base(T{other.at(Is)}...)
   {}
 
   friend ch_ostream& operator<<(ch_ostream& out, const ch_vec& in) {
@@ -490,12 +487,12 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const std::string& name, std::index_sequence<Is...>)
-    : base(stringf("%s_%d", name.c_str(), Is)...)
+    : base(T{stringf("%s_%d", name.c_str(), Is)}...)
   {}
 
   template <typename U, std::size_t...Is>
   ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(other.at(Is)...)
+    : base(T{other.at(Is)}...)
   {}
 
   friend std::ostream& operator<<(std::ostream& out, const ch_vec& in) {
@@ -525,57 +522,100 @@ public:
     : ch_vec(srcinfo, std::make_index_sequence<N>())
   {}
 
-  template <typename Arg>
-  ch_vec(Arg&& arg, CH_SRC_INFO)
-    : ch_vec(std::forward<Arg>(arg), srcinfo, std::make_index_sequence<N>())
-  {}
-
-#define CH_VEC_GEN_TMPL(a, i, x) typename Arg##i
-#define CH_VEC_GEN_TYPE(a, i, x) Arg##i
-#define CH_VEC_GEN_DECL(a, i, x) Arg##i&& arg##i
-#define CH_VEC_GEN_ARG(a, i, x)  std::forward<Arg##i>(arg##i)
+#define CH_VEC_GEN_TMPL(a, i, x)  typename Arg##i
+#define CH_VEC_GEN_TYPE(a, i, x)  Arg##i
+#define CH_VEC_GEN_TYPEF(a, i, x) Arg##i&&
+#define CH_VEC_GEN_DECL(a, i, x)  Arg##i&& arg##i
+#define CH_VEC_GEN_ARG(a, i, x)   std::forward<Arg##i>(arg##i)
+#define CH_VEC_GEN_SINFO(a, i, x) !std::is_same_v<std::decay_t<Arg##i>, source_info>
 #define CH_VEC_GEN(...) \
   template <CH_FOR_EACH(CH_VEC_GEN_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
-            CH_REQUIRE(std::is_constructible_v<T, std::common_type_t<CH_FOR_EACH(CH_VEC_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>> \
-                    && (N > 1 && N == CH_NARG(__VA_ARGS__)))> \
+            CH_REQUIRES(CH_FOR_EACH(CH_VEC_GEN_SINFO, , CH_SEP_ANDL, __VA_ARGS__) \
+                     && is_fold_constructible_v<T, CH_FOR_EACH(CH_VEC_GEN_TYPE, , CH_SEP_COMMA, __VA_ARGS__)> \
+                     && (N >= CH_NARG(__VA_ARGS__)))> \
   ch_vec(CH_FOR_EACH(CH_VEC_GEN_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
-    : ch_vec(srcinfo, std::make_index_sequence<N>(), CH_FOR_EACH(CH_VEC_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)) \
+    : ch_vec(srcinfo, \
+             std::tuple<CH_FOR_EACH(CH_VEC_GEN_TYPEF, , CH_SEP_COMMA, __VA_ARGS__)>{ \
+                 CH_FOR_EACH(CH_VEC_GEN_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, \
+             std::make_index_sequence<N>()) \
   {}
 CH_VA_ARGS_MAP(CH_VEC_GEN)
 #undef CH_VEC_GEN_TMPL
 #undef CH_VEC_GEN_TYPE
+#undef CH_VEC_GEN_TYPEF
 #undef CH_VEC_GEN_DECL
 #undef CH_VEC_GEN_ARG
+#undef CH_VEC_GEN_SINFO
 #undef CH_VEC_GEN
+
+  ch_vec(const std::initializer_list<T>& values, CH_SRC_INFO)
+    : ch_vec(srcinfo, init_getter<T>(values), std::make_index_sequence<N>()) 
+  {}
 
   ch_vec(const ch_vec& other)
     : ch_vec(other, std::make_index_sequence<N>())
   {}
 
-  ch_vec(ch_vec&& other) : base(std::move(other)) {}
+  ch_vec(ch_vec&& other) : base(std::move(other)) 
+  {}
 
 protected:
 
+  template <typename Args, std::size_t I>
+  static constexpr auto get_element(const Args& args) {
+    return std::forward<std::tuple_element_t<std::min(I, std::tuple_size_v<Args> - 1), Args>>(
+                       std::get<std::min(I, std::tuple_size_v<Args> - 1)>(args));
+  }
+
+  template <typename U>
+  class init_getter {
+  public:
+    init_getter(const std::initializer_list<U>& values) {
+      CH_CHECK(values.size() > 0, "invalid size");
+      auto it = values.begin();      
+      for (std::size_t i = 0, S = values.size(); i < N; ++i) {
+        if (i < S) {
+          values_[i] = &*it++;
+        } else {
+          values_[i] = values_[S-1];
+        }
+      }
+    }
+
+    const U& get(std::size_t index) const {
+      return *values_[index];
+    }
+
+  private:
+    std::array<const U*, N> values_;
+  };
+
   template <std::size_t... Is>
   ch_vec(const source_info& srcinfo, std::index_sequence<Is...>)
-    : base(source_info(stringf("%s_%d", srcinfo.name().c_str(), Is).c_str(), srcinfo.sloc())...)
+    : base(T{source_info(srcinfo.sloc(), stringf("%s_%d", srcinfo.name().c_str(), Is))}...)
   {}
 
-  template <typename Arg, std::size_t... Is>
-  ch_vec(Arg&& arg, const source_info& srcinfo, std::index_sequence<Is...>)
-    : base((std::forward<Arg>(arg), source_info(stringf("%s_%d", srcinfo.name().c_str(), Is).c_str(), srcinfo.sloc()))...)
-  {}
-
-  template <typename... Args, std::size_t... Is>
-  ch_vec(const source_info& srcinfo, std::index_sequence<Is...>, Args&&... args)
-    : base((std::forward<Args>(args), source_info(stringf("%s_%d", srcinfo.name().c_str(), Is).c_str(), srcinfo.sloc()))...)
+  template <typename Args, std::size_t... Is>
+  ch_vec(const source_info& srcinfo, const Args& args, std::index_sequence<Is...>)
+    : base(T{get_element<Args, Is>(args), 
+             source_info(srcinfo.sloc(), stringf("%s_%d", srcinfo.name().c_str(), Is))}...)
   {}
 
   template <typename U, std::size_t... Is>
+  ch_vec(const source_info& srcinfo, const init_getter<U>& getter, std::index_sequence<Is...>)
+    : base(getter.get(Is)...)
+  {
+    CH_UNUSED(srcinfo);
+  }
+
+  template <typename U, std::size_t... Is>
   ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(other.at(Is)...)
+    : base(T{other.at(Is)}...)
   {}
 };
+
+template <class T, class... Us>
+ch_vec(T, Us...) -> ch_vec<T, 1 + sizeof...(Us)>;
 
 }
 }

@@ -74,7 +74,7 @@ struct TestRunner2 {
   const std::function<ch_bool(const ch_int8&, const ch_int8&)> test_;
 };
 
-RetCheck& RetCheck::operator&=(const sloc_proxy<bool>& value) {
+RetCheck& RetCheck::operator&=(const sloc_arg<bool>& value) {
   if (!value.data) {
     std::cout << "error: test #" << g_test_number << " failed! (" << value.sloc << ")" << std::endl;
     std::abort();

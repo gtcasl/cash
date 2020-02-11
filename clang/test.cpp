@@ -2,52 +2,57 @@
 #include <string>
 
 template <typename T>
-struct srcinfo_proxy {
-  srcinfo_proxy(const T& p_data, const char* p_varinfo = __builtin_VARINFO()) 
+struct srcinfo_arg {
+  srcinfo_arg(const T& p_data, const char* p_name = __builtin_VARNAME()) 
     : data(p_data)
-    , varinfo(p_varinfo) 
+    , name(p_name) 
   {}  
 
   const T& data;
-  std::string varinfo;
+  std::string name;
 };
 
 template <typename T>
 class Object {
 public:
-  Object(const char* varinfo = __builtin_VARINFO()) 
+  Object(const char* name = __builtin_VARNAME()) 
     : data_(0)
-    , varinfo_(varinfo) 
+    , name_(name) 
   {}  
 
-  Object(const T& data, const char* varinfo = __builtin_VARINFO()) 
+  Object(const T& data, const char* name = __builtin_VARNAME()) 
     : data_(data)
-    , varinfo_(varinfo)
+    , name_(name)
   {}
 
-  Object(const Object& other, const char* varinfo = __builtin_VARINFO()) 
+  Object(const Object& other, const char* name = __builtin_VARNAME()) 
     : data_(other.data_)
-    , varinfo_(varinfo)
+    , name_(name)
   {}
 
-  auto& varinfo() const {
-    return varinfo_;
+  auto& name() const {
+    return name_;
   }
 
   auto& data() const {
     return data_;
   }
 
-  Object copy(const char* varinfo = __builtin_VARINFO()) {
-    return Object(data_, varinfo);
+  Object copy(const char* name = __builtin_VARNAME()) {
+    return Object(data_, name);
   }  
 
-  friend Object operator+(Object lhs, const Object& rhs) {
-    return Object(lhs.data() + rhs.data(), lhs.varinfo().c_str());
+  Object& operator=(const Object& other) {
+    data_ = other.data_;    
+    return *this;
   }
 
-  friend Object operator-(const srcinfo_proxy<Object>& lhs, const Object& rhs) {
-    return Object(lhs.data.data() + rhs.data(), lhs.varinfo.c_str());
+  friend Object operator+(Object lhs, const Object& rhs) {
+    return Object(lhs.data() + rhs.data(), lhs.name().c_str());
+  }
+
+  friend Object operator-(const srcinfo_arg<Object>& lhs, const Object& rhs) {
+    return Object(lhs.data.data() + rhs.data(), lhs.name.c_str());
   }
 
   friend Object operator*(const Object& lhs, const Object& rhs) {
@@ -55,25 +60,25 @@ public:
   }
 
 private:
-  std::string varinfo_;
+  std::string name_;
   T data_;
 };
 
 class src_info {
 public:
-  src_info(const char* varinfo) 
-    : varinfo_(varinfo)
+  src_info(const char* name) 
+    : name_(name)
   {}
 
-  auto& varinfo() const {
-    return varinfo_;
+  auto& name() const {
+    return name_;
   }
 
 private:
-  std::string varinfo_;
+  std::string name_;
 };
 
-#define CUR_SRC_INFO src_info(__builtin_VARINFO())
+#define CUR_SRC_INFO src_info(__builtin_VARNAME())
 #define SRC_INFO const src_info& sinfo = CUR_SRC_INFO
 
 template <typename T>
@@ -92,14 +97,19 @@ public:
   ObjectX(const ObjectX& other, SRC_INFO) 
     : data_(other.data_)
     , sinfo_(sinfo)
-  {}
+  {}    
+
+  ObjectX& operator=(const ObjectX& other) {
+    data_ = other.data_;    
+    return *this;
+  }
 
   auto& sinfo() const {
     return sinfo_;
   }
 
-  auto& varinfo() const {
-    return sinfo_.varinfo();
+  auto& name() const {
+    return sinfo_.name();
   }
 
   auto& data() const {
@@ -126,8 +136,8 @@ struct Object2 {
 };
 
 template <typename T>
-auto foo(const T& data, const char* varinfo = __builtin_VARINFO()) {
-  return Object<T>(data, varinfo);
+auto foo(const T& data, const char* name = __builtin_VARNAME()) {
+  return Object<T>(data, name);
 }
 
 template <typename T>
@@ -142,8 +152,8 @@ void program1() {
   Object<int> obj2;       
   ObjectX<int> obj3;
   Object2<int> obj4;
-  std::cout << "program1=" << obj0.varinfo() << ", " << obj1.varinfo() << ", " << obj2.varinfo() << ", " 
-            << obj3.varinfo() << ", " << obj4.obj_data.varinfo() << ", " << obj4.qq.varinfo() << std::endl;
+  std::cout << "program1=" << obj0.name() << ", " << obj1.name() << ", " << obj2.name() << ", " 
+            << obj3.name() << ", " << obj4.obj_data.name() << ", " << obj4.qq.name() << std::endl;
 }
 
 template <typename T>
@@ -154,10 +164,10 @@ void program2() {
   auto obj8 = obj1.copy();
   auto obj9 = foo<T>(9);
   auto obj10 = fooX<T>(10);
-  auto obj11 = foo<T>(9) + obj7;
+  auto obj11 = obj0 + obj7;
   auto obj12 = obj1 + obj8;
-  std::cout << "program2=" << qq[1].varinfo() << ", " << obj5.varinfo() << ", " << obj6.varinfo() << ", " << obj7.varinfo() << ", " 
-            << obj8.varinfo() << ", " << obj9.varinfo() << ", " << obj10.varinfo() << ", " << obj11.varinfo() << ", " << obj12.varinfo() << std::endl;
+  std::cout << "program2=" << qq[1].name() << ", " << obj5.name() << ", " << obj6.name() << ", " << obj7.name() << ", " 
+            << obj8.name() << ", " << obj9.name() << ", " << obj10.name() << ", " << obj11.name() << ", " << obj12.name() << std::endl;
 }
 
 int main() {

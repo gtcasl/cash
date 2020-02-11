@@ -1,4 +1,5 @@
 #include "lnodeimpl.h"
+#include "opimpl.h"
 #include "proxyimpl.h"
 #include "context.h"
 
@@ -18,18 +19,19 @@ lnodeimpl::lnodeimpl(uint32_t id,
                      uint32_t size,                     
                      context* ctx,
                      const std::string& name,
-                     const source_info& srcinfo)
+                     const source_location& sloc)
   : id_(id)
   , type_(type)
   , size_(size)
   , ctx_(ctx)
-  , name_(name)
-  , srcinfo_(srcinfo)
+  , sloc_(sloc)
   , hash_(0)
   , prev_(nullptr)
   , next_(nullptr)
   , users_(nullptr) 
-{}
+{
+  this->set_name(name);
+}
 
 lnodeimpl::~lnodeimpl() {
   for (lnode *curr = users_; curr;) {
@@ -95,12 +97,12 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_info& srcinfo) const {
+lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
   assert(length <= size_);
   auto self = const_cast<lnodeimpl*>(this);
   if (size_ == length)
     return self;
-  return ctx_->create_node<proxyimpl>(self, offset, length, "slice", srcinfo);
+  return ctx_->create_node<proxyimpl>(self, offset, length, "_slice", sloc);
 }
 
 bool lnodeimpl::has_user(lnode* user) const {
@@ -149,6 +151,19 @@ void lnodeimpl::replace_uses(lnodeimpl* node) {
   users_ = nullptr;
 }
 
+void lnodeimpl::set_name(const std::string& name) {
+  if (name_.empty()) {    
+    name_ += '_';
+    if (type_ == type_op) {
+      name_ = to_string(reinterpret_cast<const opimpl*>(this)->op());
+    } else {
+      name_ = to_string(type_);
+    }
+  } else {
+    name_ = name;
+  }
+}
+
 void lnodeimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << size_;
   out << "(";
@@ -160,24 +175,15 @@ void lnodeimpl::print(std::ostream& out) const {
   out << ")";
 }
 
-std::string lnodeimpl::debug_info() const {
-  std::string name;
-  if (!srcinfo_.name().empty())  {
-    name = srcinfo_.name();
-  } else {
-    name = to_string(type_);
-    if (!name_.empty()) {
-      name += "-" + name_;
-    }
-  }
+std::string lnodeimpl::debug_info() const {  
   return stringf("'%s (%d)' in module '%s (%d)' (%s:%d:%d)",
-                 name.c_str(),
+                 name_.c_str(),
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),
-                 srcinfo_.sloc().file().c_str(),
-                 srcinfo_.sloc().line(),
-                 srcinfo_.sloc().column());
+                 sloc_.file().c_str(),
+                 sloc_.line(),
+                 sloc_.column());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

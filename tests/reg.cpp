@@ -402,7 +402,7 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bool {
       auto_cflags_disable reg_init_off(cflags::force_reg_init);
-      std::array<ch_reg<ch_bit2>, 2> x;
+      ch_vec<ch_reg<ch_bit2>, 2> x;
       ch_bit2 a;
       ch_reg<ch_bit2> e;
 
@@ -446,7 +446,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);   
 
     TEST([]()->ch_bool {
-      std::array<ch_reg<ch_int4>, 2> a{1, 2};
+      ch_vec<ch_reg<ch_int4>, 2> a{1, 2};
       return (a[0] == 1 && a[1] == 2);
     }, 1);
   }

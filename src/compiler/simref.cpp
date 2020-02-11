@@ -1421,8 +1421,8 @@ public:
     auto tick = bv_cast<uint64_t>(time_, 64);
     throw std::domain_error(sstreamf() << "assertion failure at tick " 
                                        << tick << ", " 
-                                       << msg_ << "(" 
-                                       << srcinfo_ << ")");
+                                       << message_ << "(" 
+                                       << sloc_ << ")");
   }
 
 private:
@@ -1431,15 +1431,15 @@ private:
     : cond_(map.at(node->cond().id()))
     , time_(map.at(node->time().id()))
     , pred_(node->has_pred() ? map.at(node->pred().id()) : nullptr)
-    , msg_(node->msg())
-    , srcinfo_(node->srcinfo())
+    , message_(node->message())
+    , sloc_(node->sloc())
   {}
 
   const block_type* cond_;
   const block_type* time_;
   const block_type* pred_;
-  std::string msg_;
-  source_info srcinfo_;
+  std::string message_;
+  source_info sloc_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

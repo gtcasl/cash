@@ -20,25 +20,25 @@ public:
   using traits = system_traits<32, true, ch_sfloat32, ch_float32>;
   using base = ch_snumbase<ch_sfloat32>;
 
-  ch_sfloat32(const system_buffer& buffer
-      = make_system_buffer(32, idname<ch_sfloat32>()))
+  explicit ch_sfloat32(const system_buffer& buffer
+      = make_system_buffer(32))
     : buffer_(buffer)
   {}
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= 32)>
+            CH_REQUIRES(ch_width_v<U> <= 32)>
   explicit ch_sfloat32(const ch_sbitbase<U>& other)
-    : ch_sfloat32(make_system_buffer(32, idname<ch_sfloat32>())) {
+    : ch_sfloat32(make_system_buffer(32)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_sfloat32(float other)
-    : ch_sfloat32(make_system_buffer(32, idname<ch_sfloat32>())) {
+    : ch_sfloat32(make_system_buffer(32)) {
     this->operator=(other);
   }
 
   ch_sfloat32(const ch_sfloat32& other)
-    : ch_sfloat32(make_system_buffer(32, idname<ch_sfloat32>())) {
+    : ch_sfloat32(make_system_buffer(32)) {
     this->operator=(other);
   }
 
@@ -132,37 +132,37 @@ public:
   using traits = logic_traits<32, true, ch_float32, ch_sfloat32>;
   using base = ch_numbase<ch_float32>;
 
-  ch_float32(const logic_buffer& buffer 
-      = make_logic_buffer(32, idname<ch_float32>(), CH_CUR_SRC_INFO))
+  explicit ch_float32(const logic_buffer& buffer 
+      = make_logic_buffer(32, CH_CUR_SRC_INFO))
     : buffer_(buffer)
   {}
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= 32)>
+            CH_REQUIRES(ch_width_v<U> <= 32)>
   explicit ch_float32(const ch_sbitbase<U>& other, CH_SRC_INFO)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
+    : ch_float32(make_logic_buffer(32, srcinfo)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= 32)>
+            CH_REQUIRES(ch_width_v<U> <= 32)>
   explicit ch_float32(const ch_bitbase<U>& other, CH_SRC_INFO)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
+    : ch_float32(make_logic_buffer(32, srcinfo)) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_float32(float other, CH_SRC_INFO)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
+    : ch_float32(make_logic_buffer(32, srcinfo)) {
     this->operator=(other);
   }
 
   ch_float32(const ch_sfloat32& other, CH_SRC_INFO)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
+    : ch_float32(make_logic_buffer(32, srcinfo)) {
     base::operator=(other);
   }
 
   ch_float32(const ch_float32& other, CH_SRC_INFO)
-    : ch_float32(make_logic_buffer(32, idname<ch_float32>(), srcinfo)) {
+    : ch_float32(make_logic_buffer(32, srcinfo)) {
     this->operator=(other);
   }
 

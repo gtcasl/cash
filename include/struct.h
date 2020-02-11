@@ -26,11 +26,12 @@
 
 #define CH_STRUCT_SYSTEM_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::make_system_buffer( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, CH_STRINGIZE(CH_PAIR_R(x))))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i))
 
 #define CH_STRUCT_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::make_logic_buffer( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, CH_STRINGIZE(CH_PAIR_R(x)), buffer.srcinfo()))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, \
+    ch::internal::source_info(buffer.sloc(), CH_STRINGIZE(CH_PAIR_R(x)))))
 
 #define CH_STRUCT_FIELD_CTOR_INIT(a, i, x) \
   CH_PAIR_R(x) = CH_CONCAT(_,CH_PAIR_R(x))
@@ -53,16 +54,16 @@ private: \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_SYSTEM_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  type_name(const ch::internal::system_buffer& buffer = \
-    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
+  explicit type_name(const ch::internal::system_buffer& buffer = \
+    ch::internal::make_system_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
-    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth)) { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
-    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth)) { \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
@@ -97,16 +98,16 @@ private: \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_LOGIC_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  type_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name), CH_CUR_SRC_INFO)) \
+  explicit type_name(const ch::internal::logic_buffer& buffer = \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_CUR_SRC_INFO)) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), CH_SRC_INFO) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name), srcinfo)) { \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, srcinfo)) { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other, CH_SRC_INFO) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name), srcinfo)) { \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, srcinfo)) { \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
@@ -141,18 +142,18 @@ private: \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_SYSTEM_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  type_name(const ch::internal::system_buffer& buffer = \
-    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
+  explicit type_name(const ch::internal::system_buffer& buffer = \
+    ch::internal::make_system_buffer(traits::bitwidth)) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& __base) \
-    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth)) { \
     ch::internal::system_accessor::write(*this, 0, __base, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
-    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth)) { \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
@@ -189,18 +190,18 @@ private: \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_LOGIC_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  type_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name), CH_CUR_SRC_INFO)) \
+  explicit type_name(const ch::internal::logic_buffer& buffer = \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_CUR_SRC_INFO)) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) { \
   } \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& __base, CH_SRC_INFO) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name), srcinfo)) { \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, srcinfo)) { \
     ch::internal::logic_accessor::write(*this, 0, __base, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other, CH_SRC_INFO) \
-    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name), srcinfo)) { \
+    : type_name(ch::internal::make_logic_buffer(traits::bitwidth, srcinfo)) { \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \

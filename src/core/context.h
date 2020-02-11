@@ -175,15 +175,17 @@ public:
 
   //--
 
-  void create_binding(context* ctx, const source_info& srcinfo);
+  void create_binding(context* ctx, 
+                      const std::string& name, 
+                      const source_location& sloc);
 
-  inputimpl* create_input(uint32_t size,
+  inputimpl* create_input(uint32_t size, 
                           const std::string& name,
-                          const source_info& srcinfo);
+                          const source_location& sloc);
 
-  outputimpl* create_output(uint32_t size,
+  outputimpl* create_output(uint32_t size, 
                             const std::string& name,
-                            const source_info& srcinfo);
+                            const source_location& sloc);
 
   outputimpl* get_output(const std::string& name);
 
@@ -193,30 +195,30 @@ public:
 
   //--
 
-  timeimpl* create_time(const source_info& srcinfo);
+  timeimpl* create_time(const source_location& sloc);
 
   //--
 
-  lnodeimpl* current_clock(const source_info& srcinfo);
+  lnodeimpl* current_clock(const source_location& sloc);
 
-  lnodeimpl* current_reset(const source_info& srcinfo);
+  lnodeimpl* current_reset(const source_location& sloc);
 
-  cdimpl* current_cd(const source_info& srcinfo);
+  cdimpl* current_cd(const source_location& sloc);
 
   cdimpl* create_cd(const lnode& clk,
                     bool pos_edge,
-                    const source_info& srcinfo);
+                    const source_location& sloc);
 
   void push_cd(const lnode& clk,
                const lnode& reset,
                bool pos_edge,
-               const source_info& srcinfo);
+               const source_location& sloc);
 
   void pop_cd();
 
   //--
 
-  void begin_branch(lnodeimpl* key, const source_info& srcinfo);
+  void begin_branch(lnodeimpl* key, const source_location& sloc);
 
   void end_branch();
 
@@ -230,9 +232,9 @@ public:
                           uint32_t offset,
                           uint32_t length,
                           lnodeimpl* src,
-                          const source_info& srcinfo);
+                          const source_location& sloc);
 
-  lnodeimpl* get_predicate(const source_info& srcinfo);
+  lnodeimpl* get_predicate(const source_location& sloc);
 
   //--
 
@@ -240,18 +242,18 @@ public:
 
   //--
 
-  void register_tap(const lnode& target,
-                    const std::string& name,
-                    const source_info& srcinfo);
+  void register_tap(const lnode& target, 
+                    const std::string& name, 
+                    const source_location& sloc);
 
   lnodeimpl* create_bypass(lnodeimpl* target);
 
   //--
 
-  void create_udf_node(udf_iface* udf,
-                       bool is_seq,
-                       const std::string& name,
-                       const source_info& srcinfo);
+  void create_udf_node(udf_iface* udf, 
+                       bool is_seq, 
+                       const std::string& name, 
+                       const source_location& sloc);
 
   udfimpl* current_udf();
 
@@ -311,8 +313,7 @@ protected:
   node_list_view udfs_;
 
   enum_strings_t enum_strings_;
-  cd_stack_t     cd_stack_;
-  dup_tracker<std::string> dup_tap_names_;
+  cd_stack_t     cd_stack_;  
   std::list<lnodeimpl*> ext_nodes_;
 };
 

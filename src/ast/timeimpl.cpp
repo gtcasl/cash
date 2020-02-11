@@ -4,16 +4,16 @@
 
 using namespace ch::internal;
 
-timeimpl::timeimpl(context* ctx, const source_info& srcinfo)
-  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), "", srcinfo)
+timeimpl::timeimpl(context* ctx, const source_location& sloc)
+  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), "", sloc)
 {}
 
 lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) const {
-  return ctx->create_time(srcinfo_);
+  return ctx->create_time(sloc_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::getCurrentTimeNode(const source_info& srcinfo) {
-  return ctx_curr()->create_time(srcinfo);
+lnodeimpl* ch::internal::getCurrentTimeNode(const source_location& sloc) {
+  return ctx_curr()->create_time(sloc);
 }

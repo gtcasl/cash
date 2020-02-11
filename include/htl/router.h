@@ -126,7 +126,7 @@ public:
     using bits_out_t = ch_bit<Cfg::num_output_ports>;
 
     // input buffers    
-    std::array<ch_module<ch_queue<typename Cfg::flit_type, Cfg::buffer_size>>,
+    ch_vec<ch_module<ch_queue<typename Cfg::flit_type, Cfg::buffer_size>>,
                Cfg::num_input_ports> buffers;
     ch_vec<flit_t, Cfg::num_input_ports> fifo_out;
     bits_in_t fifo_out_ready;
@@ -165,7 +165,7 @@ public:
     }
 
     // switch allocation response
-    std::array<ch_module<ch_matArbiter<Cfg::num_input_ports>>, Cfg::num_output_ports> arbiter;
+    ch_vec<ch_module<ch_matArbiter<Cfg::num_input_ports>>, Cfg::num_output_ports> arbiter;
     ch_vec<bits_in_t, Cfg::num_output_ports> sa_resp;
     for (unsigned j = 0; j < Cfg::num_output_ports; ++j) {
       arbiter[j].io.in = sa_req[j];

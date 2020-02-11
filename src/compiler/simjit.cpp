@@ -318,7 +318,7 @@ extern "C" void print_data_eval(print_data_t* self) {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct assert_data_t {
-  char* msg;
+  char* message;
   char* name;
   char* file;
   int line;
@@ -327,33 +327,33 @@ struct assert_data_t {
 
   static uint32_t size(assertimpl* node) {
     uint32_t size = sizeof(assert_data_t);
-    size += node->msg().size() + 1; // msg
-    size += node->srcinfo().name().size() + 1; // name
-    size += node->srcinfo().sloc().file().size() + 1; // file
+    size += node->message().size() + 1; // message
+    size += node->name().size() + 1; // name
+    size += node->sloc().file().size() + 1; // file
     return size;
   }
 
   void init(assertimpl* node, const Compiler* cp) {
     auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
 
-    auto msg_len = node->msg().size() + 1;
-    msg = reinterpret_cast<char*>(buf);
-    memcpy(msg, node->msg().c_str(), msg_len);
+    auto msg_len = node->message().size() + 1;
+    message = reinterpret_cast<char*>(buf);
+    memcpy(message, node->message().c_str(), msg_len);
     buf += msg_len;
 
-    auto name_len = node->srcinfo().name().size() + 1;
+    auto name_len = node->name().size() + 1;
     name = reinterpret_cast<char*>(buf);
-    memcpy(name, node->srcinfo().name().c_str(), name_len);
+    memcpy(name, node->name().c_str(), name_len);
     buf += name_len;
 
-    auto file_len = node->srcinfo().sloc().file().size() + 1;
+    auto file_len = node->sloc().file().size() + 1;
     file = reinterpret_cast<char*>(buf);
-    memcpy(file, node->srcinfo().sloc().file().c_str(), file_len);
+    memcpy(file, node->sloc().file().c_str(), file_len);
     buf += file_len;
 
-    line = node->srcinfo().sloc().line();
+    line = node->sloc().line();
 
-    column = node->srcinfo().sloc().column();
+    column = node->sloc().column();
 
     init_sdata(cp, &time, node->time().impl());
   }
@@ -362,7 +362,7 @@ struct assert_data_t {
 extern "C" void assert_data_eval(assert_data_t* self) {
   throw std::domain_error(sstreamf() << "assertion failure at tick " 
                                      << static_cast<uint64_t>(self->time) << ", " 
-                                     << self->msg << "('" 
+                                     << self->message << "('" 
                                      << self->name << "' in " 
                                      << self->file << ":" 
                                      << self->line << ":" 

@@ -44,58 +44,57 @@ public:
   using base = ch_snumbase<ch_sfixed<N, F>>;
   using base::operator=;
 
-  ch_sfixed(const system_buffer& buffer
-            = make_system_buffer(N, idname<ch_sfixed>()))
+  explicit  ch_sfixed(const system_buffer& buffer = make_system_buffer(N))
     : buffer_(buffer)
   {}
 
   explicit ch_sfixed(float other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   explicit ch_sfixed(double other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_sfixed(const ch_sbitbase<U>& other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_sfixed(const U& other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_sfixed(const ch_sbit<M>& other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_sfixed(const ch_suint<M>& other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_sfixed(const ch_sint<M>& other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   ch_sfixed(const ch_sfixed& other)
-    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N)) {
     this->operator=(other);
   }
 
@@ -174,91 +173,91 @@ public:
   using base = ch_numbase<ch_fixed<N, F>>;
   using base::operator=;
 
-  ch_fixed(const logic_buffer& buffer
-     = make_logic_buffer(N, idname<ch_fixed>(), CH_CUR_SRC_INFO))
+  explicit ch_fixed(const logic_buffer& buffer
+     = make_logic_buffer(N, CH_CUR_SRC_INFO))
     : buffer_(buffer)
   {}
 
   explicit ch_fixed(float other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   explicit ch_fixed(double other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_fixed(const ch_sbitbase<U>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_fixed(const ch_bitbase<U>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_fixed(const U& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_fixed(const ch_sbit<M>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_fixed(const ch_sint<M>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_fixed(const ch_suint<M>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_fixed(const ch_bit<M>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_fixed(const ch_uint<M>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_fixed(const ch_int<M>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   ch_fixed(const ch_sfixed<N, F>& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   ch_fixed(const ch_fixed& other, CH_SRC_INFO)
-    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>(), srcinfo)) {
+    : ch_fixed(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 

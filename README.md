@@ -15,7 +15,6 @@ Cash requires C++17 compiler to build with support for inline variables.
 Other dependencies include:
 
   - [LLVM] (https://www.llvm.org)
-  - [LIJIT] (https://www.gnu.org/software/libjit/)
   - [iVerilog] (http://iverilog.icarus.com/)
   - [Catch] (https://github.com/catchorg/Catch2)
 
@@ -26,9 +25,9 @@ IVerilog Install:
 
     $ sudo apt-get install iverilog
     
-LLVM 8.0 Install:
+LLVM 9.0 Install:
 
-    $ sudo apt-get install llvm-8-dev
+    $ sudo apt-get install llvm-9-dev
 
 To install Cash you must clone the repository and create a build directory:
 

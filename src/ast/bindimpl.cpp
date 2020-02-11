@@ -16,8 +16,11 @@ static uint32_t find_port_index(bindportimpl* bindport, const std::vector<lnode>
   return -1;
 }
 
-bindimpl::bindimpl(context* ctx, context* module, const source_info& srcinfo)
-  : ioimpl(ctx, type_bind, 0, module->name(), srcinfo)
+bindimpl::bindimpl(context* ctx, 
+                   context* module, 
+                   const std::string& name,
+                   const source_location& sloc)
+  : ioimpl(ctx, type_bind, 0, name, sloc)
   , module_(module) {
   // acquire module instance
   module_->acquire();
@@ -25,15 +28,15 @@ bindimpl::bindimpl(context* ctx, context* module, const source_info& srcinfo)
   // bind system clock
   auto module_clk = module->sys_clk();
   if (module_clk) {
-    auto cd = ctx->current_cd(srcinfo);
-    this->bind_input(cd->clk().impl(), module_clk, srcinfo);
+    auto cd = ctx->current_cd(sloc);
+    this->bind_input(cd->clk().impl(), module_clk, sloc);
   }
 
   // bind system reset
   auto module_reset = module->sys_reset();
   if (module_reset) {
-    auto reset = ctx->current_reset(srcinfo);
-    this->bind_input(reset, module_reset, srcinfo);
+    auto reset = ctx->current_reset(sloc);
+    this->bind_input(reset, module_reset, sloc);
   }
 }
 
@@ -63,12 +66,12 @@ void bindimpl::remove_port(lnodeimpl* port) {
 
 void bindimpl::bind_input(lnodeimpl* src,
                           inputimpl* ioport,
-                          const source_info& srcinfo) {
+                          const source_location& sloc) {
   assert(src->ctx() == ctx_);
   assert(ioport->ctx() != ctx_);
 
   // create bind port
-  auto input = ctx_->create_node<bindportimpl>(this, src, ioport, srcinfo);
+  auto input = ctx_->create_node<bindportimpl>(this, src, ioport, sloc);
   ioport->add_bindport(input);
 
   // add to list
@@ -82,14 +85,14 @@ void bindimpl::bind_input(lnodeimpl* src,
 
 void bindimpl::bind_output(lnodeimpl* dst,
                            outputimpl* ioport,
-                           const source_info& srcinfo) {
+                           const source_location& sloc) {
   assert(dst->ctx() == ctx_);
   assert(ioport->ctx() != ctx_);
 
   // create bind port
-  auto output = ctx_->create_node<bindportimpl>(this, ioport, srcinfo);
+  auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
   assert(type_proxy == dst->type());
-  reinterpret_cast<proxyimpl*>(dst)->write(0, output, 0, dst->size(), srcinfo);
+  reinterpret_cast<proxyimpl*>(dst)->write(0, output, 0, dst->size(), sloc);
 
   // add to list
   auto p = find_port_index(output, outputs_);
@@ -115,8 +118,8 @@ bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            lnodeimpl* src,
                            inputimpl* ioport,
-                           const source_info& srcinfo)
-  : ioimpl(ctx, type_bindin, ioport->size(), ioport->name(), srcinfo)
+                           const source_location& sloc)
+  : ioimpl(ctx, type_bindin, ioport->size(), ioport->name(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
@@ -126,8 +129,8 @@ bindportimpl::bindportimpl(context* ctx,
 bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            outputimpl* ioport,
-                           const source_info& srcinfo)
-  : ioimpl(ctx, type_bindout, ioport->size(), ioport->name(), srcinfo)
+                           const source_location& sloc)
+  : ioimpl(ctx, type_bindout, ioport->size(), ioport->name(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
@@ -159,20 +162,20 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::bindInputNode(const lnode& input, const source_info& srcinfo) {
+lnodeimpl* ch::internal::bindInputNode(const lnode& input, const source_location& sloc) {
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto name = stringf("%s.%s", binding->module()->name().c_str(), input.name().c_str());
-  auto node = ctx->create_node<proxyimpl>(input.size(), name, srcinfo);
-  binding->bind_input(node, reinterpret_cast<inputimpl*>(input.impl()), srcinfo);
+  auto node = ctx->create_node<proxyimpl>(input.size(), name, sloc);
+  binding->bind_input(node, reinterpret_cast<inputimpl*>(input.impl()), sloc);
   return node;
 }
 
-lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const source_info& srcinfo) {
+lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const source_location& sloc) {
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto name = stringf("%s.%s", binding->module()->name().c_str(), output.name().c_str());
-  auto node = ctx->create_node<proxyimpl>(output.size(), name, srcinfo);
-  binding->bind_output(node, reinterpret_cast<outputimpl*>(output.impl()), srcinfo);
+  auto node = ctx->create_node<proxyimpl>(output.size(), name, sloc);
+  binding->bind_output(node, reinterpret_cast<outputimpl*>(output.impl()), sloc);
   return node;
 }

@@ -151,7 +151,7 @@ TEST_CASE("misc", "[misc]") {
   SECTION("taps", "[tap]") {
     TESTX([]()->bool {
       auto_cflags_enable dump_enable(cflags::dump_cfg | cflags::debug_cfg);
-      ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device("taps",
+      ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device(
         [](auto lhs, auto rhs) {
           auto ret = (lhs + rhs) / 2;
           __tap(ret);
@@ -174,14 +174,14 @@ TEST_CASE("misc", "[misc]") {
 
     TESTX([]()->bool {
       auto_cflags_enable dump_enable(cflags::dump_cfg | cflags::debug_cfg);
-      ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device("taps2",
+      ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device(
         [](auto lhs, auto rhs) {
           auto f = [](auto in) {
-                  auto ret = (in << 1) / 2;
-                  __tap(ret);
-                  return ret;
-                };
-          std::array<ch_module<GenericModule<ch_uint4, ch_uint4>>, 2> m{f, f};
+            auto ret = (in << 1) / 2;
+            __tap(ret);
+            return ret;
+          };
+          ch_vec<ch_module<GenericModule<ch_uint4, ch_uint4>>, 2> m{f, f};
           m[0].io.in = lhs;
           m[1].io.in = rhs;
           auto ret = (m[0].io.out + m[1].io.out) / 2;
@@ -446,9 +446,9 @@ TEST_CASE("misc", "[misc]") {
 
     TESTX([]()->bool {
       auto_cflags_disable cg_merge(cflags::codegen_merged);
-      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device("merged",
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) {
-          std::array<ch_module<Bypass<ch_int4>>, 2> bypass;
+          ch_vec<ch_module<Bypass<ch_int4>>, 2> bypass;
           bypass[0].io.in = lhs;
           bypass[1].io.in = rhs;
           return bypass[0].io.out * bypass[1].io.out;
@@ -470,9 +470,9 @@ TEST_CASE("misc", "[misc]") {
 
     TESTX([]()->bool {
       auto_cflags_disable cg_merge(cflags::codegen_merged);
-      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device("merged2",
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) {
-          std::array<ch_module<Bypass<ch_int4>>, 2> bypass;
+          ch_vec<ch_module<Bypass<ch_int4>>, 2> bypass;
           bypass[1].io.in = rhs;
           return lhs * bypass[1].io.out;
         }
@@ -493,9 +493,9 @@ TEST_CASE("misc", "[misc]") {
 
     TESTX([]()->bool {
       auto_cflags_disable cfo_off(cflags::disable_cfo);
-      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device("bypass",
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) {
-          std::array<ch_module<Bypass<ch_int4>>, 2> bypass;
+          ch_vec<ch_module<Bypass<ch_int4>>, 2> bypass;
           bypass[0].io.in = lhs;
           bypass[1].io.in = rhs;
           auto x = bypass[0].io.out + bypass[1].io.out;

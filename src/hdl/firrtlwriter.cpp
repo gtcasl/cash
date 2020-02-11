@@ -199,9 +199,9 @@ bool firrtlwriter::print_decl(std::ostream& out,
     this->print_name(out, node);
     out << " : ";
     this->print_dtype(out, node);
-    auto& srcinfo = node->srcinfo();
-    if (!srcinfo.empty()) {
-      out << " @[" << srcinfo.sloc() << "]";
+    auto& sloc = node->sloc();
+    if (!sloc.empty()) {
+      out << " @[" << sloc << "]";
     }
     out << std::endl;
     return true;

@@ -148,7 +148,7 @@ struct ch_llqueue {
         data_new[i] = ~reading | ptr[i+1];
       }
 
-      std::array<ch_reg<T>, N> data;
+      ch_vec<ch_reg<T>, N> data;
       for (unsigned i = 0; i < N-1; ++i) {
         data[i]->next = ch_sel(data_upd[i], ch_sel(data_new[i], io.enq.data, data[i+1]), data[i]);
       }

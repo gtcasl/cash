@@ -12,61 +12,60 @@ public:
   using base = ch_sbitbase<ch_sbit<N>>;
   using base::operator=;
 
-  ch_sbit(const system_buffer& buffer
-          = make_system_buffer(N, idname<ch_sbit>()))
+  explicit ch_sbit(const system_buffer& buffer = make_system_buffer(N))
     : buffer_(buffer) {
     assert(N == buffer->size());
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_sbit(const U& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(is_bitvector_extended_type_v<U>)>
+            CH_REQUIRES(is_bitvector_extended_type_v<U>)>
   explicit ch_sbit(U&& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    this->operator=(make_system_buffer(sdata_type(N , std::forward<U>(other))));
+    : ch_sbit(make_system_buffer(N)) {
+    this->operator=(ch_sbit(make_system_buffer(sdata_type(N , std::forward<U>(other)))));
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_sbit(const ch_sbitbase<U>& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_sbit(const ch_sbool& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_sbit(const ch_sint<M>& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_sbit(const ch_suint<M>& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_sbit(const ch_sbit<M>& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(other);
   }
 
   ch_sbit(const ch_sbit& other)
-    : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
+    : ch_sbit(make_system_buffer(N)) {
     this->operator=(other);
   }
 
@@ -102,87 +101,86 @@ public:
   using base = ch_bitbase<ch_bit<N>>;
   using base::operator=;
 
-  ch_bit(const logic_buffer& buffer 
-    = make_logic_buffer(N, idname<ch_bit>(), CH_CUR_SRC_INFO))
+  explicit ch_bit(const logic_buffer& buffer = make_logic_buffer(N, CH_CUR_SRC_INFO))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
 
   template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
+            CH_REQUIRES(std::is_integral_v<U>)>
   ch_bit(const U& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_bit(const ch_sbitbase<U>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_bit(const ch_sbool& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_bit(const ch_sbit<M>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_bit(const ch_sint<M>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M <= N)>
+            CH_REQUIRES(M <= N)>
   ch_bit(const ch_suint<M>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
+            CH_REQUIRES(ch_width_v<U> <= N)>
   explicit ch_bit(const ch_bitbase<U>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_bit(const ch_bool& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_bit(const ch_uint<M>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_bit(const ch_int<M>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   template <unsigned M,
-            CH_REQUIRE(M < N)>
+            CH_REQUIRES(M < N)>
   ch_bit(const ch_bit<M>& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 
   ch_bit(const ch_bit& other, CH_SRC_INFO)
-    : ch_bit(make_logic_buffer(N, idname<ch_bit>(), srcinfo)) {
+    : ch_bit(make_logic_buffer(N, srcinfo)) {
     this->operator=(other);
   }
 

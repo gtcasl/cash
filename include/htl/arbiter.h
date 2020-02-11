@@ -68,7 +68,7 @@ struct ch_idxArbiter {
   );
 
   void describe() {
-    std::array<ch_module<Arbiter>, P> arbiters;
+    ch_vec<ch_module<Arbiter>, P> arbiters;
     ch_counter<P> ctr;
 
     for (unsigned i = 0; i < P; ++i) {      

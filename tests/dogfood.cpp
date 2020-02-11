@@ -236,7 +236,7 @@ struct EgressNIC {
   );
 
   void describe() {
-    std::array<ch_module<ch_llqueue<T, 1>>, 2> buf;
+    ch_vec<ch_module<ch_llqueue<T, 1>>, 2> buf;
 
     for (unsigned i = 0; i < 2; ++i) {
       buf.at(i).io.enq(io.putData.at(i));

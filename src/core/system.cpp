@@ -14,6 +14,12 @@ system_buffer_impl::system_buffer_impl(sdata_type&& data)
   , size_(value_.size())
 {}
 
+system_buffer_impl::system_buffer_impl(uint32_t size)
+  : value_(size)
+  , offset_(0)
+  , size_(size)
+{}
+
 system_buffer_impl::system_buffer_impl(uint32_t size, const std::string& name)
   : value_(size)
   , offset_(0)
@@ -22,13 +28,22 @@ system_buffer_impl::system_buffer_impl(uint32_t size, const std::string& name)
 {}
 
 system_buffer_impl::system_buffer_impl(uint32_t size,
-                             const system_buffer& buffer,
-                             uint32_t offset,
-                             const std::string& name)
+                                       const system_buffer& buffer,
+                                       uint32_t offset)
+  : source_(buffer)
+  , offset_(offset)
+  , size_(size) {
+  assert(offset_ + size_ <= buffer->size());
+}
+
+system_buffer_impl::system_buffer_impl(uint32_t size,
+                                       const system_buffer& buffer,
+                                       uint32_t offset,
+                                       const std::string& name)
   : source_(buffer)
   , offset_(offset)
   , size_(size)
-  , name_(((!buffer->name().empty() && !name.empty()) ? (buffer->name() + '.' + name) : name)) {
+  , name_(name) {
   assert(offset_ + size_ <= buffer->size());
 }
 
