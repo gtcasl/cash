@@ -19,8 +19,7 @@ set(SOURCE_FILES
     float.cpp
     udf.cpp
     fixed.cpp
-    complex.cpp    
-    jitregress.cpp    
+    complex.cpp        
     errors.cpp
     router.cpp   
     main.cpp
@@ -29,6 +28,7 @@ set(SOURCE_FILES
 if (NOT ${CMAKE_CXX_COMPILER} MATCHES "clang")
     # cache.cpp fails on Clang (TODO: investigate why)
     set(SOURCE_FILES ${SOURCE_FILES} cache.cpp)
+    set(SOURCE_FILES ${SOURCE_FILES} jitregress.cpp)
 endif()
 
 # copy resource directory

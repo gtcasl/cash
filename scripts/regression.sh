@@ -22,6 +22,23 @@ set +e
  popd
  popd
 
+ # Test LLVM Release project on GCC(no clang plugin)
+ mkdir -p build_llr
+ pushd build_llr
+ cmake -DJIT=LLVM -DPLUGIN=OFF -DCMAKE_BUILD_TYPE=Release $CASH_DIR
+ make -j`nproc` all
+ make test   
+ CASH_CFLAGS=256 make test    # Turn off JIT
+ CASH_CFLAGS=512 make test    # Turn off CFO opts
+ CASH_CFLAGS=523904 make test # Turn off all opts
+ pushd tests
+ valgrind ../bin/testsuite
+ CASH_CFLAGS=256 valgrind ../bin/testsuite
+ CASH_CFLAGS=512 valgrind ../bin/testsuite
+ CASH_CFLAGS=523904 valgrind ../bin/testsuite
+ popd
+ popd
+
 # Test LIBJIT Release project
  mkdir -p build_jbr
  pushd build_jbr

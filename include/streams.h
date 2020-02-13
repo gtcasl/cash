@@ -259,7 +259,7 @@ public:
   #ifndef NDEBUG    
     buf_.write(node, format, sloc);    
   #else
-    CH_UNUSED(node, format, srcinfo);
+    CH_UNUSED(node, format, sloc);
   #endif
     return *this;
   }

@@ -125,7 +125,7 @@ inline void ch_assert(const ch_bool& cond, const std::string& message, CH_SLOC) 
 #ifndef NDEBUG
   createAssertNode(get_lnode(cond), message, sloc);
 #else
-  CH_UNUSED(cond, message, srcinfo);
+  CH_UNUSED(cond, message, sloc);
 #endif
 }
 
@@ -137,7 +137,7 @@ void ch_tap(const T& value, const std::string& name, CH_SLOC) {
   static_assert(is_logic_type_v<T>, "invalid type");
   registerTap(get_lnode(value), name, sloc);
 #else
-  CH_UNUSED(value, name, srcinfo);
+  CH_UNUSED(value, name, sloc);
 #endif
 }
 
