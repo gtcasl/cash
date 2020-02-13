@@ -39,6 +39,8 @@ public:
 
   void print_header(std::ostream& out);
 
+  void print_port(std::ostream& out, ioimpl* node);
+
   void print_body(std::ostream& out);
 
   void print_footer(std::ostream& out);
@@ -46,13 +48,7 @@ public:
   bool print_decl(std::ostream& out,
                   lnodeimpl* node,
                   std::unordered_set<uint32_t>& visited,
-                  lnodeimpl* ref = nullptr);
-
-  void print_port(std::ostream& out, ioimpl* node);
-
-  bool print_module(std::ostream& out, moduleimpl* node);
-
-  bool print_modport(std::ostream& out, moduleportimpl* node);
+                  lnodeimpl* inline_node = nullptr);
 
   bool print_logic(std::ostream& out, lnodeimpl* node);
 
@@ -69,6 +65,10 @@ public:
   bool print_select(std::ostream& out, selectimpl* node);
 
   bool print_reg(std::ostream& out, regimpl* node);
+
+  bool print_module(std::ostream& out, moduleimpl* node);
+
+  bool print_modport(std::ostream& out, moduleportimpl* node);
 
   bool print_cdomain(std::ostream& out, cdimpl* cd);
 

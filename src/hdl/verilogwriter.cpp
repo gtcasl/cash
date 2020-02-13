@@ -19,23 +19,29 @@
 
 using namespace ch::internal;
 
-const auto IsRegType = [](lnodeimpl* node) {
+static bool IsRegType(lnodeimpl* node) {
   auto type = node->type();
   return (type_reg == type && !reinterpret_cast<regimpl*>(node)->is_pipe())
       || (type_msrport == type)
       || (type_mem == type)
       || (type_sel == type && !reinterpret_cast<selectimpl*>(node)->is_ternary());
-};
+}
 
-auto DataWidth = [](lnodeimpl* node) {
-  auto type = node->type();
-  return (type_mem == type) ?  reinterpret_cast<memimpl*>(node)->data_width() : node->size();
-};
+static bool IsUseBeforeDef(lnodeimpl* node, const lnodeimpl* use) {
+  return (use->id() < node->id());
+}
 
-const auto is_inline_literal = [](lnodeimpl* node) {
+static bool is_inline_literal(lnodeimpl* node) {
   assert(type_lit == node->type());
   return (node->size() <= 64);
 };
+
+static auto DataWidth(lnodeimpl* node) {
+  auto type = node->type();
+  return (type_mem == type) ? reinterpret_cast<memimpl*>(node)->data_width() : node->size();
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 verilogwriter::verilogwriter(context* ctx) : ctx_(ctx) {
   for (auto node : ctx->nodes()) {
@@ -133,6 +139,26 @@ void verilogwriter::print_header(std::ostream& out) {
   out << std::endl << ");" << std::endl;
 }
 
+void verilogwriter::print_port(std::ostream& out, ioimpl* node) {
+  auto type = node->type();
+  switch (type) {
+  case type_input:
+    out << "input";
+    break;
+  case type_output:
+    out << "output";
+    break;
+  default:
+    assert(false);
+  }
+
+  out << " ";
+  this->print_type(out, node);
+
+  out << " ";
+  this->print_name(out, node);
+}
+
 void verilogwriter::print_body(std::ostream& out) {
   //
   // declaration
@@ -207,96 +233,10 @@ void verilogwriter::print_footer(std::ostream& out) {
   out << "endmodule" << std::endl;
 }
 
-bool verilogwriter::print_module(std::ostream& out, moduleimpl* node) {
-  //--
-  auto find_modpin = [&](inputimpl* port)->moduleportimpl* {
-    for (auto& input : node->inputs()) {
-      auto b = reinterpret_cast<moduleportimpl*>(input.impl());
-      if (b->ioport().impl() == port)
-        return b;
-    }
-    return nullptr;
-  };
-
-  //--
-  auto find_modpout = [&](outputimpl* port)->moduleportimpl* {
-    for (auto& output : node->outputs()) {
-      auto b = reinterpret_cast<moduleportimpl*>(output.impl());
-      if (b->ioport().impl() == port)
-        return b;
-    }
-    return nullptr;
-  };
-
-  auto_separator sep(", ");
-  auto m = node->target();
-  out << m->name() << " ";
-  print_name(out, node);
-  out << "(";
-  {
-    auto_indent indent(out);
-    auto_separator sep2(",");
-    for (auto n : m->inputs()) {
-      auto input = reinterpret_cast<inputimpl*>(n);
-      out << sep2 << std::endl << '.' << identifier_from_string(input->name()) << "(";
-      auto modport = find_modpin(input);
-      if (modport) {
-        this->print_name(out, modport);
-      }
-      out << ")";
-    }
-    for (auto n : m->outputs()) {
-      auto output = reinterpret_cast<outputimpl*>(n);
-      out << sep2 << std::endl << '.' << identifier_from_string(output->name()) << "(";
-      auto modport = find_modpout(output);
-      if (modport) {
-        this->print_name(out, modport);
-      }
-      out << ")";
-    }
-  }
-  out << ");" << std::endl;
-  return true;
-}
-
-bool verilogwriter::print_modport(std::ostream& out, moduleportimpl* node) {
-  // outputs are sourced via binding already
-  if (node->type() == type_modpout)
-    return false;
-
-  out << "assign ";
-  this->print_name(out, node);
-  out << " = ";
-  this->print_name(out, node->src(0).impl());
-  out << ";" << std::endl;
-  std::flush(out);
-  return true;
-}
-
-void verilogwriter::print_port(std::ostream& out, ioimpl* node) {
-  auto type = node->type();
-  switch (type) {
-  case type_input:
-    out << "input";
-    break;
-  case type_output:
-    out << "output";
-    break;
-  default:
-    assert(false);
-  }
-
-  out << " ";
-  this->print_type(out, node);
-
-  out << " ";
-  this->print_name(out, node);
-}
-
 bool verilogwriter::print_decl(std::ostream& out,
                                lnodeimpl* node,
                                std::unordered_set<uint32_t>& visited,
-                               lnodeimpl* ref) {
+                               lnodeimpl* inline_node) {
   if (visited.count(node->id()))
     return false;
 
@@ -330,18 +270,29 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_tap:
   case type_bypass:  
   case type_udfout:
-    if (ref
-     && (IsRegType(ref) != IsRegType(node)
-      || DataWidth(ref) != DataWidth(node))) {
+    if (type_modpin == type) {
+      // inline mode if already defined at use location
+      auto modpin = reinterpret_cast<moduleportimpl*>(node);
+      auto src  =modpin->src(0).impl();
+      if (!IsUseBeforeDef(src, modpin))
+        return false;
+    }    
+
+    if (inline_node != nullptr
+     && (IsRegType(inline_node) != IsRegType(node)
+      || DataWidth(inline_node) != DataWidth(node))) {
       return false;    
     }
-    if (ref) {
+
+    if (inline_node != nullptr) {
       out << ", ";
     } else {
       this->print_type(out, node);
       out << " ";
     }
+
     this->print_name(out, node);
+
     if (type_mem == type) {
       auto mem = reinterpret_cast<memimpl*>(node);
       out << " [0:" << (mem->num_items() - 1) << "]";
@@ -382,8 +333,10 @@ bool verilogwriter::print_decl(std::ostream& out,
         out << " */";
       }
     }
+
     visited.insert(node->id());
-    if (!ref) {      
+    
+    if (inline_node == nullptr) {      
       if (platform::self().cflags() & cflags::codegen_sloc) {
         out << ";";
         auto& sloc = node->sloc();
@@ -399,6 +352,7 @@ bool verilogwriter::print_decl(std::ostream& out,
       out << std::endl;
     }
     return true;
+    
   case type_module:
   case type_input:
   case type_output:
@@ -775,6 +729,81 @@ bool verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     }
     out << "end" << std::endl;
   }
+  return true;
+}
+
+bool verilogwriter::print_module(std::ostream& out, moduleimpl* node) {
+  //--
+  auto find_modpin = [&](inputimpl* port)->moduleportimpl* {
+    for (auto& input : node->inputs()) {
+      auto b = reinterpret_cast<moduleportimpl*>(input.impl());
+      if (b->ioport().impl() == port)
+        return b;
+    }
+    return nullptr;
+  };
+
+  //--
+  auto find_modpout = [&](outputimpl* port)->moduleportimpl* {
+    for (auto& output : node->outputs()) {
+      auto b = reinterpret_cast<moduleportimpl*>(output.impl());
+      if (b->ioport().impl() == port)
+        return b;
+    }
+    return nullptr;
+  };
+
+  auto_separator sep(", ");
+  auto m = node->target();
+  out << m->name() << " ";
+  print_name(out, node);
+  out << "(";
+  {
+    auto_indent indent(out);
+    auto_separator sep2(",");
+    for (auto n : m->inputs()) {
+      auto input = reinterpret_cast<inputimpl*>(n);
+      out << sep2 << std::endl << '.' << identifier_from_string(input->name()) << "(";
+      auto modpin = find_modpin(input);
+      if (modpin) {
+        auto src = modpin->src(0).impl();
+        if (IsUseBeforeDef(src, modpin)) {
+          this->print_name(out, modpin);
+        } else {
+          this->print_name(out, src);          
+        }
+      }
+      out << ")";
+    }
+    for (auto n : m->outputs()) {
+      auto output = reinterpret_cast<outputimpl*>(n);
+      out << sep2 << std::endl << '.' << identifier_from_string(output->name()) << "(";
+      auto modport = find_modpout(output);
+      if (modport) {
+        this->print_name(out, modport);
+      }
+      out << ")";
+    }
+  }
+  out << ");" << std::endl;
+  return true;
+}
+
+bool verilogwriter::print_modport(std::ostream& out, moduleportimpl* node) {
+  // outputs are sourced via binding already
+  if (node->type() == type_modpout)
+    return false;
+
+   auto src = node->src(0).impl();
+   if (!IsUseBeforeDef(src, node))
+    return false;
+
+  out << "assign ";
+  this->print_name(out, node);
+  out << " = ";
+  this->print_name(out, src);
+  out << ";" << std::endl;
+  std::flush(out);
   return true;
 }
 
