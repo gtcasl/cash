@@ -57,7 +57,7 @@ That's all!
 
 Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wiki).
 
-## Basic Example: A Generic binary Adder
+## Basic Example: A Generic Adder
 
 ```C++
 #include <cash.h>

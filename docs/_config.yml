@@ -6,7 +6,8 @@ theme: jekyll-theme-cayman
 
 # logo image to use. logo images are constrained at 50px in height.
 logo: assets/cash_logo.png
+use_logo: true
 
 # email address feedback gets sent to
 feedback_email: blaise-tine@gmail.com
-
+show_feedback: true
