@@ -15,9 +15,9 @@ Cash requires a C++17 compiler to build and works best with clang 9.0 to leverag
 Other dependencies include:
 
   - [LLVM] (https://www.llvm.org)
-  - [LIBJIT] (https://www.gnu.org/software/libjit/)
+  - [LIBJIT] (https://www.gnu.org/software/libjit)
   - [Catch] (https://github.com/catchorg/Catch2)
-  - [iVerilog] (http://iverilog.icarus.com/)
+  - [iVerilog] (http://iverilog.icarus.com)
 
 Default Build Instructions (Ubuntu 18.04)
 ------------------------------------------

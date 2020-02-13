@@ -14,9 +14,9 @@ It has been tested with GCC 7 and Clang 9.
 
 Other dependencies include:
 
-  - [LLVM] (https://www.llvm.org)
-  - [LIBJIT] (https://www.gnu.org/software/libjit/)
-  - [iVerilog](http://iverilog.icarus.com/)
+  - [LLVM](https://www.llvm.org)
+  - [LIBJIT](https://www.gnu.org/software/libjit)
+  - [iVerilog](http://iverilog.icarus.com)
   - [Catch](https://github.com/catchorg/Catch2)
 
 # Build Status
@@ -28,14 +28,6 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 
 # System Setup (Ubuntu 18.04)
 
-Cash requires C++17 compiler to build with support for inline variables.
-
-Other dependencies include:
-
-  - [LLVM] (https://www.llvm.org)
-  - [iVerilog] (http://iverilog.icarus.com/)
-  - [Catch] (https://github.com/catchorg/Catch2)
-    
 IVerilog Install:
 
     $ sudo apt-get install iverilog
