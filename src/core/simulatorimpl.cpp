@@ -33,7 +33,7 @@ simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   // enqueue all contexts
   for (auto dev : devices) {
     auto ctx = dev.impl()->ctx();
-    if (ctx->bindings().size()
+    if (ctx->modules().size()
      && (platform::self().cflags() & cflags::codegen_merged) != 0) {
       auto merged_ctx = new context(ctx->name());
       merged_ctx->acquire();
@@ -62,7 +62,7 @@ simulatorimpl::~simulatorimpl() {
 void simulatorimpl::initialize() {
   {
     if (1 == contexts_.size()
-     && 0 == contexts_[0]->bindings().size()) {
+     && 0 == contexts_[0]->modules().size()) {
       eval_ctx_ = contexts_[0];
       eval_ctx_->acquire();
     } else {

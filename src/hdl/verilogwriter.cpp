@@ -3,7 +3,7 @@
 #include "context.h"
 #include "compile.h"
 #include "deviceimpl.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "litimpl.h"
 #include "cdimpl.h"
 #include "regimpl.h"
@@ -70,14 +70,14 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
 void verilogwriter::print(std::ostream& out,
                           std::unordered_set<std::string_view>& visited) {  
   // print dependent modules
-  for (auto node : ctx_->bindings()) {
-    auto binding = reinterpret_cast<bindimpl*>(node);
-    auto module = binding->module();
+  for (auto node : ctx_->modules()) {
+    auto module = reinterpret_cast<moduleimpl*>(node);
+    auto target = module->target();
     // ensure single instantiation
-    if (visited.count(module->name()))
+    if (visited.count(target->name()))
       continue;
-    visited.insert(module->name());
-    verilogwriter child_module(module);
+    visited.insert(target->name());
+    verilogwriter child_module(target);
     child_module.print(out, visited);
     out << std::endl;
   }
@@ -207,11 +207,11 @@ void verilogwriter::print_footer(std::ostream& out) {
   out << "endmodule" << std::endl;
 }
 
-bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
+bool verilogwriter::print_module(std::ostream& out, moduleimpl* node) {
   //--
-  auto find_bindin = [&](inputimpl* port)->bindportimpl* {
+  auto find_modpin = [&](inputimpl* port)->moduleportimpl* {
     for (auto& input : node->inputs()) {
-      auto b = reinterpret_cast<bindportimpl*>(input.impl());
+      auto b = reinterpret_cast<moduleportimpl*>(input.impl());
       if (b->ioport().impl() == port)
         return b;
     }
@@ -219,9 +219,9 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   };
 
   //--
-  auto find_bindout = [&](outputimpl* port)->bindportimpl* {
+  auto find_modpout = [&](outputimpl* port)->moduleportimpl* {
     for (auto& output : node->outputs()) {
-      auto b = reinterpret_cast<bindportimpl*>(output.impl());
+      auto b = reinterpret_cast<moduleportimpl*>(output.impl());
       if (b->ioport().impl() == port)
         return b;
     }
@@ -229,7 +229,7 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   };
 
   auto_separator sep(", ");
-  auto m = node->module();
+  auto m = node->target();
   out << m->name() << " ";
   print_name(out, node);
   out << "(";
@@ -239,18 +239,18 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
     for (auto n : m->inputs()) {
       auto input = reinterpret_cast<inputimpl*>(n);
       out << sep2 << std::endl << '.' << identifier_from_string(input->name()) << "(";
-      auto bindport = find_bindin(input);
-      if (bindport) {
-        this->print_name(out, bindport);
+      auto modport = find_modpin(input);
+      if (modport) {
+        this->print_name(out, modport);
       }
       out << ")";
     }
     for (auto n : m->outputs()) {
       auto output = reinterpret_cast<outputimpl*>(n);
       out << sep2 << std::endl << '.' << identifier_from_string(output->name()) << "(";
-      auto bindport = find_bindout(output);
-      if (bindport) {
-        this->print_name(out, bindport);
+      auto modport = find_modpout(output);
+      if (modport) {
+        this->print_name(out, modport);
       }
       out << ")";
     }
@@ -259,9 +259,9 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   return true;
 }
 
-bool verilogwriter::print_bindport(std::ostream& out, bindportimpl* node) {
+bool verilogwriter::print_modport(std::ostream& out, moduleportimpl* node) {
   // outputs are sourced via binding already
-  if (node->type() == type_bindout)
+  if (node->type() == type_modpout)
     return false;
 
   out << "assign ";
@@ -319,8 +319,8 @@ bool verilogwriter::print_decl(std::ostream& out,
       return false;
     }
     [[fallthrough]];
-  case type_bindin:
-  case type_bindout:
+  case type_modpin:
+  case type_modpout:
   case type_op:
   case type_sel:
   case type_reg:
@@ -399,7 +399,7 @@ bool verilogwriter::print_decl(std::ostream& out,
       out << std::endl;
     }
     return true;
-  case type_bind:
+  case type_module:
   case type_input:
   case type_output:
   case type_cd:
@@ -431,11 +431,11 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
     return this->print_reg(out, reinterpret_cast<regimpl*>(node));
   case type_mem:
     return this->print_mem(out, reinterpret_cast<memimpl*>(node));
-  case type_bind:
-    return this->print_binding(out, reinterpret_cast<bindimpl*>(node));
-  case type_bindin:
-  case type_bindout:
-    return this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
+  case type_module:
+    return this->print_module(out, reinterpret_cast<moduleimpl*>(node));
+  case type_modpin:
+  case type_modpout:
+    return this->print_modport(out, reinterpret_cast<moduleportimpl*>(node));
   case type_udfc:
   case type_udfs:
     return this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog::body);
@@ -906,11 +906,11 @@ bool verilogwriter::print_bypass(std::ostream& out, bypassimpl* node) {
       }
     }
 
-    for (auto b : ctx->bindings()) {
-      auto ret = full_path(bypass, reinterpret_cast<bindimpl*>(b)->module());
+    for (auto module : ctx->modules()) {
+      auto ret = full_path(bypass, reinterpret_cast<moduleimpl*>(module)->target());
       if (!ret.empty()) {
         std::stringstream ss;
-        print_name(ss, b);
+        print_name(ss, module);
         ss << '.' << ret;
         return ss.str();
       }
@@ -1002,26 +1002,12 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
 
 void verilogwriter::print_node_name(std::ostream& out, lnodeimpl* node) {
   switch (node->type()) {  
-  case type_input:
-  case type_output:
-  case type_tap:
-    out << identifier_from_string(node->name());
-    break;
-  case type_bindin:
-  case type_bindout: {
-    auto bp = reinterpret_cast<bindportimpl*>(node);
-    out << bp->binding()->name() << "_"
-        << bp->binding()->id() << "_" << identifier_from_string(bp->name());
-    break;
-  }
   case type_time:
     out << "$time";
     break;
-  default: {
-    auto name = node->resolve_name();
-    out << identifier_from_string(name) << "_" << node->id();
+  default:
+    node->unique_name(out);
     break;
-  }
   }
 }
 
@@ -1045,6 +1031,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline
     break;
   default:
     print_node_name(out, node);
+    break;
   }
 }
 
@@ -1144,9 +1131,9 @@ std::function<bool (udf_vostream& out, context*, std::unordered_set<uint32_t>&)>
                               context* ctx,
                               std::unordered_set<uint32_t>& visited) {
   bool changed = false;
-  for (auto node : ctx->bindings()) {
-    auto binding = reinterpret_cast<bindimpl*>(node);
-    if (print_udf_dependencies(out, binding->module(), visited))
+  for (auto node : ctx->modules()) {
+    auto module = reinterpret_cast<moduleimpl*>(node);
+    if (print_udf_dependencies(out, module->target(), visited))
       changed = true;
   }
 
@@ -1171,7 +1158,7 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device_base& device) {
   std::unordered_set<uint32_t> udf_visited;
 
   auto ctx = device.impl()->ctx();
-  if (ctx->bindings().size() 
+  if (ctx->modules().size() 
    && (platform::self().cflags() & cflags::codegen_merged) != 0) {
     auto merged_ctx = new context(ctx->name());
     compiler compiler(merged_ctx);

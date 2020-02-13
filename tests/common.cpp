@@ -83,6 +83,37 @@ RetCheck& RetCheck::operator&=(const sloc_arg<bool>& value) {
   return *this;
 }
 
+bool TESTG(const std::function<ch_bool ()>& test,
+           ch_tick cycles,
+           const ch::internal::source_location& sloc) {
+  if (!begin_test(sloc))
+    return true;
+
+  bool ret = true;
+
+  auto callback = [&](){  
+    ch_device<TestRunner> device(test);
+    ch_simulator sim(device);  
+
+    auto ticks = (0 == cycles) ? 1 : (cycles * 2);  
+    auto steps = (0 == cycles) ? 1 : 2;    
+
+    sim.run([&](ch_tick t)->bool {
+      ret &= (cycles != 0 && t == 0) || static_cast<bool>(device.io.out);
+    #ifndef NDEBUG
+      if (!ret) {
+        std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+      }
+    #endif
+      return (t < ticks);
+    }, steps);
+  };
+
+  CHECK_THROWS_AS(callback(), std::domain_error);  
+  
+  return end_test(ret);;
+}
+
 bool TEST(const std::function<ch_bool ()>& test,
           ch_tick cycles,
           const ch::internal::source_location& sloc) {

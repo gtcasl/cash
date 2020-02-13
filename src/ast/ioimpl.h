@@ -5,7 +5,7 @@
 namespace ch {
 namespace internal {
 
-class bindportimpl;
+class moduleportimpl;
 using io_value_t = smart_ptr<sdata_type>;
 
 class ioimpl : public lnodeimpl {
@@ -50,16 +50,16 @@ public:
 
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
-  bool has_bindport() const {
-    return !bindports_.empty();
+  bool has_bindings() const {
+    return !bindings_.empty();
   }
 
-  void add_bindport(bindportimpl* bindport) {
-    bindports_.push_back(bindport);
+  void bind(moduleportimpl* port) {
+    bindings_.push_back(port);
   }
 
-  auto bindports() const {
-    return bindports_;
+  auto bindings() const {
+    return bindings_;
   }
 
   void print(std::ostream& out) const override;
@@ -74,7 +74,7 @@ protected:
 
   ~inputimpl() override;
 
-  std::vector<bindportimpl*> bindports_;
+  std::vector<moduleportimpl*> bindings_;
 
   friend class context;
 };

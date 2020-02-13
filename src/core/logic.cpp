@@ -20,7 +20,7 @@ logic_buffer::logic_buffer(uint32_t size,
       src.impl(),
       src_offset,
       size,
-      ((!src.name().empty() && !name.empty()) ? (src.name() + '.' + name) : name),
+      ((!src.name().empty() && !name.empty()) ? (src.name() + '.' + name) : ""),
       sloc))
 {}
 
@@ -60,7 +60,7 @@ void logic_buffer::ensure_proxy() const {
   auto impl = impl_;
   if (type_proxy == impl->type())
     return;
-  auto proxy = ctx_curr()->create_node<proxyimpl>(impl->size(), "_proxy", impl->sloc());
+  auto proxy = ctx_curr()->create_node<proxyimpl>(impl->size(), "", impl->sloc());
   impl->replace_uses(proxy);
   proxy->write(0, impl, 0, impl->size(), impl->sloc());
 }

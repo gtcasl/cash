@@ -1,4 +1,24 @@
+class init_getter {
+  public:
+    init_getter(const std::initializer_list<T>& values) {
+      CH_CHECK(values.size() > 0, "invalid size");
+      auto it = values.begin();      
+      for (std::size_t i = 0, S = values.size(); i < N; ++i) {
+        if (i < S) {
+          values_[i] = &*it++;
+        } else {
+          values_[i] = values_[S-1];
+        }
+      }
+    }
 
+    const T& get(std::size_t index) const {
+      return *values_[index];
+    }
+
+  private:
+    std::array<const T*, N> values_;
+  };
 
 std::function<bool (proxyimpl*, uint32_t, uint32_t)>
     is_nested_constant = [&](proxyimpl* proxy, uint32_t start, uint32_t end)->bool {

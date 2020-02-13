@@ -3,7 +3,7 @@
 #include "context.h"
 #include "deviceimpl.h"
 #include "compile.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "litimpl.h"
 #include "cdimpl.h"
 #include "regimpl.h"
@@ -37,13 +37,13 @@ firrtlwriter::~firrtlwriter() {}
 void firrtlwriter::print(std::ostream& out,
                          std::unordered_set<std::string_view>& visited) {
   // print dependent modules
-  for (auto node : ctx_->bindings()) {
-    auto binding = reinterpret_cast<bindimpl*>(node);
+  for (auto node : ctx_->modules()) {
+    auto module = reinterpret_cast<moduleimpl*>(node);
     // ensure single instantiation
     if (visited.count(ctx_->name()))
       continue;
     visited.insert(ctx_->name());
-    firrtlwriter child_module(binding->module());
+    firrtlwriter child_module(module->target());
     child_module.print(out, visited);
     out << std::endl;
   }
@@ -129,14 +129,14 @@ void firrtlwriter::print_footer(std::ostream& out) {
   }
 }
 
-bool firrtlwriter::print_binding(std::ostream& out, bindimpl* node) {
-  auto module = node->module();
+bool firrtlwriter::print_module(std::ostream& out, moduleimpl* node) {
+  auto target = node->target();
   out << "inst ";
   this->print_name(out, node);
   out << " of ";
-  out << module->name() << std::endl;
+  out << target->name() << std::endl;
   for (auto& input : node->inputs()) {
-    auto b = reinterpret_cast<bindportimpl*>(input.impl());
+    auto b = reinterpret_cast<moduleportimpl*>(input.impl());
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
     this->print_name(out, node);
     out << '.' << p->name() << " <= ";
@@ -144,7 +144,7 @@ bool firrtlwriter::print_binding(std::ostream& out, bindimpl* node) {
     out << std::endl;
   }
   for (auto& output : node->outputs()) {
-    auto b = reinterpret_cast<bindportimpl*>(output.impl());
+    auto b = reinterpret_cast<moduleportimpl*>(output.impl());
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
     this->print_name(out, b);
     out << " <= ";
@@ -154,9 +154,9 @@ bool firrtlwriter::print_binding(std::ostream& out, bindimpl* node) {
   return true;
 }
 
-bool firrtlwriter::print_bindport(std::ostream& out, bindportimpl* node) {
+bool firrtlwriter::print_modport(std::ostream& out, moduleportimpl* node) {
   // outputs are sourced via binding already
-  if (node->type() == type_bindout)
+  if (node->type() == type_modpout)
     return false;
   this->print_name(out, node);
   out << " <= ";
@@ -188,8 +188,8 @@ bool firrtlwriter::print_decl(std::ostream& out,
       return false;
     [[fallthrough]];
   case type_proxy:
-  case type_bindin:
-  case type_bindout:
+  case type_modpin:
+  case type_modpout:
   case type_op:
   case type_sel:
   case type_reg:
@@ -206,7 +206,7 @@ bool firrtlwriter::print_decl(std::ostream& out,
     out << std::endl;
     return true;
   }
-  case type_bind:
+  case type_module:
   case type_input:
   case type_output:
   case type_cd:
@@ -239,11 +239,11 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
     return this->print_reg(out, reinterpret_cast<regimpl*>(node));
   case type_mem:
     return this->print_mem(out, reinterpret_cast<memimpl*>(node));
-  case type_bind:
-    return this->print_binding(out, reinterpret_cast<bindimpl*>(node));
-  case type_bindin:
-  case type_bindout:
-    return this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
+  case type_module:
+    return this->print_module(out, reinterpret_cast<moduleimpl*>(node));
+  case type_modpin:
+  case type_modpout:
+    return this->print_modport(out, reinterpret_cast<moduleportimpl*>(node));
   default:
     assert(false);
   case type_input:
@@ -670,45 +670,39 @@ void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
 }
 
 void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline) {
-  //--
-  auto print_unique_name = [&](lnodeimpl* node) {
-    auto name = node->resolve_name();
-    out << identifier_from_string(name) << "_" << node->id();
-  };
-
   auto type = node->type();
   switch (type) {
   case type_input:
   case type_output:
     out << node->name();
     break;
-  case type_proxy:
-    print_unique_name(node);
-    break;
   case type_lit:
     if (!noinline && is_inline_literal(node)) {
       auto& value = reinterpret_cast<litimpl*>(node)->value();
       print_value(out, value, true);
     } else {
-      print_unique_name(node);
+      node->unique_name(out);
     }
     break;
+  case type_proxy:
   case type_sel:
   case type_op:
   case type_reg:
   case type_mem:
-  case type_bind:
-    print_unique_name(node);
+  case type_module:
+  case type_modpin:
+  case type_modpout:
+    node->unique_name(out);
     break;
   case type_marport:
   case type_msrport:
   case type_mwport: {
     auto port = reinterpret_cast<memportimpl*>(node);
     auto mem = port->mem();
-    this->print_name(out, mem);
+    mem->unique_name(out);
     if (mem->is_logic_rom()) {
       out << "[";
-      print_unique_name(port->addr().impl());
+      port->addr().impl()->unique_name(out);
       out << "]";
     } else {
       auto port_index = mem->port_index(port);
@@ -724,12 +718,6 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool noinline)
         out << ".r" << port_index << ".data";
       }
     }
-  } break;
-  case type_bindin:
-  case type_bindout: {
-    auto bindport = reinterpret_cast<bindportimpl*>(node);
-    print_name(out, bindport->binding());
-    out << "_" << bindport->ioport().name();
   } break;
   default:
     assert(false);
@@ -749,8 +737,8 @@ void firrtlwriter::print_type(std::ostream& out, lnodeimpl* node) {
   case type_proxy:
   case type_sel:
   case type_op:
-  case type_bindin:
-  case type_bindout:
+  case type_modpin:
+  case type_modpout:
   case type_marport:
   case type_msrport:
   case type_mwport:
@@ -818,9 +806,9 @@ void firrtlwriter::print_dtype(std::ostream& out, lnodeimpl* node) {
       }
     }
   } break;
-  case type_bindin:
-  case type_bindout: {
-    auto b = reinterpret_cast<bindportimpl*>(node);
+  case type_modpin:
+  case type_modpout: {
+    auto b = reinterpret_cast<moduleportimpl*>(node);
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
     if (p->type() == type_input
      && "clk" == reinterpret_cast<inputimpl*>(p)->name()) {
@@ -872,7 +860,7 @@ void ch::internal::ch_toFIRRTL(std::ostream& out, const device_base& device) {
   std::unordered_set<std::string_view> visited;
   
   auto ctx = device.impl()->ctx();
-  if (ctx->bindings().size()
+  if (ctx->modules().size()
    && (platform::self().cflags() & cflags::codegen_merged) != 0) {
     auto merged_ctx = new context(ctx->name());
     compiler compiler(merged_ctx);

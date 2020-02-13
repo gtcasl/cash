@@ -18,17 +18,23 @@ public:
   Object(const char* name = __builtin_VARNAME()) 
     : data_(0)
     , name_(name) 
-  {}  
+  {
+    std::cout << name_ << std::endl;
+  }  
 
   Object(const T& data, const char* name = __builtin_VARNAME()) 
     : data_(data)
     , name_(name)
-  {}
+  {
+    std::cout << name_ << std::endl;
+  }
 
   Object(const Object& other, const char* name = __builtin_VARNAME()) 
     : data_(other.data_)
     , name_(name)
-  {}
+  {
+    std::cout << name_ << std::endl;
+  }
 
   auto& name() const {
     return name_;
@@ -87,17 +93,23 @@ public:
   ObjectX(SRC_INFO) 
     : data_(0)
     , sinfo_(sinfo)
-  {}
+  {
+    std::cout << sinfo_.name() << std::endl;
+  }
 
   ObjectX(T data, SRC_INFO) 
     : data_(data)
     , sinfo_(sinfo)
-  {}
+  {
+    std::cout << sinfo_.name() << std::endl;
+  }
 
   ObjectX(const ObjectX& other, SRC_INFO) 
     : data_(other.data_)
     , sinfo_(sinfo)
-  {}    
+  {
+    std::cout << sinfo_.name() << std::endl;
+  }    
 
   ObjectX& operator=(const ObjectX& other) {
     data_ = other.data_;    
@@ -152,8 +164,8 @@ void program1() {
   Object<int> obj2;       
   ObjectX<int> obj3;
   Object2<int> obj4;
-  std::cout << "program1=" << obj0.name() << ", " << obj1.name() << ", " << obj2.name() << ", " 
-            << obj3.name() << ", " << obj4.obj_data.name() << ", " << obj4.qq.name() << std::endl;
+  /*std::cout << "program1=" << obj0.name() << ", " << obj1.name() << ", " << obj2.name() << ", " 
+            << obj3.name() << ", " << obj4.obj_data.name() << ", " << obj4.qq.name() << std::endl;*/
 }
 
 template <typename T>
@@ -166,8 +178,9 @@ void program2() {
   auto obj10 = fooX<T>(10);
   auto obj11 = obj0 + obj7;
   auto obj12 = obj1 + obj8;
-  std::cout << "program2=" << qq[1].name() << ", " << obj5.name() << ", " << obj6.name() << ", " << obj7.name() << ", " 
-            << obj8.name() << ", " << obj9.name() << ", " << obj10.name() << ", " << obj11.name() << ", " << obj12.name() << std::endl;
+  auto w = std::initializer_list<Object<int>>{0, 1, 2};
+  /*std::cout << "program2=" << qq[1].name() << ", " << obj5.name() << ", " << obj6.name() << ", " << obj7.name() << ", " 
+            << obj8.name() << ", " << obj9.name() << ", " << obj10.name() << ", " << obj11.name() << ", " << obj12.name() << std::endl;*/
 }
 
 int main() {

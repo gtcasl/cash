@@ -1,6 +1,6 @@
 #include "ioport.h"
 #include "ioimpl.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "proxyimpl.h"
 #include "context.h"
 
@@ -45,8 +45,8 @@ lnodeimpl* inputimpl::clone(context* ctx, const clone_map&) const {
 void inputimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
   out << "(" << name_;
-  for (auto bindport : bindports_) {
-    out << ", $" << bindport->id();
+  for (auto port : bindings_) {
+    out << ", $" << port->id();
   }
   out << ")";
 }

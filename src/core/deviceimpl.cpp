@@ -10,7 +10,8 @@ using namespace ch::internal;
 deviceimpl::deviceimpl(const std::type_index& signature,
                        bool is_pod,
                        const std::string& name)
-  : old_ctx_(nullptr) {
+  : old_ctx_(nullptr)
+  , is_opened_(false) {
   auto ret = ctx_create(signature, is_pod, name);
   ctx_ = ret.first;
   instance_ = ret.second;
@@ -18,6 +19,9 @@ deviceimpl::deviceimpl(const std::type_index& signature,
 }
 
 deviceimpl::~deviceimpl() {
+  if (is_opened_) {
+    this->end("", source_location());
+  }
   ctx_->release();  
 }
 
@@ -29,6 +33,7 @@ std::string deviceimpl::name() const {
 }
 
 bool deviceimpl::begin() {
+  is_opened_ = true;
   old_ctx_ = ctx_swap(ctx_);
   return (instance_ != 0);
 }
@@ -47,6 +52,7 @@ void deviceimpl::end(const std::string& name, const source_location& sloc) {
   if (old_ctx_) {
     old_ctx_->create_binding(ctx_, name, sloc);
   }
+  is_opened_ = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

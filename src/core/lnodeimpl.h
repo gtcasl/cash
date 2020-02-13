@@ -19,9 +19,9 @@
   m(marport) \
   m(msrport) \
   m(mwport) \
-  m(bind) \
-  m(bindin) \
-  m(bindout) \
+  m(module) \
+  m(modpin) \
+  m(modpout) \
   m(tap) \
   m(bypass) \
   m(time) \
@@ -125,7 +125,7 @@ public:
 
   void remove_user(lnode* user);
 
-  std::string resolve_name() const;
+  void unique_name(std::ostream& out, bool identifier = true) const;
 
   virtual void print(std::ostream& out) const;
 

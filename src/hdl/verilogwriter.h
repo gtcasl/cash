@@ -14,8 +14,8 @@ class opimpl;
 class selectimpl;
 class regimpl;
 class memimpl;
-class bindimpl;
-class bindportimpl;
+class moduleimpl;
+class moduleportimpl;
 class ioimpl;
 class cdimpl;
 class udfimpl;
@@ -50,9 +50,9 @@ public:
 
   void print_port(std::ostream& out, ioimpl* node);
 
-  bool print_binding(std::ostream& out, bindimpl* node);
+  bool print_module(std::ostream& out, moduleimpl* node);
 
-  bool print_bindport(std::ostream& out, bindportimpl* node);
+  bool print_modport(std::ostream& out, moduleportimpl* node);
 
   bool print_logic(std::ostream& out, lnodeimpl* node);
 

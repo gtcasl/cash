@@ -35,6 +35,7 @@ protected:
 
   context* ctx_;
   context* old_ctx_;
+  bool is_opened_;
   uint32_t instance_;
 };
 

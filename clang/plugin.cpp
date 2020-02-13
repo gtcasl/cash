@@ -178,7 +178,7 @@ public:
       CH_DBG("@@ field_name=" << member->getName() << "\n");
       
       auto s = updates_.size();
-      this->processArgs(init, member->getASTContext());
+      this->parseAST(init, member->getASTContext());
       auto n = updates_.size();
       if (s != n) {
         for (int i = s; i < n; ++i) {
@@ -206,7 +206,7 @@ public:
     CH_DBG("@@ decl_name=" << VD->getName() << "\n");
     
     auto s = updates_.size();
-    this->processArgs(init, VD->getASTContext());
+    this->parseAST(init, VD->getASTContext());
     auto e = updates_.size();
     if (s != e) {
       for (int i = s; i < e; ++i) {
@@ -255,7 +255,7 @@ public:
 
 private:
 
-  void processArgs(clang::Expr *init, clang::ASTContext &context) {
+  void parseAST(clang::Expr *init, clang::ASTContext &context) {
 
     if (auto EWC = llvm::dyn_cast<clang::ExprWithCleanups>(init)) {
       init = EWC->getSubExpr();

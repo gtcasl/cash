@@ -1,5 +1,5 @@
 #include "simref.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "litimpl.h"
 #include "cdimpl.h"
 #include "regimpl.h"

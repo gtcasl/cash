@@ -15,8 +15,41 @@ public:
 
 protected:
 
+  struct arg_ctor_t {
+    explicit arg_ctor_t() = default;
+  };
+
+  struct arg_in_place_t {
+    explicit arg_in_place_t() = default;
+  };
+
+  struct arg_tuple_t {
+    explicit arg_tuple_t() = default;
+  };
+
+  static constexpr arg_ctor_t     arg_ctor{};
+  static constexpr arg_in_place_t arg_in_place{};
+  static constexpr arg_tuple_t    arg_tuple{};
+
   template <typename... Us>
-  vec_base(Us&&... values) : base{std::forward<Us>(values)...} {}
+  vec_base(arg_ctor_t, Us&&... values) 
+    : base{T(std::forward<Us>(values))...}
+  {}
+
+  template <typename... Us>
+  vec_base(arg_in_place_t, Us&&... values) 
+    : base{std::forward<Us>(values)...}
+  {}
+
+  template <typename... Us>
+  vec_base(arg_tuple_t, Us&&... values) 
+    : base{std::make_from_tuple<T>(values)...}
+  {}
+
+  template <typename... Us>
+  vec_base(const source_location& sloc, Us&&... values) 
+    : base{T(std::forward<Us>(values), sloc)...} 
+  {}
 
   vec_base(const vec_base& other) : base(other) {}
 
@@ -185,10 +218,11 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>)
-    : base(T{make_logic_buffer(ch_width_v<T>, 
+    : base(base::arg_ctor, 
+           make_logic_buffer(ch_width_v<T>, 
                              buffer, 
                              Is * ch_width_v<T>, 
-                             source_info(buffer.sloc(), stringf("%d", Is)))}...)
+                             source_info(buffer.sloc(), stringf("%d", Is)))...)
   {}
 
   const logic_buffer& __buffer() const {
@@ -351,7 +385,11 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const system_buffer& buffer, std::index_sequence<Is...>)
-    : base(T{make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))}...)
+    : base(base::arg_ctor, 
+           make_system_buffer(ch_width_v<T>, 
+                              buffer, 
+                              Is * ch_width_v<T>, 
+                              stringf("%d", Is))...)
   {}
 
   const system_buffer& __buffer() const {
@@ -419,17 +457,17 @@ protected:
 
   template <std::size_t... Is>
   ch_vec(const std::string& name, const source_location& sloc, std::index_sequence<Is...>)
-    : base(T{stringf("%s_%d", name.c_str(), Is), sloc}...)
+    : base(sloc, stringf("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t... Is>
   ch_vec(const vec_base<U, N>& other, const source_location& sloc, std::index_sequence<Is...>)
-    : base(T{other.at(Is), sloc}...)
+    : base(sloc, other.at(Is)...)
   {}
   
-  template <typename U, std::size_t... Is>
-  ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(T{other.at(Is)}...)
+  template <std::size_t... Is>
+  ch_vec(const ch_vec& other, std::index_sequence<Is...>)
+    : base(base::arg_in_place, other.at(Is)...)
   {}
 
   friend ch_ostream& operator<<(ch_ostream& out, const ch_vec& in) {
@@ -487,12 +525,17 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const std::string& name, std::index_sequence<Is...>)
-    : base(T{stringf("%s_%d", name.c_str(), Is)}...)
+    : base(base::arg_ctor, stringf("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>
   ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(T{other.at(Is)}...)
+    : base(base::arg_ctor, other.at(Is)...)
+  {}
+
+   template <std::size_t...Is>
+  ch_vec(const ch_vec& other, std::index_sequence<Is...>)
+    : base(base::arg_in_place, other.at(Is)...)
   {}
 
   friend std::ostream& operator<<(std::ostream& out, const ch_vec& in) {
@@ -548,10 +591,6 @@ CH_VA_ARGS_MAP(CH_VEC_GEN)
 #undef CH_VEC_GEN_SINFO
 #undef CH_VEC_GEN
 
-  ch_vec(const std::initializer_list<T>& values, CH_SRC_INFO)
-    : ch_vec(srcinfo, init_getter<T>(values), std::make_index_sequence<N>()) 
-  {}
-
   ch_vec(const ch_vec& other)
     : ch_vec(other, std::make_index_sequence<N>())
   {}
@@ -567,55 +606,22 @@ protected:
                        std::get<std::min(I, std::tuple_size_v<Args> - 1)>(args));
   }
 
-  template <typename U>
-  class init_getter {
-  public:
-    init_getter(const std::initializer_list<U>& values) {
-      CH_CHECK(values.size() > 0, "invalid size");
-      auto it = values.begin();      
-      for (std::size_t i = 0, S = values.size(); i < N; ++i) {
-        if (i < S) {
-          values_[i] = &*it++;
-        } else {
-          values_[i] = values_[S-1];
-        }
-      }
-    }
-
-    const U& get(std::size_t index) const {
-      return *values_[index];
-    }
-
-  private:
-    std::array<const U*, N> values_;
-  };
-
   template <std::size_t... Is>
   ch_vec(const source_info& srcinfo, std::index_sequence<Is...>)
-    : base(T{source_info(srcinfo.sloc(), stringf("%s_%d", srcinfo.name().c_str(), Is))}...)
+    : base(base::arg_ctor, source_info(srcinfo.sloc(), stringf("%s_%d", srcinfo.name().c_str(), Is))...)
   {}
 
   template <typename Args, std::size_t... Is>
   ch_vec(const source_info& srcinfo, const Args& args, std::index_sequence<Is...>)
-    : base(T{get_element<Args, Is>(args), 
-             source_info(srcinfo.sloc(), stringf("%s_%d", srcinfo.name().c_str(), Is))}...)
+    : base(base::arg_tuple, std::forward_as_tuple(get_element<Args, Is>(args), 
+             source_info(srcinfo.sloc(), stringf("%s_%d", srcinfo.name().c_str(), Is)))...)
   {}
 
-  template <typename U, std::size_t... Is>
-  ch_vec(const source_info& srcinfo, const init_getter<U>& getter, std::index_sequence<Is...>)
-    : base(getter.get(Is)...)
-  {
-    CH_UNUSED(srcinfo);
-  }
-
-  template <typename U, std::size_t... Is>
-  ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(T{other.at(Is)}...)
+  template <std::size_t... Is>
+  ch_vec(const ch_vec& other, std::index_sequence<Is...>)
+    : base(base::arg_in_place, other.at(Is)...)
   {}
 };
-
-template <class T, class... Us>
-ch_vec(T, Us...) -> ch_vec<T, 1 + sizeof...(Us)>;
 
 }
 }

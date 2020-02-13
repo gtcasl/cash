@@ -1,7 +1,7 @@
 #include "tracerimpl.h"
 #include "tracer.h"
 #include "ioimpl.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "context.h"
 #include "verilogwriter.h"
 
@@ -37,7 +37,7 @@ tracerimpl::tracerimpl(const std::vector<device_base>& devices)
   , trace_head_(nullptr)
   , trace_tail_(nullptr)
   , num_traces_(0)
-  , is_single_context_(1 == contexts_.size() && 0 == contexts_.back()->bindings().size()) {
+  , is_single_context_(1 == contexts_.size() && 0 == contexts_.back()->modules().size()) {
   if ((platform::self().cflags() & cflags::verbose_tracing) != 0) {
     verbose_tracing_ = true;
   }

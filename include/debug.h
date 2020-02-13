@@ -92,14 +92,14 @@ void ch_print(const sloc_arg<std::string>& format, Args&&... args) {
 #endif
 }
 
-/*template <typename... Args>
+template <typename... Args>
 void ch_print(const sloc_arg<const char*>& format, Args&&... args) {
 #ifndef NDEBUG  
   detail::createPrintNode(format.data, format.sloc, std::forward<Args>(args)...);
 #else
   CH_UNUSED(format, args...);
 #endif
-}*/
+}
 
 template <typename... Args>
 void ch_println(const sloc_arg<std::string>& format, Args&&... args) {
@@ -110,14 +110,14 @@ void ch_println(const sloc_arg<std::string>& format, Args&&... args) {
 #endif
 }
 
-/*template <typename... Args>
+template <typename... Args>
 void ch_println(const sloc_arg<const char*>& format, Args&&... args) {
 #ifndef NDEBUG
   detail::createPrintNode(std::string(format.data) + "\n", format.sloc, std::forward<Args>(args)...);
 #else
   CH_UNUSED(format, args...);
 #endif
-}*/
+}
 
 // assert function
 

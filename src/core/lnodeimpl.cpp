@@ -1,6 +1,7 @@
 #include "lnodeimpl.h"
 #include "opimpl.h"
 #include "proxyimpl.h"
+#include "moduleimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -150,16 +151,37 @@ void lnodeimpl::replace_uses(lnodeimpl* node) {
   users_ = nullptr;
 }
 
-std::string lnodeimpl::resolve_name() const {
-  if (name_.empty()) {    
-    if (type_ == type_op) {
-      return '_' + to_string(reinterpret_cast<const opimpl*>(this)->op());
-    } else {
-      return '_' + to_string(type_);
-    }
-  } else {
-    return name_;
+void lnodeimpl::unique_name(std::ostream& out, bool identifier) const {
+  switch (type_) {  
+  case type_input:
+  case type_output:
+  case type_tap:
+    out << identifier_from_string(name_);
+    break;
+  case type_modpin:
+  case type_modpout: {
+    auto modport = reinterpret_cast<const moduleportimpl*>(this);
+    modport->module()->unique_name(out);
+    out << "_" << identifier_from_string(name_);
+    break;
   }
+  default: {
+    if (name_.empty()) {   
+      out << '_';
+      if (type_ == type_op) {
+        out << to_string(reinterpret_cast<const opimpl*>(this)->op());
+      } else {
+        out << to_string(type_);
+      }
+    } else {
+      out << identifier_from_string(name_);
+    }
+    if (identifier) {
+      out << '_' << id_;
+    }
+    break;
+  }
+  }  
 }
 
 void lnodeimpl::print(std::ostream& out) const {
@@ -174,8 +196,10 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {  
+  std::stringstream ss;
+  this->unique_name(ss);
   return stringf("'%s (%d)' in module '%s (%d)' (%s:%d:%d)",
-                 this->resolve_name().c_str(),
+                 ss.str().c_str(),
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),

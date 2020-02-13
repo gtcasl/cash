@@ -7,7 +7,7 @@
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "ioimpl.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "timeimpl.h"
 #include "context.h"
 #include "ordered_set.h"
@@ -439,7 +439,7 @@ bool compiler::dead_code_elimination() {
             ctx_->dump_cfg(std::cout);
           }
         #endif
-          throw std::domain_error(sstreamf() << "uninitialized variable " << node->debug_info());
+          throw std::domain_error(sstreamf() << "uninitialized variable " << src_impl->debug_info());
         }
       }
 
@@ -1506,7 +1506,7 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
 
   //--
   std::function<void (context*, clone_map&)>
-      visit = [&](context* curr, clone_map& map) {
+    visit = [&](context* curr, clone_map& map) {
     //--
     std::vector<std::unique_ptr<placeholder_node>> placeholders;
     std::unordered_map<uint32_t, std::vector<lnodeimpl**>> unresolved_nodes;
@@ -1563,18 +1563,18 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
     //--
     for (auto node : curr->nodes()) {
       switch (node->type()) {
-      case type_bind: {
+      case type_module: {
         clone_map sub_map;
-        auto bind = reinterpret_cast<bindimpl*>(node);        
-        auto module = bind->module();
+        auto module = reinterpret_cast<moduleimpl*>(node);        
+        auto target = module->target();
 
         // map module inputs to bind inputs
-        for (auto input : module->inputs()) {
+        for (auto input : target->inputs()) {
           bool found = false;
-          for (auto bp : reinterpret_cast<inputimpl*>(input)->bindports()) {
-            for (auto& bi : bind->inputs()) {
+          for (auto bp : reinterpret_cast<inputimpl*>(input)->bindings()) {
+            for (auto& bi : module->inputs()) {
               if (bp->id() == bi.id()) {
-                auto bi_impl = reinterpret_cast<bindportimpl*>(bi.impl());
+                auto bi_impl = reinterpret_cast<moduleportimpl*>(bi.impl());
                 ensure_placeholder(bi_impl, 0);
                 sub_map[input->id()] = map.at(bi_impl->src(0).id());
                 found = true;
@@ -1587,20 +1587,24 @@ void compiler::create_merged_context(context* ctx, bool verbose_tracing) {
           assert(found);
         }
 
-        node_path.push_back(stringf("%s_%d", bind->module()->name().c_str(), bind->id()));
-        visit(bind->module(), sub_map);
+        {
+          std::stringstream ss;
+          module->unique_name(ss);
+          node_path.push_back(ss.str());
+        }
+        visit(module->target(), sub_map);
         node_path.pop_back();
 
         // map bindoutputs to module outputs
-        for (auto& bo : bind->outputs()) {
-          auto bo_impl = reinterpret_cast<bindportimpl*>(bo.impl());
+        for (auto& bo : module->outputs()) {
+          auto bo_impl = reinterpret_cast<moduleportimpl*>(bo.impl());
           auto bo_port = bo_impl->ioport().impl();
           auto bo_value = sub_map.at(bo_port->src(0).id());
           update_map(bo.id(), bo_value);
         }
       } break;
-      case type_bindin:
-      case type_bindout:
+      case type_modpin:
+      case type_modpout:
         // skip
         break;
       case type_input: {
@@ -1804,7 +1808,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 
   CH_DBG(2, "build evaluation list for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
-  assert(0 == ctx_->bindings().size());
+  assert(0 == ctx_->modules().size());
 
   // move system time evaluation to the end
   auto sys_time = ctx_->sys_time();

@@ -15,8 +15,8 @@ class selectimpl;
 class regimpl;
 class ioimpl;
 class memimpl;
-class bindimpl;
-class bindportimpl;
+class moduleimpl;
+class moduleportimpl;
 class cdimpl;
 enum class ch_op;
 
@@ -41,9 +41,9 @@ public:
                   lnodeimpl* node,
                   std::unordered_set<uint32_t>& visited);
 
-  bool print_binding(std::ostream& out, bindimpl* node);
+  bool print_module(std::ostream& out, moduleimpl* node);
 
-  bool print_bindport(std::ostream& out, bindportimpl* node);
+  bool print_modport(std::ostream& out, moduleportimpl* node);
 
   bool print_logic(std::ostream& out, lnodeimpl* node);
 

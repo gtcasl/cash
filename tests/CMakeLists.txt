@@ -35,7 +35,7 @@ endif()
 file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # build executables
-add_executable(dogfood dogfood.cpp common.cpp)
+add_executable(dogfood dogfood.cpp)
 add_executable(testsuite ${SOURCE_FILES})
 
 # define dependent libraries

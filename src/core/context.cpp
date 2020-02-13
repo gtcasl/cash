@@ -4,7 +4,7 @@
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
-#include "bindimpl.h"
+#include "moduleimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
@@ -130,7 +130,7 @@ context::context(const std::string& name, context* parent)
   , branchconv_(nullptr)
   , nodes_(&mems_, &marports_, &msrports_, &mwports_, &regs_,
            &proxies_, &sels_, &ops_,
-           &inputs_, &outputs_, &cdomains_, &bindings_, &bindports_,
+           &inputs_, &outputs_, &cdomains_, &modules_, &modports_,
            &udfseqs_, &udfcombs_, &udfports_, &gtaps_, &btaps_, &taps_, &literals_)
   , snodes_(&regs_, &msrports_, &mwports_, &udfseqs_)
   , udfs_(&udfcombs_, &udfseqs_) {
@@ -210,12 +210,12 @@ void context::add_node(lnodeimpl* node) {
   case type_mwport:
     mwports_.push_back(node);
     break;
-  case type_bind:
-    bindings_.push_back(node);
+  case type_module:
+    modules_.push_back(node);
     break;
-  case type_bindin:
-  case type_bindout:
-    bindports_.push_back(node);
+  case type_modpin:
+  case type_modpout:
+    modports_.push_back(node);
     break;
   case type_tap:
     taps_.push_back(node);
@@ -295,12 +295,12 @@ void context::delete_node(lnodeimpl* node) {
   case type_mwport:
     mwports_.remove(node);
     break;
-  case type_bind:
-    bindings_.remove(node);
+  case type_module:
+    modules_.remove(node);
     break;
-  case type_bindin:
-  case type_bindout:
-    bindports_.remove(node);
+  case type_modpin:
+  case type_modpout:
+    modports_.remove(node);
     break;
   case type_tap:
     taps_.remove(node);
@@ -369,18 +369,17 @@ void context::reset_system_node(lnodeimpl* node) {
 }
 
 void context::create_binding(context* ctx, const std::string& name, const source_location& sloc) {
-  this->create_node<bindimpl>(ctx, name, sloc);
+  this->create_node<moduleimpl>(ctx, name, sloc);
 }
 
 inputimpl* context::create_input(uint32_t size,
                                  const std::string& name,
                                  const source_location& sloc) {
-#ifndef NDEBUG  
   for (auto node : inputs_) {
     auto input = reinterpret_cast<inputimpl*>(node);
-    assert(input->name() != name);
+    if (input->name() == name)
+      return input;
   }
-#endif
   auto value = smart_ptr<sdata_type>::make(size);
   return this->create_node<inputimpl>(size, value, name, sloc);
 }
@@ -388,10 +387,10 @@ inputimpl* context::create_input(uint32_t size,
 outputimpl* context::create_output(uint32_t size,
                                    const std::string& name,
                                    const source_location& sloc) {
-#ifndef NDEBUG  
-  assert(this->get_output(name) == nullptr);
-#endif
-  auto src = this->create_node<proxyimpl>(size, name, sloc);
+  auto output = this->get_output(name);
+  if (output)
+    return output;
+  auto src = this->create_node<proxyimpl>(size, '_' + name, sloc);
   auto value = smart_ptr<sdata_type>::make(size);
   return this->create_node<outputimpl>(size, src, value, name, sloc);
 }
@@ -513,8 +512,8 @@ lnodeimpl* context::get_predicate(const source_location& sloc) {
   return branchconv_->get_predicate(sloc);
 }
 
-bindimpl* context::current_binding() {
-  return reinterpret_cast<bindimpl*>(bindings_.back());
+moduleimpl* context::current_module() {
+  return reinterpret_cast<moduleimpl*>(modules_.back());
 }
 
 void context::register_tap(const lnode& target,
@@ -677,11 +676,11 @@ void context::dump_stats(std::ostream& out) {
         proxies_bits += node->size();
         ++num_proxies;
         break;
-      case type_bind:
-        calc_stats(reinterpret_cast<bindimpl*>(node)->module());
+      case type_module:
+        calc_stats(reinterpret_cast<moduleimpl*>(node)->target());
         break;
-      case type_bindin:
-      case type_bindout:
+      case type_modpin:
+      case type_modpout:
         break;
       default:
         other_bits += node->size();

@@ -21,7 +21,7 @@ class regimpl;
 class ioportimpl;
 class inputimpl;
 class outputimpl;
-class bindimpl;
+class moduleimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
@@ -134,8 +134,8 @@ public:
     return sys_time_;
   }
 
-  auto& bindings() const {
-    return bindings_;
+  auto& modules() const {
+    return modules_;
   }
 
   auto& cdomains() const {
@@ -238,7 +238,7 @@ public:
 
   //--
 
-  bindimpl* current_binding();
+  moduleimpl* current_module();
 
   //--
 
@@ -299,8 +299,8 @@ protected:
   node_list marports_;
   node_list msrports_;
   node_list mwports_;
-  node_list bindings_;
-  node_list bindports_;
+  node_list modules_;
+  node_list modports_;
   node_list taps_;
   node_list btaps_;
   node_list gtaps_;  

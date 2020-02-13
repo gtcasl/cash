@@ -6,7 +6,7 @@ set(JIT "LLVM" CACHE STRING "JIT library to use")
 set(JITs "LLVM;LIBJIT;OFF")
 set_property(CACHE JIT PROPERTY STRINGS ${JITs})
 
-option(PLUGIN "Enable clang plugin." OFF)
+option(PLUGIN "Enable clang plugin." ON)
 
 option(CODECOV "Enable code coverage." OFF)
 
@@ -67,7 +67,7 @@ set(SOURCE_FILES
   src/ast/memimpl.cpp
   src/ast/selectimpl.cpp
   src/ast/opimpl.cpp
-  src/ast/bindimpl.cpp
+  src/ast/moduleimpl.cpp
   src/ast/timeimpl.cpp
   src/ast/assertimpl.cpp
   src/ast/printimpl.cpp

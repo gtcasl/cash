@@ -384,7 +384,7 @@ lnodeimpl* branchconverter::get_predicate(const source_location& sloc) {
   // create predicate variable
   auto zero = ctx_->create_literal(sdata_type(1, 0));
   auto one = ctx_->create_literal(sdata_type(1, 1));  
-  pred = ctx_->create_node<proxyimpl>(zero, 0, 1, "_proxy", sloc);
+  pred = ctx_->create_node<proxyimpl>(zero, 0, 1, "", sloc);
 
   // remove from source init block
   auto it = cond_inits_.find(pred->id());

@@ -721,25 +721,21 @@ void bar() {
   {
     std::array<ch_reg<ch_bit4>, 2> a;
     std::array<ch_reg<ch_bit4>, 2> b{0, 0};
-    std::array<std::array<ch_reg<ch_bit4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
   }
 
   {
     std::array<ch_mem<ch_bit4, 4>, 2> a;
     std::array<ch_mem<ch_bit4, 4>, 2> b{0, 0};
-    std::array<std::array<ch_mem<ch_bit4, 4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
   }
 
   {
     ch_vec<ch_reg<ch_bit4>, 2> a;
     ch_vec<ch_reg<ch_bit4>, 2> b{0, 0};
-    ch_vec<ch_vec<ch_reg<ch_bit4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
   }
 
   {
     ch_vec<ch_mem<ch_bit4, 4>, 2> a;
     ch_vec<ch_mem<ch_bit4, 4>, 2> b{0, 0};
-    ch_vec<ch_vec<ch_mem<ch_bit4, 4>, 2>, 2> c{{ {0, 0}, {0, 0} }};
   }
 
   {

@@ -107,8 +107,7 @@ inline constexpr bool bool_constant_v = std::bool_constant<B>::value;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename To, typename... Froms>
-inline constexpr bool is_fold_constructible_v = 
-    std::conjunction_v<std::is_constructible<To, Froms>...>;
+inline constexpr bool is_fold_constructible_v = (std::is_constructible_v<To, Froms> && ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
