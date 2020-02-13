@@ -10,15 +10,16 @@ https://gtcasl.github.io/cash/
 
 Dependencies
 ------------
-Cash requires C++17 compiler to build with support for inline variables.
+Cash requires a C++17 compiler to build and works best with clang 9.0 to leverage its custom plugin for code reflection.
 
 Other dependencies include:
 
-  - [Clang] (https://www.llvm.org)
-  - [iVerilog] (http://iverilog.icarus.com/)
+  - [LLVM] (https://www.llvm.org)
+  - [LIBJIT] (https://www.gnu.org/software/libjit/)
   - [Catch] (https://github.com/catchorg/Catch2)
+  - [iVerilog] (http://iverilog.icarus.com/)
 
-Default Build Instructions (Ubuntu Bionic)
+Default Build Instructions (Ubuntu 18.04)
 ------------------------------------------
 
 IVerilog Install:
@@ -84,7 +85,7 @@ You must link the Cash library from its install location to your project
 
 Example
 -------
-A generic binary adder.
+A generic adder.
 
 ```C++
 #include <cash.h>

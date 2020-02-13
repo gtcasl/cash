@@ -8,15 +8,16 @@ Cash is a C++ embedded domain specific library (EDSL) for hardware design and si
 
 # Requirements
 
-Cash requires C++17 compiler to build with support for inline variables.
+Cash requires a C++17 compiler to build and works best with clang 9.0 to leverage its custom plugin for code reflection.
 
-It has been tested with GCC 7 and Clang 5.
+It has been tested with GCC 7 and Clang 9.
 
 Other dependencies include:
 
-  - [LLVM](https://www.llvm.org)
-  - [Catch](https://github.com/catchorg/Catch2)
+  - [LLVM] (https://www.llvm.org)
+  - [LIBJIT] (https://www.gnu.org/software/libjit/)
   - [iVerilog](http://iverilog.icarus.com/)
+  - [Catch](https://github.com/catchorg/Catch2)
 
 # Build Status
 
@@ -25,7 +26,7 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 [![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
 [![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
 
-# System Setup (Ubuntu Bionic)
+# System Setup (Ubuntu 18.04)
 
 Cash requires C++17 compiler to build with support for inline variables.
 
@@ -41,7 +42,7 @@ IVerilog Install:
     
 LLVM 9.0 Install:
 
-    $ sudo apt-get install llvm-9-dev
+    $ sudo apt-get install clang-9 libclang-9-dev
 
 # Installation
 
@@ -64,12 +65,11 @@ That's all!
 
 Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wiki).
 
-## Basic Example: A Generic Counter
+## Basic Example: A Generic binary Adder
 
 ```C++
 #include <cash.h>
-using namespace ch::logic;
-using namespace ch::system;
+using namespace ch::core;
 
 // hardware description
 template <unsigned N>
