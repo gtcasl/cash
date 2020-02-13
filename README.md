@@ -22,6 +22,10 @@ Other dependencies include:
 Default Build Instructions (Ubuntu 18.04)
 ------------------------------------------
 
+Build essentials Install:
+    
+    $ sudo build-essential zlib1g-dev
+
 IVerilog Install:
 
     $ sudo apt-get install iverilog

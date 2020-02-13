@@ -2,9 +2,11 @@
 layout: default
 ---
 
-# What is Cash?
+# What's Cash?
 
-Cash is a C++ embedded domain specific library (EDSL) for hardware design and simulation. It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. Cash enables developpers to describe and simulate their hardware modules from a single source program, leveraging the large C++ ecosystem.
+Cash is a C++ embedded domain specific library (EDSL) for hardware design and simulation. 
+It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. 
+Cash enables developpers to describe and simulate their hardware designs in a single source program, leveraging the large ecosystem of C++ development tools and libraries.
 
 # Requirements
 
@@ -28,6 +30,10 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 
 # System Setup (Ubuntu 18.04)
 
+Build essentials Install:
+    
+    $ sudo build-essential zlib1g-dev
+    
 IVerilog Install:
 
     $ sudo apt-get install iverilog
@@ -52,10 +58,6 @@ Optionally, you can also install Cash on your system:
     # make install
     
 That's all!
-
-# Documentation
-
-Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wiki).
 
 ## Basic Example: A Generic Adder
 
@@ -95,6 +97,10 @@ int main() {
   return 0;
 }
 ```
+# Documentation
+
+Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wiki).
+
 # Contributions
 
 Contributions are welcome, just email me at blaise.tine@gmail.com.
