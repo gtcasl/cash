@@ -1,10 +1,10 @@
 #pragma once
 
-#include <htl/queue.h>
-#include <htl/onehot.h>
-#include <htl/mux.h>
-#include <htl/xbar.h>
-#include <htl/arbiter.h>
+#include "queue.h"
+#include "onehot.h"
+#include "mux.h"
+#include "xbar.h"
+#include "arbiter.h"
 
 namespace ch {
 namespace htl {

@@ -1,5 +1,5 @@
-#include <htl/fixed.h>
 #include "common.h"
+#include <htl/fixed.h>
 
 using namespace ch::htl;
 

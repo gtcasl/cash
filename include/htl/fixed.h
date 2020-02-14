@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cash.h>
+#include "../core.h"
+#include "complex.h"
 #include <math.h>
 
 namespace ch {
@@ -307,6 +308,25 @@ protected:
 
   friend class ch::extension::logic_accessor;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <unsigned N, unsigned F>
+auto operator*(const ch_complex<ch_fixed<N, F>>& lhs, const ch_complex<ch_fixed<N, F>>& rhs) {
+  static constexpr unsigned K = N + F;
+  auto re = ch_shr<N>(ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.im.as_int(), rhs.im.as_int()), F);
+  auto im = ch_shr<N>(ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.re.as_int(), rhs.im.as_int()), F);
+  return ch_complex<ch_fixed<N, F>>(im, re);
+}
+
+template <unsigned N, unsigned F>
+auto operator/(const ch_complex<ch_fixed<N, F>>& lhs, const ch_complex<ch_fixed<N, F>>& rhs) {
+  static constexpr unsigned K = N + F;  
+  auto re = ch_shr<N>(ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.im.as_int(), rhs.im.as_int()), F);
+  auto im = ch_shr<N>(ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.re.as_int(), rhs.im.as_int()), F);
+  auto q  = ch_shr<N>(ch_mul<K>(rhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(rhs.im.as_int(), rhs.im.as_int()), F);
+  return ch_complex<ch_fixed<N, F>>(ch_slice<N>(ch_shl<N+F>(im, F) / q), ch_slice<N>(ch_shl<N+F>(re, F) / q));
+}
 
 }
 }

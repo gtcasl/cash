@@ -62,7 +62,7 @@ Optionally, you can also install Cash on your system:
 1. Create a file 'adder.cpp' that contains the code listing below.
 
 ```cpp
-#include <cash.h>
+#include <cash/core.h>
 using namespace ch::core;
 
 // hardware description
@@ -103,7 +103,7 @@ int main() {
 ```make
 CC = clang++-9
 CXXFLAGS += -std=c++17 -I$(CASH_HOME)/include -Wall -Wextra -pedantic
-LDFLAGS += -lcash -L$(CASH_HOME)/build/lib
+LDFLAGS += -lcash -L$(CASH_HOME)/lib
 
 all: adder.cpp
     $(CC) $(CXXFLAGS) $(LDFLAGS) adder.cpp -o adder

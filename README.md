@@ -92,7 +92,7 @@ Example
 A generic adder.
 
 ```C++
-#include <cash.h>
+#include <cash/core.h>
 
 using namespace ch::core;
 

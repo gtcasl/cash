@@ -3,7 +3,7 @@
 
 CXXFLAGS += -std=c++17 -O3 -DNDEBUG -I$(CASH_HOME)/include -Wall -Wextra -pedantic
 #CXXFLAGS += -std=c++17 -O0 -g -I$(CASH_HOME)/include -Wall -Wextra -pedantic
-LDFLAGS += -L$(CASH_HOME)/build/lib -lcash
+LDFLAGS += -L$(CASH_HOME)/lib -lcash
 
 SRCS = adder.cpp counter.cpp fastmul.cpp matmul.cpp fifo.cpp gcd.cpp vending.cpp sobel.cpp fft.cpp aes.cpp vectoradd.cpp
 

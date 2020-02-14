@@ -1,5 +1,5 @@
-#include <htl/queue.h>
 #include "common.h"
+#include <htl/queue.h>
 
 using namespace ch::htl;
 namespace {

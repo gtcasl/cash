@@ -1,5 +1,5 @@
-#include <htl/cache.h>
 #include "common.h"
+#include <htl/cache.h>
 
 using namespace ch::htl::cache;
 

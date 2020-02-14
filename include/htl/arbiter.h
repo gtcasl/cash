@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cash.h>
-#include <htl/decoupled.h>
-#include <htl/counter.h>
-#include <htl/xbar.h>
-#include <htl/onehot.h>
+#include "../core.h"
+#include "decoupled.h"
+#include "counter.h"
+#include "xbar.h"
+#include "onehot.h"
 
 namespace ch {
 namespace htl {

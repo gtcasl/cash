@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cash.h>
-#include <htl/queue.h>
+#include "../core.h"
+#include "queue.h"
 
 namespace ch {
 namespace htl {

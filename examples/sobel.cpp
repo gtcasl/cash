@@ -1,4 +1,4 @@
-#include <cash.h>
+#include <core.h>
 #include <htl/decoupled.h>
 #include <htl/counter.h>
 #include <htl/sdf.h>

@@ -1,4 +1,4 @@
-#include <cash.h>
+#include <cash/core.h>
 #include "../examples/common.h"
 
 using namespace ch::core;

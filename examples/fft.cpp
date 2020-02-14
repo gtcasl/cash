@@ -1,6 +1,6 @@
 #include <math.h>
 #include <complex>
-#include <cash.h>
+#include <core.h>
 #include <htl/counter.h>
 #include <htl/decoupled.h>
 #include <htl/complex.h>

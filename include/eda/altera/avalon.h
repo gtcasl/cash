@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cash.h>
-#include <htl/queue.h>
-#include <htl/decoupled.h>
+#include "../../core.h"
+#include "../../htl/queue.h"
+#include "../../htl/decoupled.h"
 
 namespace eda {
 namespace altera {

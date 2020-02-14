@@ -1,3 +1,4 @@
+#include "common.h"
 #include <htl/queue.h>
 #include <htl/onehot.h>
 #include <htl/mux.h>
@@ -5,7 +6,6 @@
 #include <htl/arbiter.h>
 #include <htl/fixed.h>
 #include <htl/complex.h>
-#include "common.h"
 #include <math.h>
 
 using namespace ch::logic;

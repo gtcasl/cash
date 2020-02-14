@@ -1,3 +1,4 @@
+#include "common.h"
 #include <htl/onehot.h>
 #include <htl/mux.h>
 #include <htl/xbar.h>
@@ -6,7 +7,6 @@
 #include <htl/counter.h>
 #include <htl/enc.h>
 #include <htl/queue.h>
-#include "common.h"
 
 using namespace ch::htl;
 

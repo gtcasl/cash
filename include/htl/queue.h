@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cash.h>
-#include <htl/decoupled.h>
-#include <htl/counter.h>
+#include "../core.h"
+#include "decoupled.h"
+#include "counter.h"
 
 namespace ch {
 namespace htl {

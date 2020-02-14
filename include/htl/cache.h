@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cash.h>
-#include <htl/decoupled.h>
-#include <htl/mux.h>
-#include <htl/enc.h>
+#include <cash/core.h>
+#include <cash/htl/decoupled.h>
+#include <cash/htl/mux.h>
+#include <cash/htl/enc.h>
 
 namespace ch {
 namespace htl {

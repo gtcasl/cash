@@ -1,6 +1,5 @@
-#include <functional>
-#include "cash.h"
-#include "htl/decoupled.h"
+#include "common.h"
+#include <htl/decoupled.h>
 
 using namespace ch::logic;
 using namespace ch::system;

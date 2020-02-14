@@ -3,7 +3,7 @@
 #include <memory>
 #include <optional>
 #include <random>
-#include <eda/altera/avalon.h>
+#include "avalon.h"
 
 namespace eda {
 namespace altera {

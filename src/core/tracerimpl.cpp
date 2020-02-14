@@ -692,7 +692,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
       prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
 
   out << "#pragma once" << std::endl;
-  out << "#include <eda/verilator/vl_simulator.h>" << std::endl;
+  out << "#include <cash/eda/verilator/vl_simulator.h>" << std::endl;
   out << "#define CHECK(x) do { if (!(x)) { std::cout << \"FAILED: \" << #x << std::endl; } } while (false)" << std::endl;
   out << "class vl_testbench {" << std::endl;
   out << "public:" << std::endl;
@@ -890,7 +890,7 @@ void tracerimpl::toSystemC(std::ofstream& out,
       prev_values(signals_.size(), std::make_pair<block_t*, uint32_t>(nullptr, 0));
 
   out << "#pragma once" << std::endl;
-  out << "#include <eda/verilator/sc_simulator.h>" << std::endl;
+  out << "#include <cash/eda/verilator/sc_simulator.h>" << std::endl;
   out << "#define CHECK(x) do { if (!(x)) { std::cout << \"FAILED: \" << #x << std::endl; } } while (false)" << std::endl;
   out << "class sc_testbench {" << std::endl;
   out << "public:" << std::endl;

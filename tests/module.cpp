@@ -1,5 +1,5 @@
 #include "common.h"
-#include "htl/decoupled.h"
+#include <htl/decoupled.h>
 
 using namespace ch::htl;
 
