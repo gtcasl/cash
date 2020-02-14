@@ -4,8 +4,8 @@ CXXFLAGS += -std=c++17 -g -I$(CASH_HOME)/include -Wall -Wextra -pedantic
 
 # Clang plugin flags
 ifeq (,$(wildcard $(CASH_HOME)/lib/libcashpp.so))
-CXX = clang++-9
-CXXFLAGS += -Xclang -load -Xclang $(CASH_HOME)/lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp
+	CXX = clang++-9
+	CXXFLAGS += -Xclang -load -Xclang $(CASH_HOME)/lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp
 endif
 
 LDFLAGS  += -lcash -L$(CASH_HOME)/lib
