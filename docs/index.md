@@ -12,8 +12,6 @@ Cash enables developpers to describe and simulate their hardware designs in a si
 
 Cash requires a C++17 compiler to build and works best with clang 9.0 to leverage its custom plugin for code reflection.
 
-It has been tested with GCC 7 and Clang 9.
-
 Other dependencies include:
 
   - [LLVM](https://www.llvm.org)
@@ -23,22 +21,22 @@ Other dependencies include:
 
 # Build Status
 
-The master branch has been added to [travis](https://travis-ci.org)'s continuous integration (CI) build process and [codecov](https://codecov.io)'s code coverage.
-
 [![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
 [![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
 
-# System Setup (Ubuntu 18.04)
+# System Setup
 
-Build essentials Install:
+### Ubuntu 18.04 (Bionic)
+
+Install Build Essentials:
     
     $ sudo build-essential zlib1g-dev
     
-IVerilog Install:
+Install IVerilog:
 
     $ sudo apt-get install iverilog
     
-LLVM 9.0 Install:
+Install LLVM 9.0:
 
     $ sudo apt-get install clang-9 libclang-9-dev
 
@@ -57,11 +55,13 @@ Optionally, you can also install Cash on your system:
 
     # make install
     
-That's all!
+# QuickStart Example
 
-## Basic Example: A Generic Adder
+#### Implementing a Generic Adder using Cash.
 
-```C++
+1. Create a file 'adder.cpp' that contains the code listing below.
+
+```cpp
 #include <cash.h>
 using namespace ch::core;
 
@@ -97,7 +97,49 @@ int main() {
   return 0;
 }
 ```
+
+2. Setup Makefile
+
+```make
+CC = clang++-9
+CXXFLAGS += -std=c++17 -I$(CASH_HOME)/include -Wall -Wextra -pedantic
+LDFLAGS += -lcash -L$(CASH_HOME)/build/lib
+
+all: adder.cpp
+    $(CC) $(CXXFLAGS) $(LDFLAGS) adder.cpp -o adder
+
+clean:
+    rm -rf adder
+```
+
+3. Build the Adder program
+
+    $ export CASH_HOME=build
+    $ clang++-9 -std=c++17 -I../include -lcash -L$CASH_HOME/build/lib -Xclang -load -Xclang lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp -Xclang -plugin-arg-cash-pp -Xclang debug -Xclang -plugin-arg-cash-pp -Xclang dump-ast ../examples/adder.cpp > test.log 2>&1
+
+4. XXX
+
 # Documentation
+
+## Data Types
+
+## Built-in Operators
+
+## Control Flow
+
+## Sequential Logic
+
+## User-Defined Function
+
+## High-Level Synthesis
+
+## Simulation
+
+## HDL Codegen
+
+## Examples
+
+## Test Suite
 
 Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wiki).
 

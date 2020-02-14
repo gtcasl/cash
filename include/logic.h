@@ -416,7 +416,7 @@ auto to_lnode(const T& obj, const source_info& srcinfo) {
 template <typename R, typename T>
 auto logic_op_cast(const T& obj, const source_info& srcinfo) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
-  if constexpr ((is_signed_v<T> != is_signed_v<R> || !is_resizable_v<R>)) {
+  if constexpr ((ch_signed_v<T> != ch_signed_v<R> || !is_resizable_v<R>)) {
     return R(obj, srcinfo);
   } else
   if constexpr (is_logic_type_v<T>) {
@@ -447,19 +447,19 @@ auto make_logic_op(const A& a, const source_info& srcinfo) {
 
 template <typename R, ch_op op, typename A>
 auto make_logic_op(const A& a, const source_info& srcinfo) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), srcinfo.name(), srcinfo.sloc());
+  auto node = createOpNode(op, ch_width_v<R>, ch_signed_v<R>, get_lnode(a), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<R>(node);
 }
 
 template <ch_op op, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
-  auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b), srcinfo.name(), srcinfo.sloc());
+  auto node = createOpNode(op, 1, ch_signed_v<A>, get_lnode(a), get_lnode(b), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<ch_bool>(node);
 }
 
 template <typename R, ch_op op, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_info& srcinfo) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b), srcinfo.name(), srcinfo.sloc());
+  auto node = createOpNode(op, ch_width_v<R>, ch_signed_v<R>, get_lnode(a), get_lnode(b), srcinfo.name(), srcinfo.sloc());
   return make_logic_type<R>(node);
 }
 

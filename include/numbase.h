@@ -147,7 +147,7 @@ protected:
   auto do_abs() const {
     auto& self = *reinterpret_cast<const T*>(this);
     T res;
-    if constexpr (is_signed_v<T>) {
+    if constexpr (ch_signed_v<T>) {
       res = self[ch_width_v<T>-1] ? -self : self;
     } else {
       res = self;
@@ -308,7 +308,7 @@ protected:
   auto do_abs(const source_info& srcinfo) const {
     auto& self = *reinterpret_cast<const T*>(this);
     T res;
-    if constexpr (is_signed_v<T>) {
+    if constexpr (ch_signed_v<T>) {
       res = ch_sel(self[ch_width_v<T>-1], -self, self, srcinfo);
     } else {
       res = self;

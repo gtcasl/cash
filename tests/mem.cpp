@@ -116,7 +116,7 @@ TEST_CASE("memory", "[memory]") {
   
   SECTION("mem", "[mem]") {
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_bit2 a;
       ch_bit4 d, q;
       ch_bool en;
@@ -147,7 +147,7 @@ TEST_CASE("memory", "[memory]") {
     }, 5);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_bit2 a;
       ch_uint4 d, q;
       ch_bool en;
@@ -178,7 +178,7 @@ TEST_CASE("memory", "[memory]") {
     }, 5);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_mem<Q_t, 2> mem;
       mem.write(0, Q_t(11_b, 01_b));
       auto x = mem.read(0).as_bit();
@@ -188,7 +188,7 @@ TEST_CASE("memory", "[memory]") {
     }, 2);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_mem<ch_bit32, 3> mem;
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
@@ -198,7 +198,7 @@ TEST_CASE("memory", "[memory]") {
     }, 2);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_mem<ch_bit<65>, 3> mem;
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
@@ -208,7 +208,7 @@ TEST_CASE("memory", "[memory]") {
     }, 2);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_mem<ch_bit<65>, 3, true> mem;
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
@@ -218,7 +218,7 @@ TEST_CASE("memory", "[memory]") {
     }, 3);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_mem<ch_bit<65>, 3, true> mem;
       ch_bool en(true);
       mem.write(1, 0x55);
@@ -229,7 +229,7 @@ TEST_CASE("memory", "[memory]") {
     }, 3);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_mem<ch_bit<33>, 3> mem;
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();

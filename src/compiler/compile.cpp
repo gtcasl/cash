@@ -155,7 +155,7 @@ void compiler::optimize() {
   // run optimization passes
   bool changed = true;
   if (ctx_->parent()
-   && (platform::self().cflags() & cflags::merged_only_opt) != 0) {
+   && (platform::self().cflags() & ch_flags::merged_only_opt) != 0) {
     changed = false;
   }
 
@@ -176,12 +176,12 @@ void compiler::optimize() {
 
 #ifndef NDEBUG
   // dump nodes
-  if (platform::self().cflags() & cflags::dump_cfg) {
+  if (platform::self().cflags() & ch_flags::dump_cfg) {
     ctx_->dump_cfg(std::cout);
   }
 
   // dump tap's CFG
-  if (platform::self().cflags() & cflags::debug_cfg) {
+  if (platform::self().cflags() & ch_flags::debug_cfg) {
     for (auto node : ctx_->taps()) {
       std::cout << "CFG dump for tap variable: " << node->name() << std::endl;
       ctx_->debug_cfg(node, std::cout);
@@ -435,7 +435,7 @@ bool compiler::dead_code_elimination() {
 
         if (!use_interval.empty()) {
         #ifndef NDEBUG
-          if (platform::self().cflags() & cflags::dump_cfg) {
+          if (platform::self().cflags() & ch_flags::dump_cfg) {
             ctx_->dump_cfg(std::cout);
           }
         #endif
@@ -495,7 +495,7 @@ bool compiler::dead_code_elimination() {
 }
 
 bool compiler::constant_folding() {
-  if (platform::self().cflags() & cflags::disable_cfo)
+  if (platform::self().cflags() & ch_flags::disable_cfo)
     return false;
 
   CH_DBG(3, "Begin Compiler::CFO\n");
@@ -1005,7 +1005,7 @@ bool compiler::constant_folding() {
 }
 
 bool compiler::subexpressions_elimination() {
-  if (platform::self().cflags() & cflags::disable_cse)
+  if (platform::self().cflags() & ch_flags::disable_cse)
     return false;
 
   CH_DBG(3, "Begin Compiler::CSE\n");
@@ -1073,7 +1073,7 @@ bool compiler::subexpressions_elimination() {
 }
 
 bool compiler::prune_identity_proxies() {
-  if (platform::self().cflags() & cflags::disable_pip)
+  if (platform::self().cflags() & ch_flags::disable_pip)
     return false;
 
   CH_DBG(3, "Begin Compiler::PIP\n");
@@ -1101,7 +1101,7 @@ bool compiler::prune_identity_proxies() {
 }
 
 bool compiler::proxies_coalescing() {
-  if (platform::self().cflags() & cflags::disable_pcx)
+  if (platform::self().cflags() & ch_flags::disable_pcx)
     return false;
 
   CH_DBG(3, "Begin Compiler::PCX\n");
@@ -1262,7 +1262,7 @@ bool compiler::proxies_coalescing() {
 }
 
 bool compiler::branch_coalescing() {
-  if (platform::self().cflags() & cflags::disable_bro)
+  if (platform::self().cflags() & ch_flags::disable_bro)
     return false;
 
   CH_DBG(3, "Begin Compiler::BRO\n");
@@ -1452,7 +1452,7 @@ bool compiler::branch_coalescing() {
 }
 
 bool compiler::register_promotion() {
-  if (platform::self().cflags() & cflags::disable_rpo)
+  if (platform::self().cflags() & ch_flags::disable_rpo)
     return false;
 
   CH_DBG(3, "Begin Compiler::RPO\n");
@@ -1768,7 +1768,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
           uninitialized_regs.insert(node);
         return true;
       }
-      if (platform::self().cflags() & cflags::dump_cfg) {
+      if (platform::self().cflags() & ch_flags::dump_cfg) {
         for (auto _node : eval_list) {
           std::cerr << _node->ctx()->id() << ": ";
           _node->print(std::cerr);
@@ -1878,7 +1878,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     dfs_visit(sys_time);
   }
 
-  if (platform::self().cflags() & cflags::dump_cfg) {
+  if (platform::self().cflags() & ch_flags::dump_cfg) {
     for (auto node : eval_list) {
       std::cout << node->ctx()->id() << ": ";
       node->print(std::cerr);
@@ -1888,7 +1888,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   }
 
   if (!uninitialized_regs.empty()
-   && (platform::self().cflags() & cflags::check_reg_init)) {
+   && (platform::self().cflags() & ch_flags::check_reg_init)) {
     for (auto node : uninitialized_regs) {
       fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
     }

@@ -150,7 +150,7 @@ TEST_CASE("misc", "[misc]") {
   
   SECTION("taps", "[tap]") {
     TESTX([]()->bool {
-      auto_cflags_enable dump_enable(cflags::dump_cfg | cflags::debug_cfg);
+      auto_cflags_enable dump_enable(ch_flags::dump_cfg | ch_flags::debug_cfg);
       ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device(
         [](auto lhs, auto rhs) {
           auto ret = (lhs + rhs) / 2;
@@ -173,7 +173,7 @@ TEST_CASE("misc", "[misc]") {
     });
 
     TESTX([]()->bool {
-      auto_cflags_enable dump_enable(cflags::dump_cfg | cflags::debug_cfg);
+      auto_cflags_enable dump_enable(ch_flags::dump_cfg | ch_flags::debug_cfg);
       ch_device<GenericModule2<ch_uint4, ch_uint4, ch_uint4>> device(
         [](auto lhs, auto rhs) {
           auto f = [](auto in) {
@@ -445,7 +445,7 @@ TEST_CASE("misc", "[misc]") {
     });
 
     TESTX([]()->bool {
-      auto_cflags_disable cg_merge(cflags::codegen_merged);
+      auto_cflags_disable cg_merge(ch_flags::codegen_merged);
       ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) {
           ch_vec<ch_module<Bypass<ch_int4>>, 2> bypass;
@@ -469,7 +469,7 @@ TEST_CASE("misc", "[misc]") {
     });
 
     TESTX([]()->bool {
-      auto_cflags_disable cg_merge(cflags::codegen_merged);
+      auto_cflags_disable cg_merge(ch_flags::codegen_merged);
       ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) {
           ch_vec<ch_module<Bypass<ch_int4>>, 2> bypass;
@@ -492,7 +492,7 @@ TEST_CASE("misc", "[misc]") {
     });
 
     TESTX([]()->bool {
-      auto_cflags_disable cfo_off(cflags::disable_cfo);
+      auto_cflags_disable cfo_off(ch_flags::disable_cfo);
       ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
         [](auto lhs, auto rhs) {
           ch_vec<ch_module<Bypass<ch_int4>>, 2> bypass;

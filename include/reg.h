@@ -50,7 +50,7 @@ template <typename T>
 class ch_reg_impl final : public T {
 public:  
   static_assert(is_logic_only_v<T>, "invalid type");
-  using traits = reg_traits<ch_width_v<T>, is_signed_v<T>, T, ch_system_t<T>>;
+  using traits = reg_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_system_t<T>>;
   using base = T;
 
   explicit ch_reg_impl(CH_SRC_INFO)

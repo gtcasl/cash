@@ -25,6 +25,7 @@
 #include "udf.h"
 #include "streams.h"
 #include "debug.h"
+#include "cflags.h"
 
 namespace ch {
 
@@ -54,6 +55,13 @@ namespace logic {
 
   using namespace ch::utility;
 
+  using ch::internal::ch_width_v;
+  using ch::internal::ch_signed_v;
+  using ch::internal::ch_direction_v;
+
+  using ch::internal::ch_system_t;
+  using ch::internal::ch_logic_t;
+
   //
   // data types
   //
@@ -79,15 +87,8 @@ namespace logic {
   using ch::internal::ch_mem;
 
   //
-  // utility types
+  // adapter types
   //
-
-  using ch::internal::ch_width_v;
-  using ch::internal::is_signed_v;
-  using ch::internal::ch_direction_v;
-
-  using ch::internal::ch_system_t;
-  using ch::internal::ch_logic_t;
 
   using ch::internal::ch_system_io;
   using ch::internal::ch_logic_io;
@@ -384,11 +385,15 @@ namespace system {
 
   using ch::internal::sdata_type;
 
+  using ch::internal::ch_flags;
+
   //
   // diagnosis functions
   //
 
   using ch::internal::ch_stats;
+  using ch::internal::ch_setflags;
+  using ch::internal::ch_getflags;
 
   //
   // codegen functions

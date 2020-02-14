@@ -164,7 +164,7 @@ public:
     assert(ch_width_v<T> <= N);
     if constexpr (ch_width_v<T> < N) {
       sdata_type tmp(N);
-      bv_pad<is_signed_v<T>>(tmp.words(), N, system_accessor::data(obj).words(), ch_width_v<T>);
+      bv_pad<ch_signed_v<T>>(tmp.words(), N, system_accessor::data(obj).words(), ch_width_v<T>);
       return make_system_buffer(std::move(tmp));
     } else {
       return make_system_buffer(*obj.__buffer());
@@ -388,7 +388,7 @@ auto& get_snode(const T& obj) {
 template <typename R, typename T>
 auto system_op_cast(const T& obj) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
-  if constexpr ((is_signed_v<T> != is_signed_v<R>) || !is_resizable_v<R>) {
+  if constexpr ((ch_signed_v<T> != ch_signed_v<R>) || !is_resizable_v<R>) {
     return R(obj);
   } else
   if constexpr (is_system_type_v<T>) {
@@ -409,7 +409,7 @@ auto system_op_cast(const T& obj) {
 
 #define CH_OP_FUNC_S(value, func) \
   if constexpr (op == value) { \
-    return func<is_signed_v<R>, block_type>; \
+    return func<ch_signed_v<R>, block_type>; \
   }
 
 #define CH_OP_FUNC_X(value, func) \
@@ -427,7 +427,7 @@ auto get_op_function1() {
 
 template <typename R, ch_op op, typename A>
 auto get_op_function1() {
-  static const bool sign_enable = is_signed_v<R>;
+  static const bool sign_enable = ch_signed_v<R>;
   static const bool resize_enable = (ch_width_v<R> > ch_width_v<A>);
   CH_OP_FUNC_X(ch_op::inv, bv_inv)
   else CH_OP_FUNC_X(ch_op::neg, bv_neg)
@@ -439,7 +439,7 @@ auto get_op_function2() {
   static const auto resize_type = CH_OP_RESIZE(op);  
   if constexpr (0 != static_cast<int>(resize_type)) {
     static_assert(op_flags::resize_src == resize_type, "invalid type");
-    static const bool sign_enable = is_signed_v<A>;
+    static const bool sign_enable = ch_signed_v<A>;
     static const bool resize_enable = (ch_width_v<A> != ch_width_v<B>);
     CH_OP_FUNC_X(ch_op::eq, bv_eq)
     else CH_OP_FUNC_X(ch_op::lt, bv_lt)
@@ -452,7 +452,7 @@ auto get_op_function2() {
 template <typename R, ch_op op, typename A, typename B>
 auto get_op_function2() {
   static const auto resize_type = CH_OP_RESIZE(op);
-  static const bool sign_enable = is_signed_v<R>;
+  static const bool sign_enable = ch_signed_v<R>;
   if constexpr (0 != static_cast<int>(resize_type)) {
     static_assert(op_flags::resize_dst == resize_type, "invalid type");
     static const bool resize_enable = (ch_width_v<A> < ch_width_v<R>)
@@ -832,7 +832,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   explicit operator U() const { \
     auto self = reinterpret_cast<const type*>(this); \
     auto ret = static_cast<U>(system_accessor::data(*self)); \
-    if constexpr(is_signed_v<type> && (bitwidth_v<U> > type::traits::bitwidth)) { \
+    if constexpr(ch_signed_v<type> && (bitwidth_v<U> > type::traits::bitwidth)) { \
       return sign_ext(ret, type::traits::bitwidth); \
     } else { \
       return ret; \

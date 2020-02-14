@@ -34,7 +34,7 @@ simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   for (auto dev : devices) {
     auto ctx = dev.impl()->ctx();
     if (ctx->modules().size()
-     && (platform::self().cflags() & cflags::codegen_merged) != 0) {
+     && (platform::self().cflags() & ch_flags::codegen_merged) != 0) {
       auto merged_ctx = new context(ctx->name());
       merged_ctx->acquire();
       compiler compiler(merged_ctx);
@@ -88,7 +88,7 @@ void simulatorimpl::initialize() {
 
     // initialize driver
   #if defined(LIBJIT) || defined(LLVMJIT)
-    if (0 == (platform::self().cflags() & cflags::disable_jit)) {
+    if (0 == (platform::self().cflags() & ch_flags::disable_jit)) {
       sim_driver_ = new simjit::driver();
     } else {
       sim_driver_ = new simref::driver();

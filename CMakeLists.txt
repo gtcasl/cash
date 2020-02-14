@@ -27,8 +27,11 @@ if (PLUGIN)
   set(CMAKE_CXX_COMPILER "clang++")
 endif()
 
-# use C++17 compiler
+# use C++17 for all projects
 add_compile_options(-std=c++17)
+
+# Must use GNUInstallDirs to install libraries into correct locations on all platforms.
+include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
@@ -39,9 +42,6 @@ set(PROJECT_CONFIG ${PROJECT_NAME}Config)
 
 # check dependent packages
 find_package(IVERILOG REQUIRED)
-
-# set include path
-include_directories("include" "src/core" "src/ast" "src/compiler" "src/hdl")
 
 #
 # set source files
@@ -93,20 +93,21 @@ endif()
 
 # build library
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
-target_compile_options(${PROJECT_NAME} PRIVATE -pedantic -Werror -Wall -Wextra)
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE src)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR})
 
-# link pthreads
-find_package(Threads)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+target_compile_options(${PROJECT_NAME} PRIVATE -pedantic -Werror -Wall -Wextra)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>    
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ast 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/compiler 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/hdl
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/eda)
 
 if (JIT STREQUAL "LIBJIT")
   message(STATUS "using LIBJIT library.")
@@ -137,16 +138,17 @@ else()
   message(STATUS "Code coverage disabled.")
 endif()
 
-include(GNUInstallDirs)
-
 # 'make install' to the correct locations (provided by GNUInstallDirs).
-install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_CONFIG}
+install(TARGETS ${PROJECT_NAME} 
+  EXPORT ${PROJECT_CONFIG}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # populate public include directory
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+
+# This makes the project importable from the install directory
+install(EXPORT ${PROJECT_CONFIG} DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
 # This makes the project importable from the build directory
 export(TARGETS ${PROJECT_NAME} FILE ${PROJECT_CONFIG}.cmake)

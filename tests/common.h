@@ -2,7 +2,6 @@
 
 #include <string.h>
 #include <cash.h>
-#include "platform.h"
 #include "catch.h"
 
 using namespace ch::internal;
@@ -203,21 +202,21 @@ private:
 class auto_cflags_enable {
 public:
   auto_cflags_enable(int flags) {
-    cflags_ = platform::self().cflags();
-    platform::self().set_cflags(cflags(cflags_ | flags));
+    cflags_ = ch_getflags();
+    ch_setflags(ch_flags(cflags_ | flags));
   }
 
-  auto_cflags_enable(cflags flags) {
-    cflags_ = platform::self().cflags();
-    platform::self().set_cflags(cflags(cflags_ | flags));
+  auto_cflags_enable(ch_flags flags) {
+    cflags_ = ch_getflags();
+    ch_setflags(ch_flags(cflags_ | flags));
   }
 
   ~auto_cflags_enable() {
-    platform::self().set_cflags(cflags_);
+    ch_setflags(cflags_);
   }
 
 private:
-  ch::internal::cflags cflags_;
+  ch::internal::ch_flags cflags_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,21 +224,21 @@ private:
 class auto_cflags_disable {
 public:  
   auto_cflags_disable(int flags) {
-    cflags_ = platform::self().cflags();
-    platform::self().set_cflags(cflags(cflags_ & ~flags));
+    cflags_ = ch_getflags();
+    ch_setflags(ch_flags(cflags_ & ~flags));
   }
 
-  auto_cflags_disable(cflags flags) {
-    cflags_ = platform::self().cflags();
-    platform::self().set_cflags(cflags(cflags_ & ~static_cast<int>(flags)));
+  auto_cflags_disable(ch_flags flags) {
+    cflags_ = ch_getflags();
+    ch_setflags(ch_flags(cflags_ & ~static_cast<int>(flags)));
   }
 
   ~auto_cflags_disable() {
-    platform::self().set_cflags(cflags_);
+    ch_setflags(cflags_);
   }
 
 private:
-  ch::internal::cflags cflags_;
+  ch::internal::ch_flags cflags_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

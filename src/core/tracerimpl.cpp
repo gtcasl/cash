@@ -38,7 +38,7 @@ tracerimpl::tracerimpl(const std::vector<device_base>& devices)
   , trace_tail_(nullptr)
   , num_traces_(0)
   , is_single_context_(1 == contexts_.size() && 0 == contexts_.back()->modules().size()) {
-  if ((platform::self().cflags() & cflags::verbose_tracing) != 0) {
+  if ((platform::self().cflags() & ch_flags::verbose_tracing) != 0) {
     verbose_tracing_ = true;
   }
 }

@@ -21,7 +21,7 @@ __enum (E, 2, (a, b, c, d));
 TEST_CASE("registers", "[registers]") {
   SECTION("delay", "[delay]") {
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_bit2 a;
       a = ch_delay(11_b);
       auto e = ch_case(ch_now(), 3, 11_b)(a);
@@ -30,7 +30,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_bit2 a;
       ch_bool en(true);
       a = ch_delayEn(11_b, en);
@@ -56,7 +56,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_bit2 a;
       a = ch_delay(10_b, 4);
       ch_bit2 e = ch_case(ch_now(), 4*2-1, 10_b)(a);
@@ -65,7 +65,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto v = ch_case<ch_bit4>(ch_now(), 7, 2)(5, 1)(3, 0)(1, 3)(0);
       auto a = ch_delay(v, 4);
       auto e = ch_case<ch_bit4>(ch_now(), 13, 2)(11, 1)(9, 0)(7, 3)(a);
@@ -107,7 +107,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto x = 0xAA'00330012_h45;
       auto v = ch_case<ch_bit<45>>(ch_now(), 7, 2)(5, 1)(3, 0)(1, x)(0);
       auto a = ch_delay(v, 4);
@@ -127,7 +127,7 @@ TEST_CASE("registers", "[registers]") {
     }, 8);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto x = 0xaadddadd'ffff1105'dddcc070_h128;
       auto v = ch_case<ch_bit128>(ch_now(), 7, 2)(5, 1)(3, 0)(1, x)(0);
       auto a = ch_delay(v, 4);
@@ -147,7 +147,7 @@ TEST_CASE("registers", "[registers]") {
     }, 8);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto a = ch_delay(0xFEDCBA98_h, 7);
       auto e = ch_case(ch_now(), 2*7-1, 0xFEDCBA98_h)(a);
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -163,7 +163,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto v = 0x555555557777777733333333_h;
       auto a = ch_delay(v);
       auto e = ch_case(ch_now(), 3, v)(1, v)(a);
@@ -192,7 +192,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto a = ch_delay(V2{3, 1});
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -200,7 +200,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto a = ch_delay(X{3, 1});
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -208,7 +208,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto a = ch_delay(U{10_b});
       auto e = ch_case(ch_now(), 3, 10_b)(a.as_uint());
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -216,7 +216,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto a = ch_delay<E>(E::c);
       auto e = ch_case<E>(ch_now(), 3, E::c)(a);
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -224,7 +224,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_uint2 a;
       a = ch_delay(ch_sel(ch_reset(), 1, a + 1));
       ch_bit2 e = ch_case(ch_now(), 3, 10_b)(5, 11_b)(7, 00_b)(9, 01_b)(a);
@@ -233,7 +233,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       auto x = ch_delay<E>(E::c);
       auto e = ch_case<E>(ch_now(), 3, E::c)(x);
       return (x == e);
@@ -250,7 +250,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<V2> a;
       a->next = V2{3, 1};
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
@@ -259,7 +259,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<X> a;
       a->next = X{3, 1};
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
@@ -284,7 +284,7 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<E> a;
       a->next = E::c;
       auto e = ch_case<E>(ch_now(), 3, E::c)(a);
@@ -313,7 +313,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<ch_bit2> a;
       auto x = ch_case(ch_now(), 8, 11_b)(6, 0)(4, 2)(2, 1)(0);
       a->next = x;
@@ -323,7 +323,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 9, 11_b)(7, 0)(5, 2)(3, 1)(0);
       e->next = ch_case(ch_now(), 9, 11_b)(7, 1)(5, 0)(3, 2)(1, 1)(1);
@@ -343,7 +343,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 11, 11_b)(9, 3)(7, 0)(5, 2)(3, 1)(0);
       e->next = ch_case(ch_now(), 11, 01_b)(9, 1)(7, 1)(5, 0)(3, 2)(1, 1)(1);
@@ -363,7 +363,7 @@ TEST_CASE("registers", "[registers]") {
     }, 5);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 9, 11_b)(7, 0)(5, 2)(3, 1)(0);
       e->next = ch_case(ch_now(), 9, 01_b)(7, 1)(5, 0)(3, 2)(1, 1)(1);
@@ -380,7 +380,7 @@ TEST_CASE("registers", "[registers]") {
 
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 9, 11_b)(7, 0)(5, 2)(3, 1)(0);
       auto v = ch_case(ch_now(), 9, 11_b)(7, 1)(5, 0)(3, 2)(0);
@@ -401,7 +401,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_vec<ch_reg<ch_bit2>, 2> x;
       ch_bit2 a;
       ch_reg<ch_bit2> e;
@@ -417,7 +417,7 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      auto_cflags_disable reg_init_off(ch_flags::force_reg_init);
       ch_reg<X> x;
       ch_reg<ch_bit2> e;
 

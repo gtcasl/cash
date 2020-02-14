@@ -27,7 +27,7 @@ regimpl::regimpl(context* ctx,
   this->add_src(cd);
   this->add_src(next);
 
-  if ((platform::self().cflags() & cflags::force_reg_init)
+  if ((platform::self().cflags() & ch_flags::force_reg_init)
    && !init_data) {    
     assert(!reset);
     reset = ctx->current_reset(sloc);
@@ -184,7 +184,7 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
   auto rst = ctx->current_reset(sloc);
 
   lnodeimpl* reg = nullptr;
-  if (0 == (platform::self().cflags() & cflags::disable_sro)) {
+  if (0 == (platform::self().cflags() & ch_flags::disable_sro)) {
     reg = ctx->create_node<regimpl>(
       next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), name, sloc);
   } else {
@@ -213,7 +213,7 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
   auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
 
   lnodeimpl* reg = nullptr;
-  if (0 ==(platform::self().cflags() & cflags::disable_sro)) {
+  if (0 ==(platform::self().cflags() & ch_flags::disable_sro)) {
     reg = ctx->create_node<regimpl>(
       next.size(), length, cd, rst, enable_impl, next.impl(), init_data.impl(), name, sloc);
   } else {

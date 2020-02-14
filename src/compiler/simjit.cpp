@@ -1257,7 +1257,7 @@ private:
   bool optimize_select(selectimpl* node) {
     __source_marker();
     //--
-    if (0 != (platform::self().cflags() & cflags::disable_swo))
+    if (0 != (platform::self().cflags() & ch_flags::disable_swo))
       return false;
 
     //--
@@ -1551,7 +1551,7 @@ private:
     jit_insn_store_relative(j_func_, j_vars_, addr, j_clk);
 
     auto bypass_enable = (1 == node->ctx()->cdomains().size())
-                       && 0 == (platform::self().cflags() & cflags::disable_cpb)
+                       && 0 == (platform::self().cflags() & ch_flags::disable_cpb)
                        && ch::internal::compiler::build_bypass_list(bypass_nodes_, node->ctx(), node->id());
     if (bypass_enable) {      
       jit_label_t l_skip(jit_label_undefined);
@@ -1566,7 +1566,7 @@ private:
 
   void resolve_branch(lnodeimpl* node) {
     if (sblock_.cd
-     && ((0 != (platform::self().cflags() & cflags::disable_snc)
+     && ((0 != (platform::self().cflags() & ch_flags::disable_snc)
       || (nullptr == node)
       || !is_snode_type(node->type())
       || get_snode_cd(node) != sblock_.cd
@@ -3251,7 +3251,7 @@ public:
     jit_insn_return(j_func_, j_zero);
 
     // dump JIT assembly code
-    if (platform::self().cflags() & cflags::dump_ast) {
+    if (platform::self().cflags() & ch_flags::dump_ast) {
       auto file = fopen("simjit.ast", "w");
       jit_dump_ast(file, j_func_, "simjit");
       fclose(file);
@@ -3265,7 +3265,7 @@ public:
     jit_context_build_end(sim_ctx_->j_ctx);
 
     // dump JIT assembly code
-    if (platform::self().cflags() & cflags::dump_asm) {
+    if (platform::self().cflags() & ch_flags::dump_asm) {
       auto file = fopen("simjit.asm", "w");
       jit_dump_asm(file, j_func_, "simjit");
       fclose(file);

@@ -22,9 +22,9 @@ class platform::Impl {
       dbg_node_ = atoi(dbg_node);
     }
 
-    auto cflags = std::getenv("CASH_CFLAGS");
-    if (cflags) {
-      cflags_ = atoi(cflags);
+    auto ch_flags = std::getenv("CASH_CFLAGS");
+    if (ch_flags) {
+      cflags_ = atoi(ch_flags);
     }
   }
 
@@ -47,15 +47,25 @@ int platform::dbg_node() const {
   return impl_->dbg_node_;
 }
 
-ch::internal::cflags platform::cflags() const {
-  return ch::internal::cflags(impl_->cflags_);
+ch::internal::ch_flags platform::cflags() const {
+  return ch::internal::ch_flags(impl_->cflags_);
 }
 
-void platform::set_cflags(ch::internal::cflags value) {
+void platform::set_cflags(ch::internal::ch_flags value) {
   impl_->cflags_ = static_cast<int>(value);
 }
 
 platform& platform::self() {
   static platform s_instance;
   return s_instance;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::ch_setflags(ch_flags flags) {
+  return platform::self().set_cflags(flags);
+}
+
+ch_flags ch::internal::ch_getflags() {
+  return platform::self().cflags();
 }

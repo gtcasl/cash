@@ -129,7 +129,7 @@ struct is_signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 }
 
 template <typename T>
-inline constexpr bool is_signed_v = detail::is_signed_impl<std::decay_t<T>>::value;
+inline constexpr bool ch_signed_v = detail::is_signed_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -261,7 +261,7 @@ template <ch_direction Direction,
 struct base_system_io_traits {
   static constexpr int type = traits_system | traits_system_io;
   static constexpr unsigned bitwidth = ch_width_v<SystemType>;
-  static constexpr unsigned is_signed = is_signed_v<SystemType>;
+  static constexpr unsigned is_signed = ch_signed_v<SystemType>;
   static constexpr ch_direction direction = Direction;
   using system_io   = SystemIO;
   using flip_io     = FlipIO;
@@ -279,7 +279,7 @@ template <ch_direction Direction,
 struct base_logic_io_traits {
   static constexpr int type = traits_logic | traits_logic_io;
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
-  static constexpr unsigned is_signed = is_signed_v<LogicType>;
+  static constexpr unsigned is_signed = ch_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using logic_io    = LogicIO;
   using flip_io     = FlipIO;
