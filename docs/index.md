@@ -26,40 +26,81 @@ Other dependencies include:
 
 # System Setup
 
-### Ubuntu 18.04 (Bionic)
+**Ubuntu 18.04 (Bionic)**
 
 Install Build Essentials:
-    
-    $ sudo build-essential zlib1g-dev
-    
+```shell    
+$ sudo build-essential zlib1g-dev
+```    
 Install IVerilog:
-
-    $ sudo apt-get install iverilog
-    
+```shell
+$ sudo apt-get install iverilog
+```    
 Install LLVM 9.0:
-
-    $ sudo apt-get install clang-9 libclang-9-dev
-
+```shell
+$ sudo apt-get install clang-9 libclang-9-dev
+```
 # Installation
 
 To install Cash you must clone the repository and create a build directory:
-
-    $ git clone https://github.com/gtcasl/cash.git && cd cash
-    $ mkdir build && cd build
-
+```shell
+$ git clone https://github.com/gtcasl/cash.git && cd cash
+$ mkdir build && cd build
+```
 Then use run cmake to generate the makefile and export the package informations:
+```shell
+$ cmake ..
+```
+Build and install Cash on your system:
+```shell
+$ make -j`nproc` all
+$ sudo make install
+```
+Test your build
+```shell
+$ make test
+```
 
-    $ cmake ..
+**Alternative Installation using LIBJIT Compiler**
 
-Optionally, you can also install Cash on your system:
-
-    # make install
-    
+Install LIBJIT dependencies:
+```shell  
+$ sudo apt-get install libtool autoconf flex bison texinfo
+```  
+Build and install LIBJIT:
+```shell  
+$ git clone https://git.savannah.gnu.org/git/libjit.git  
+$ pushd libjit
+$ ./bootstrap
+$ mkdir build
+$ pushd build
+$ ../configure --with-pic
+$ make -j`nproc` all
+$ sudo make install
+$ popd
+$ popd
+```  
+Build and install Cash using 'JIT=LIBJIT' configuration option:
+```shell  
+$ mkdir build && cd build
+$ cmake .. -DJIT=LIBJIT
+$ make -j`nproc` all
+$ sudo make install
+```
 # QuickStart Example
 
 #### Implementing a Generic Adder using Cash.
 
-1. Create a file 'adder.cpp' that contains the code listing below.
+1. Create demo folder
+```shell
+$ mkdir demo
+$ cd demo
+```
+2. Copy Makefile template
+```shell
+$ cp /path_to_project/scripts/Makefile .
+```
+3. Create a file 'demo.cpp' that contains the code listing below.
 
 ```cpp
 #include <cash/core.h>
@@ -98,48 +139,35 @@ int main() {
 }
 ```
 
-2. Setup Makefile
-
-```make
-CC = clang++-9
-CXXFLAGS += -std=c++17 -I$(CASH_HOME)/include -Wall -Wextra -pedantic
-LDFLAGS += -lcash -L$(CASH_HOME)/lib
-
-all: adder.cpp
-    $(CC) $(CXXFLAGS) $(LDFLAGS) adder.cpp -o adder
-
-clean:
-    rm -rf adder
+4. Build the Adder program
+```shell
+    $ make
 ```
-
-3. Build the Adder program
-
-    $ export CASH_HOME=build
-    $ clang++-9 -std=c++17 -I../include -lcash -L$CASH_HOME/build/lib -Xclang -load -Xclang lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp -Xclang -plugin-arg-cash-pp -Xclang debug -Xclang -plugin-arg-cash-pp -Xclang dump-ast ../examples/adder.cpp > test.log 2>&1
-
-4. XXX
-
+5. Run the program
+```shell
+    $ demo.out
+```
 # Documentation
 
-## Data Types
+### Data Types
 
-## Built-in Operators
+### Built-in Operators
 
-## Control Flow
+### Control Flow
 
-## Sequential Logic
+### Sequential Logic
 
-## User-Defined Function
+### User-Defined Function
 
-## High-Level Synthesis
+### High-Level Synthesis
 
-## Simulation
+### Simulation
 
-## HDL Codegen
+### HDL Codegen
 
-## Examples
+### Examples
 
-## Test Suite
+### Test Suite
 
 Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wiki).
 
