@@ -1,4 +1,4 @@
-#include <cash/eda/altera/avalon_sim.h>
+#include "eda/altera/avalon_sim.h"
 
 using namespace eda::altera::avalon;
 

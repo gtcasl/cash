@@ -9,9 +9,8 @@ namespace eda {
 namespace altera {
 namespace avalon {
 
-using namespace ch::logic;
-using namespace ch::system;
-using namespace ch::literals;
+using namespace ch::core;
+using namespace ch::extension;
 
 class avm_slave_driver_impl;
 

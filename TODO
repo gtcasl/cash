@@ -302,3 +302,5 @@ http://stackoverflow.com/questions/38561242/struct-to-from-stdtuple-conversion
 
 clang++-9 -std=c++17 -I../include -lcash -L$CASH_HOME/build/lib -Xclang -load -Xclang lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp -Xclang -plugin-arg-cash-pp -Xclang debug -Xclang -plugin-arg-cash-pp -Xclang dump-ast ../examples/adder.cpp > test.log 2>&1
 clang++-9 -std=c++17 -I../include -Xclang -load -Xclang lib/libcashpp.so -Xclang -add-plugin -Xclang cash-pp -Xclang -plugin-arg-cash-pp -Xclang debug -Xclang -plugin-arg-cash-pp -Xclang dump-ast ../clang/test.cpp > test.log 2>&1
+
+bundle exec jekyll serve --trace

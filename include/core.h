@@ -66,12 +66,6 @@ namespace logic {
   // data types
   //
 
-  using ch::internal::ch_bitbase;
-  using ch::internal::ch_sbitbase;
-
-  using ch::internal::ch_numbase;
-  using ch::internal::ch_snumbase;
-
   using ch::internal::ch_bit;
   using ch::internal::ch_sbit;
 
@@ -382,9 +376,6 @@ namespace system {
   using ch::internal::ch_device;
   using ch::internal::ch_simulator;
   using ch::internal::ch_tracer;
-
-  using ch::internal::sdata_type;
-
   using ch::internal::ch_flags;
 
   //
@@ -420,7 +411,11 @@ namespace core {
 // user defined functions
 //
 namespace extension {
-  using ch::internal::is_data_type_v;
+  using ch::internal::sdata_type;
+  using ch::internal::ch_bitbase;
+  using ch::internal::ch_sbitbase;
+  using ch::internal::ch_numbase;
+  using ch::internal::ch_snumbase;  
   using ch::internal::logic_traits;
   using ch::internal::system_traits;
   using ch::internal::logic_buffer;
@@ -431,7 +426,8 @@ namespace extension {
   using ch::internal::logic_accessor;
   using ch::internal::udf_verilog;
   using ch::internal::udf_vostream;
-  using ch::internal::source_info;
+  using ch::internal::source_info;  
+  using ch::internal::is_data_type_v;
 }
 
 }

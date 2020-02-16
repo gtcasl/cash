@@ -8,6 +8,7 @@
 using namespace ch::core;
 using namespace ch::htl;
 
+// Generic MAC module
 template <uint I, uint O>
 struct MAC {
   __io (
@@ -26,6 +27,7 @@ struct MAC {
   }
 };
 
+// Generic MatMul module
 template <unsigned I, unsigned O, unsigned N, unsigned P, unsigned M>
 struct MatMul {
   __io (
@@ -37,9 +39,11 @@ struct MatMul {
   );
 
   void describe() {
-    // systolic array of MAC units
+    // systolic 2D array of MAC units
     ch_vec<ch_vec<ch_module<MAC<I, O>>, P>, N> macs;
-    ch_counter<N+P+M> ctr(io.valid_in); // valid counter
+
+    // using counter object from HTL library
+    ch_counter<N+P+M> ctr(io.valid_in);
 
     // MAC array connections
     for (unsigned r = 0; r < N; ++r) {
@@ -58,25 +62,34 @@ struct MatMul {
   }
 };
 
+static constexpr int N = 2;
+static constexpr int P = 3;
+static constexpr int M = 4;
+
 int main() {
-  auto a = Matrix<int>(4, 4);
-  auto b = Matrix<int>(4, 4);
+  // a=MxN, b=PxM, c=PxN
+  auto a = Matrix<int>(M, N);
+  auto b = Matrix<int>(P, M);
+  auto c = a * b;
 
   for (size_t j = 0; j < a.height(); ++j)  {
     for (size_t i = 0; i < a.width(); ++i) {
       a.at(i, j) = j * a.width() + i;
+      std::cout << "a[" << j << "][" << i << "]=" << a.at(i, j) << std::endl;
     }
   }
 
   for (size_t j = 0; j < b.height(); ++j)  {
     for (size_t i = 0; i < b.width(); ++i) {
       b.at(i, j) = j * b.width() + i;
+      std::cout << "b[" << j << "][" << i << "]=" << b.at(i, j) << std::endl;
     }
   }
 
-  ch_device<MatMul<8, 24, 4, 4, 4>> matmul;
+  ch_device<MatMul<8, 24, N, P, M>> matmul;
 
   ch_tracer tracer(matmul);
+
   tracer.run([&](ch_tick t)->bool {
     matmul.io.valid_in = true;
     auto j = t / 2;
@@ -84,7 +97,7 @@ int main() {
       matmul.io.a_in[i] = (j < a.width()) ? a.at(j, i) : 0;
     }
     for (size_t i = 0; i < b.width(); ++i) {
-      matmul.io.b_in[i] = (j < a.width()) ? b.at(i, j) : 0;
+      matmul.io.b_in[i] = (j < b.height()) ? b.at(i, j) : 0;
     }
     return (!matmul.io.valid_out) && (t < MAX_TICKS);
   }, 2);
@@ -92,10 +105,10 @@ int main() {
   std::cout << "result:" << std::endl;
   std::cout << "out = "  << matmul.io.c_out << std::endl;
 
-  // Verify
-  auto c = a * b;
+  // Verify  
   for (size_t j = 0; j < c.height(); ++j)  {
     for (size_t i = 0; i < c.width(); ++i) {
+      std::cout << "c[" << j << "][" << i << "]=" << c.at(i, j) << std::endl;
       CHECK(c.at(i, j) == matmul.io.c_out[j][i]);
     }
   }
