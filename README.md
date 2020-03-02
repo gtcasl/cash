@@ -24,7 +24,7 @@ Default Build Instructions (Ubuntu 18.04)
 
 Build essentials Install:
     
-    $ sudo build-essential zlib1g-dev
+    $ sudo apt-get install build-essential zlib1g-dev
 
 IVerilog Install:
 
