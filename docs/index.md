@@ -35,7 +35,7 @@ Other dependencies include:
 
 Install Build Essentials:
 ```shell    
-$ sudo apt-get install build-essential zlib1g-dev
+$ sudo apt-get install build-essential git zlib1g-dev
 ```    
 Install IVerilog:
 ```shell
