@@ -24,7 +24,7 @@ Default Build Instructions (Ubuntu 18.04)
 
 Build essentials Install:
     
-    $ sudo apt-get install build-essential git zlib1g-dev
+    $ sudo apt-get install build-essential git cmake zlib1g-dev
 
 IVerilog Install:
 
@@ -33,6 +33,8 @@ IVerilog Install:
 Clang 9.0 Install:
 
     $ sudo apt-get install clang-9 libclang-9-dev
+    $ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
+    $ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
 
 To install Cash you must clone the repository and create a build directory:
 
