@@ -35,7 +35,7 @@ Other dependencies include:
 
 Install Build Essentials:
 ```shell    
-$ sudo apt-get install build-essential git zlib1g-dev
+$ sudo apt-get install build-essential git cmake zlib1g-dev
 ```    
 Install IVerilog:
 ```shell
@@ -44,6 +44,8 @@ $ sudo apt-get install iverilog
 Install LLVM 9.0:
 ```shell
 $ sudo apt-get install clang-9 libclang-9-dev
+$ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
+$ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
 ```
 # Installation
 
