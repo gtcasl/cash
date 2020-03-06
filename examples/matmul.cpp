@@ -70,8 +70,7 @@ int main() {
   // a=MxN, b=PxM, c=PxN
   auto a = Matrix<int>(M, N);
   auto b = Matrix<int>(P, M);
-  auto c = a * b;
-
+  
   for (size_t j = 0; j < a.height(); ++j)  {
     for (size_t i = 0; i < a.width(); ++i) {
       a.at(i, j) = j * a.width() + i;
@@ -106,6 +105,7 @@ int main() {
   std::cout << "out = "  << matmul.io.c_out << std::endl;
 
   // Verify  
+  auto c = a * b;
   for (size_t j = 0; j < c.height(); ++j)  {
     for (size_t i = 0; i < c.width(); ++i) {
       std::cout << "c[" << j << "][" << i << "]=" << c.at(i, j) << std::endl;
