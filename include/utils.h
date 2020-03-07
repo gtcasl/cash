@@ -306,9 +306,9 @@ constexpr auto make_list_n(T&& value) {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace detail {
-template <typename Func, auto Step, typename T, T Start, T ...Is>
+template <typename Func, typename T, T Step, T Start, T ...Is>
 constexpr void static_for_impl(Func&& func, std::integer_sequence<T, Is...>) {
-  (func(std::integral_constant<T, Start + Is * Step>{}), ...);
+  (func(std::integral_constant<T, Start + (Is * Step)>{}), ...);
 }
 }
 
@@ -316,7 +316,7 @@ template <auto Stop, typename Func>
 constexpr void static_for(Func&& func) {
   static_assert(Stop > 0, "invalid size");
   using type_t = decltype(Stop);
-  detail::static_for_impl<Func, 1, type_t, 0>(
+  detail::static_for_impl<Func, type_t, 1, 0>(
     std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - 0)>{}
   );
 }
@@ -325,7 +325,7 @@ template <auto Start, auto Stop, typename Func>
 constexpr void static_for(Func&& func) {
   static_assert((Stop - Start) > 0, "invalid size");
   using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
-  detail::static_for_impl<Func, 1, type_t, Start>(
+  detail::static_for_impl<Func, type_t, 1, Start>(
     std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start)>{}
   );
 }
@@ -334,7 +334,7 @@ template <auto Start, auto Stop, auto Step, typename Func>
 constexpr void static_for(Func&& func) {
   static_assert(((Stop - Start) / Step) > 0, "invalid size");
   using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
-  detail::static_for_impl<Func, Step, type_t, Start>(
+  detail::static_for_impl<Func, type_t, Step, Start>(
     std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start) / Step>{}
   );
 }

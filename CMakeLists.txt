@@ -57,8 +57,6 @@ set(SOURCE_FILES
   src/core/logic.cpp
   src/core/system.cpp
   src/core/deviceimpl.cpp
-  src/core/simulatorimpl.cpp
-  src/core/tracerimpl.cpp
   src/ast/ioimpl.cpp
   src/ast/proxyimpl.cpp
   src/ast/cdimpl.cpp
@@ -71,12 +69,14 @@ set(SOURCE_FILES
   src/ast/timeimpl.cpp
   src/ast/assertimpl.cpp
   src/ast/printimpl.cpp
-  src/ast/udfimpl.cpp  
-  src/hdl/verilogwriter.cpp
-  src/hdl/firrtlwriter.cpp      
-  src/eda/altera/avalon_sim.cpp
+  src/ast/udfimpl.cpp    
   src/compiler/compile.cpp 
   src/compiler/simref.cpp
+  src/hdl/verilogwriter.cpp
+  src/hdl/firrtlwriter.cpp 
+  src/sim/simulatorimpl.cpp
+  src/sim/tracerimpl.cpp
+  src/eda/altera/avalon_sim.cpp
 )
 
 if (JIT STREQUAL "LLVM")
@@ -106,6 +106,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core 
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ast 
             ${CMAKE_CURRENT_SOURCE_DIR}/src/compiler 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/sim
             ${CMAKE_CURRENT_SOURCE_DIR}/src/hdl
             ${CMAKE_CURRENT_SOURCE_DIR}/src/eda)
 

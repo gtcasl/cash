@@ -438,15 +438,16 @@ TEST_CASE("htl", "[htl]") {
   TESTX([]()->bool {
     RetCheck ret;
 
-    static_for<1, 4>([&](auto N) {
+    static_for<1, 5>([&](auto N) {      
       ch_device<ch_queue<ch_bit4, N>> queue0;
       ch_device<ch_llqueue<ch_bit4, N>> queue1;
       auto queues = std::make_tuple(&queue0, &queue1);
 
       static_for<std::tuple_size_v<decltype(queues)>>([&](auto I) {
         auto& queue = *std::get<I>(queues);
-        auto v_file = stringf("%s.v", queue.name().c_str());
-        auto f_file = stringf("%s.fir", queue.name().c_str());
+        auto v_file = stringf("%s_%d_%d.v", queue.name().c_str(), N(), I());
+        auto f_file = stringf("%s_%d_%d.fir", queue.name().c_str(), N(), I());        
+        auto t_file = stringf("%s_%d_%d_tb.v", queue.name().c_str(), N(), I());
         ch_toVerilog(v_file, queue);
         ch_toFIRRTL(f_file, queue);
 
@@ -519,9 +520,9 @@ TEST_CASE("htl", "[htl]") {
         ret &= !queue.io.deq.valid;  // empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 0 == queue.io.size;   // 0
-
-        trace.toVerilog("queue_tb.v", v_file);
-        ret &= (checkVerilog("queue_tb.v"));
+        
+        trace.toVerilog(t_file, v_file);
+        ret &= (checkVerilog(t_file));
       });
     });
     return !!ret;
