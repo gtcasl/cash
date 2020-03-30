@@ -15,7 +15,7 @@ Cash enables developpers to describe and simulate their hardware designs in a si
 
 # Requirements
 
-Cash requires a C++17 compiler to build and works best with clang 9.0 to leverage its custom plugin for code reflection.
+Cash requires a C++17 compiler to build and works best with clang 9 to leverage its custom plugin for code reflection.
 
 Other dependencies include:
 
@@ -31,7 +31,7 @@ Other dependencies include:
 
 # System Setup
 
-**Ubuntu 18.04 (Bionic)**
+**Minimal System Requirement: Ubuntu 18.04 (Bionic)**
 
 Install Build Essentials:
 ```shell    
@@ -41,7 +41,7 @@ Install IVerilog:
 ```shell
 $ sudo apt-get install iverilog
 ```    
-Install LLVM 9.0:
+Install LLVM 9:
 ```shell
 $ sudo apt-get install clang-9 libclang-9-dev
 $ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
