@@ -10,7 +10,7 @@ using namespace ch::internal;
 #define NUM_TRACES 100
 
 struct vcd_signal_compare_t {
-  bool operator()(ioportimpl* lhs, ioportimpl* rhs) {
+  bool operator()(const ioportimpl* lhs, const ioportimpl* rhs) const {
     auto lhs_pos  = lhs->name().find_last_of('/');
     auto rhs_pos  = rhs->name().find_last_of('/');
     auto lhs_path = (lhs_pos != std::string::npos) ? lhs->name().substr(0, lhs_pos) : "";
