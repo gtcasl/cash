@@ -183,9 +183,9 @@ static constexpr int M = 4;
 int main() {
 
   // a=MxN, b=PxM, c=PxN
-  int a[N][M] = {{0, 1, 2, 3}, {4, 5, 6, 7}};
-  int b[M][P] = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8}, {9, 10, 11}};
-  int c[N][P] = {{42, 48, 54}, {114, 136, 158}};
+  int a[N][M] = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 } };
+  int b[M][P] = { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }, { 9, 10, 11 } };
+  int c[N][P] = { { 42, 48, 54 }, { 114, 136, 158 } };
 
   ch_device<MatMul<InBits, OutBits, N, P, M>> matmul;
 
