@@ -183,9 +183,9 @@ static constexpr int M = 4;
 int main() {
 
   // a=MxN, b=PxM, c=PxN
-  int a[N][M] = {0, 1, 2, 3, 4, 5, 6, 7};
-  int b[M][P] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};  
-  int c[N][P] = {42, 48, 54, 114, 136, 158};
+  int a[N][M] = {{0, 1, 2, 3}, {4, 5, 6, 7}};
+  int b[M][P] = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8}, {9, 10, 11}};  
+  int c[N][P] = {{42, 48, 54}, {114, 136, 158}};
 
   ch_device<MatMul<InBits, OutBits, N, P, M>> matmul;
 
@@ -546,6 +546,54 @@ using Flits = ch_vec<Flit<N>, 16>;
         <td>primary types</td>
     </tr>
     <tr>
+        <td>Ternary</td>
+        <td>ch_sel</td>
+        <td>primary types</td>
+        <td rowspan="4">Conditionals</td>
+    </tr>
+    <tr>
+        <td>Multi-Selection</td>
+        <td>ch_case</td>
+        <td>primary types</td>
+    </tr>
+    <tr>
+        <td>Minimun</td>
+        <td>ch_min</td>
+        <td>primary types</td>
+    </tr>
+    <tr>
+        <td>Maximum</td>
+        <td>ch_max</td>
+        <td>primary types</td>
+    </tr>
+    <tr>
+        <td>Padding</td>
+        <td>ch_pad</td>
+        <td>primary types</td>
+        <td rowspan="4">Resizing</td>
+    </tr>
+    <tr>
+        <td>Resizing</td>
+        <td>ch_resize</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Concatenation</td>
+        <td>ch_cat</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Replication</td>
+        <td>ch_dup</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Bit Shuffling</td>
+        <td>ch_shuffle</td>
+        <td>all types</td>
+        <td rowspan="1">Permutations</td>
+    </tr>
+    <tr>
         <td>Reinterpret Cast</td>
         <td>ch_as</td>
         <td>all types</td>
@@ -560,11 +608,115 @@ using Flits = ch_vec<Flit<N>, 16>;
         <td>Clone</td>
         <td>ch_clone</td>
         <td>all types</td>
-        <td rowspan="2">Instance</td>
+        <td rowspan="5">References</td>
     </tr>
     <tr>
         <td>Reference</td>
         <td>ch_ref</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Slice Reference</td>
+        <td>ch_sliceref</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Aligned Slice Reference</td>
+        <td>ch_asliceref</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Group Assigment</td>
+        <td>ch_tie</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Map</td>
+        <td>ch_map</td>
+        <td>all types</td>
+        <td rowspan="4">Higher-Order</td>
+    </tr>
+    <tr>
+        <td>Fold</td>
+        <td>ch_fold</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Zip</td>
+        <td>ch_zip</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Scan</td>
+        <td>ch_scan</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Shift Register</td>
+        <td>ch_delay</td>
+        <td>all types</td>
+        <td rowspan="3">Delay</td>
+    </tr>
+    <tr>
+        <td>Next Value</td>
+        <td>ch_next</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Next-Enabled Value</td>
+        <td>ch_nextEn</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Clock Domain</td>
+        <td>ch_cd</td>
+        <td>all types</td>
+        <td rowspan="5">System Clock</td>
+    </tr>
+    <tr>
+        <td>Push Clock</td>
+        <td>ch_pushcd</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Pop Clock</td>
+        <td>ch_popcd</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Current Clock</td>
+        <td>ch_clock</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Current Reset</td>
+        <td>ch_reset</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Print</td>
+        <td>ch_print</td>
+        <td>all types</td>
+        <td rowspan="5">Debugging</td>
+    </tr>
+    <tr>
+        <td>Print NewLine</td>
+        <td>ch_println</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Assertion</td>
+        <td>ch_assert</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Signal Tapping</td>
+        <td>ch_tap</td>
+        <td>all types</td>
+    </tr>
+    <tr>
+        <td>Current Time</td>
+        <td>ch_now</td>
         <td>all types</td>
     </tr>
 </table>
