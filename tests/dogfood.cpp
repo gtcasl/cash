@@ -34,7 +34,7 @@ __struct (u4_2_t, (
   (ch_bit2) b
 ));
 
-__inout (bundle4_io, (
+__interface (bundle4_io, (
   __in (e2_t) x,
   __in (s4_2_t) y,
   __out (u4_2_t) z,
@@ -106,7 +106,7 @@ struct Foo2 {
 };
 
 struct Foo3 {
-  __inout (io_ab_t, (
+  __interface (io_ab_t, (
     __in (ch_uint2) a,
     __out (ch_uint2) b
   ));
@@ -144,18 +144,18 @@ struct QueueWrapper {
 };
 
 template <typename T>
-__inout (link_io, (
+__interface (link_io, (
   __out (T) data,
   __out (ch_bool) valid
 ));
 
 template <typename T>
-__inout (plink_io, link_io<T>, (
+__interface (plink_io, link_io<T>, (
   __out (ch_bool) parity
 ));
 
 template <typename T>
-__inout (filter_io, (
+__interface (filter_io, (
   (ch_flip_io<plink_io<T>>) x,
   (plink_io<T>) y
 ));

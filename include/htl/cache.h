@@ -40,7 +40,7 @@ struct Config {
   static constexpr unsigned tag_bits    = addr_bits - index_bits - offset_bits;
   static constexpr unsigned maddr_bits  = addr_bits - offset_bits;
 
-  __inout (cpu_req_io, (
+  __interface (cpu_req_io, (
     __in (ch_bit<addr_bits>)  address,
     __in (ch_bit<data_bits>)  writedata,
     __in (ch_bit<word_sel>)   worden,
@@ -51,7 +51,7 @@ struct Config {
     __out (ch_bool)           waitrequest
   ));
 
-  __inout (mem_req_io, (
+  __interface (mem_req_io, (
     __out (ch_bit<maddr_bits>) address,
     __out (ch_bit<block_bits>) writedata,
     __out (ch_bool)            read,

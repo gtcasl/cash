@@ -35,7 +35,7 @@ static const char* sqrt_v_source =
     "    end\n"
     "endmodule";
 
-__inout(sqrt_io, (
+__interface(sqrt_io, (
   __in  (ch_int32) in,
   __out (ch_int16) out,
   __out (ch_bool)  valid

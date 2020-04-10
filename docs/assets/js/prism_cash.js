@@ -3,7 +3,7 @@
     Prism.languages.cash = Prism.languages.extend('cpp', {
         // highlight built-in macros
         'cash-macros': {
-            pattern: /\b(?:ch_false|ch_true|ch_cout|__io|__sio|__flip|__in|__out|__inout|__enum|__struct|__union|__if|__elif|__else|__switch|__case|__default|__tap|__assert|__requires)\b/,
+            pattern: /\b(?:ch_false|ch_true|ch_cout|__io|__sio|__flip|__in|__out|__interface|__enum|__struct|__union|__if|__elif|__else|__switch|__case|__default|__tap|__assert|__requires)\b/,
             alias: 'constant'
         },
         // highlight built-in types

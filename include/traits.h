@@ -44,11 +44,14 @@ enum class ch_direction {
   none  = 0x0,
   in    = 0x1,
   out   = 0x2,
-  inout = in | out,
 };
 
 inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
   return ch_direction(static_cast<int>(lsh) | static_cast<int>(rhs));
+}
+
+inline constexpr auto operator&(ch_direction lsh, ch_direction rhs) {
+  return ch_direction(static_cast<int>(lsh) & static_cast<int>(rhs));
 }
 
 CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type != traits_none));

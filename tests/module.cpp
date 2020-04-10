@@ -8,23 +8,24 @@ namespace {
 static_assert(ch_direction_v<ch_in<ch_bool>> == ch_direction::in, "invalid direction");
 static_assert(ch_direction_v<ch_out<ch_bool>> == ch_direction::out, "invalid direction");
 
-__inout (io_bundle2_io, (
+__interface (io_bundle2_io, (
   __in (ch_bool) x,
   __in (ch_bool) y
 ));
 static_assert(ch_direction_v<io_bundle2_io> == ch_direction::in, "invalid direction");
 
-__inout (io_bundle1_io, (
+__interface (io_bundle1_io, (
   __out (ch_bool) x,
   __out (ch_bool) y
 ));
 static_assert(ch_direction_v<io_bundle1_io> == ch_direction::out, "invalid direction");
 
-__inout (io_bundle3_io, (
-  __in (ch_bool) x,
+__interface (io_bundle3_io, (
+  __in  (ch_bool) x,
   __out (ch_bool) y
 ));
-static_assert(ch_direction_v<io_bundle3_io> == ch_direction::inout, "invalid direction");
+static_assert((ch_direction_v<io_bundle3_io> & ch_direction::in) == ch_direction::in, "invalid direction");
+static_assert((ch_direction_v<io_bundle3_io> & ch_direction::out) == ch_direction::out, "invalid direction");
 
 __enum (e2_t, 2, (
   a, b, c, d
@@ -40,7 +41,7 @@ __struct (u4_2_t, (
   (ch_bit2) b
 ));
 
-__inout (bundle4_io, (
+__interface (bundle4_io, (
   __in (e2_t) x,
   __in (s4_2_t) y,
   __out (u4_2_t) z,
@@ -50,18 +51,18 @@ __inout (bundle4_io, (
 ));
 
 template <typename T>
-__inout (link_io, (
+__interface (link_io, (
   __out (T) data,
   __out (ch_bool) valid
 ));
 
 template <typename T>
-__inout (plink_io, link_io<T>, (
+__interface (plink_io, link_io<T>, (
   __out (ch_bool) parity
 ));
 
 template <typename T>
-__inout (filter_io, (
+__interface (filter_io, (
   (ch_flip_io<plink_io<T>>) x,
   (plink_io<T>) y
 ));
@@ -145,7 +146,7 @@ struct Foo2 {
 };
 
 struct Foo3 {
-  __inout (io_ab_t, (
+  __interface (io_ab_t, (
     __in (ch_uint2) a,
     __out (ch_uint2) b
   ));

@@ -109,8 +109,8 @@ class Router {
 public:
   using flit_t = ch_valid_t<typename Cfg::flit_type>;
 
-  __inout (port_io, (
-    __in (flit_t)   flit,
+  __interface (port_io, (
+    __in  (flit_t)  flit,
     __out (ch_bool) credit
   ));
 

@@ -53,7 +53,7 @@ include/htl/router.h
 include/htl/sdf.h
 include/htl/xbar.h
 include/if.h
-include/inout.h
+include/interface.h
 include/int.h
 include/ioport.h
 include/literals.h

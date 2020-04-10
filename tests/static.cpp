@@ -103,7 +103,7 @@ struct QQ {
 };
 
 struct PP {
-  __inout (io_ab_t, (
+  __interface (io_ab_t, (
     __in (ch_uint2) a,
     __out (ch_uint2) b
   ));

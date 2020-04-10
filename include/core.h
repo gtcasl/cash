@@ -9,7 +9,7 @@
 #include "vec.h"
 #include "union.h"
 #include "struct.h"
-#include "inout.h"
+#include "interface.h"
 #include "cd.h"
 #include "reg.h"
 #include "mem.h"
@@ -436,28 +436,28 @@ namespace extension {
 // macro operators
 //
 
-#define __if       CH_IF
-#define __elif     CH_ELIF
-#define __else     CH_ELSE
+#define __if        CH_IF
+#define __elif      CH_ELIF
+#define __else      CH_ELSE
 
-#define __switch   CH_SWITCH
-#define __case     CH_CASE
-#define __default  CH_DEFAULT
+#define __switch    CH_SWITCH
+#define __case      CH_CASE
+#define __default   CH_DEFAULT
 
-#define __tap      CH_TAP
-#define __assert   CH_ASSERT
+#define __tap       CH_TAP
+#define __assert    CH_ASSERT
 
-#define __struct   CH_STRUCT
-#define __union    CH_UNION
-#define __enum     CH_ENUM
+#define __struct    CH_STRUCT
+#define __union     CH_UNION
+#define __enum      CH_ENUM
 
-#define __in(...)  (ch_in<__VA_ARGS__>)
-#define __out(...) (ch_out<__VA_ARGS__>)
-#define __inout    CH_INOUT
-#define __io       CH_IO
-#define __sio      CH_SCIO
-#define __flip     CH_FLIP
+#define __in(...)   (ch_in<__VA_ARGS__>)
+#define __out(...)  (ch_out<__VA_ARGS__>)
+#define __interface CH_INTERFACE
+#define __io        CH_IO
+#define __sio       CH_SCIO
+#define __flip      CH_FLIP
 
 #define __requires  CH_REQUIRES
 
-#define __unused   CH_UNUSED
+#define __unused    CH_UNUSED

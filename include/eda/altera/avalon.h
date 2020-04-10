@@ -23,7 +23,7 @@ struct avm_properties {
 
 using avm_v0 = avm_properties<512, 64, 5>;
 
-__inout (avalon_st_io, (
+__interface (avalon_st_io, (
   __in  (ch_bool) valid_in,  // inputs available
   __out (ch_bool) ready_out, // can receive inputs
   __out (ch_bool) valid_out, // outputs available
@@ -31,7 +31,7 @@ __inout (avalon_st_io, (
 ));
 
 template <typename T = avm_v0>
-__inout (avalon_mm_io, (
+__interface (avalon_mm_io, (
   __in  (ch_bit<T::DataW>)   readdata,
   __in  (ch_bool)            readdatavalid,
   __in  (ch_bool)            waitrequest,

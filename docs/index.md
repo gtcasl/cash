@@ -259,7 +259,7 @@ The 'MAC' sub-module are instantiated inside the top module using the 'ch_module
     </tr>
     <tr>
         <td>IO Types</td>
-        <td>__in, __out, __inout</td>
+        <td>__in, __out, __interface</td>
     </tr>
     <tr>
         <td>Sequential Types</td>
@@ -308,7 +308,7 @@ The following *ch_deq_io\<T\>* declararion defines its ’flipped’ interface w
 
 ```cash
 template <typename T>
-__inout (ch_enq_io, (
+__interface (ch_enq_io, (
   __in(T) data,
   __in(ch_bool) valid,
   __out(ch_bool) ready

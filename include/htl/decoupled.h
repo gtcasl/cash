@@ -8,19 +8,19 @@ namespace htl {
 using namespace ch::logic;
 
 template <typename T>
-__inout (ch_valid_in, (
+__interface (ch_valid_in, (
   __in (T) data,
   __in (ch_bool) valid
 ));
 
 template <typename T = void>
-__inout (ch_enq_io, ch_valid_in<T>, (
+__interface (ch_enq_io, ch_valid_in<T>, (
   __out (ch_bool) ready
 ));
 
 namespace detail {
-  __inout (enq_io_void, (
-    __in (ch_bool) valid,
+  __interface (enq_io_void, (
+    __in  (ch_bool) valid,
     __out (ch_bool) ready
   ));
 }
