@@ -331,7 +331,7 @@ Register variables *'rp'* and *'wp'* are assigned their next value via *'rp->nex
 template <typename T, unsigned N>
 class Fifo {
   __io(
-    (enq_io<T>) enq,
+    (enq_io<T>)             enq,
     (ch_flip_io<enq_io<T>>) deq
   );
   
@@ -369,17 +369,20 @@ Composition, inheritance, and templates are also supported on user-defined types
 The following listing shows a definition of an *enum* *'FlitType'*, a generic *union* *'FlitData'*, a *struct* *'Flit'*, and a vector *'Flits'*.
 
 ```cash
-__enum (FlitType, (Invalid, Valid));
+__enum (FlitType, (
+  Invalid, 
+  Valid
+));
 
 template <unsigned N>
 __union (FlitData, (
   (ch_int<N>) vi,
-  (ch_float) vf
+  (ch_float)  vf
 ));
 
 template <unsigned N>
 __struct (Flit, (
-  (FlitType) type,
+  (FlitType)    type,
   (FlitData<N>) data
 ));
 
@@ -1012,13 +1015,17 @@ public:
   __io (
     __in (ch_uint<avm_v0::AddrW>) dst,
     __in (ch_uint<avm_v0::AddrW>) src,
-    __in (ch_uint32)       count,
-    (avalon_st_io)         avs,
-    (avalon_mm_io<avm_v0>) avm_dst,
-    (avalon_mm_io<avm_v0>) avm_src
+    __in (ch_uint32)              count,
+    (avalon_st_io)                avs,
+    (avalon_mm_io<avm_v0>)        avm_dst,
+    (avalon_mm_io<avm_v0>)        avm_src
   );
 
-  __enum (ctrl_state, (idle, running, done));
+  __enum (ctrl_state, (
+    idle, 
+    running, 
+    done
+  ));
 
   sobel_ocl(uint32_t width, uint32_t height, uint32_t pipelen)
     : core_(width, height, pipelen)
