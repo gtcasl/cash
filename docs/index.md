@@ -303,7 +303,7 @@ Input/Output types in Cash are implemented using type specifiers to assign a dir
 *__out(T)* is used to define a output signal of data type *T*.
 Cash implements a generic utility function, *ch_flip_io\<T\>*, for inverting the direction of a given I/O type at compile time.
 This is particularly useful when connecting master-slave components.
-The following code snippet defines a generic I/O type *ch_enq_io\<T\>*, encapsulating two input signals *'data'* and *'valid'*, and an output signal *'ready'*. 
+The following code snippet defines a generic I/O interface *ch_enq_io\<T\>*, encapsulating two input signals *'data'* and *'valid'*, and an output signal *'ready'*. 
 The following *ch_deq_io\<T\>* declararion defines its ’flipped’ interface where *'data'* and *'valid'* are now ouput signals, and *'ready'* is an input signal.
 
 ```cash
