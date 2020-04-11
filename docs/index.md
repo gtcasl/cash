@@ -331,7 +331,7 @@ Register variables *'rp'* and *'wp'* are assigned their next value via *'rp->nex
 ```cash
 template <typename T, unsigned N>
 class Fifo {
-  __io(
+  __io (
     (enq_io<T>)             enq,
     (ch_flip_io<enq_io<T>>) deq
   );
@@ -837,9 +837,9 @@ The example also includes an ALU test module to illustrate how to instantiate an
 ```cash
 struct MyDiv {
   __io (
-    __in(ch_int32) lhs,
-    __in(ch_int32) rhs,
-   __out(ch_int32) dst,
+    __in  (ch_int32) lhs,
+    __in  (ch_int32) rhs,
+    __out (ch_int32) dst,
   );
   
   void eval() {
@@ -853,10 +853,11 @@ struct MyDiv {
 
 struct ALU {
   __io (
-    __in(ch_int32) a,
-    __in(ch_int32) b,
-   __out(ch_int32) c,
-  ); 
+    __in  (ch_int32) a,
+    __in  (ch_int32) b,
+    __out (ch_int32) c,
+  );
+  
   void describe() {
     ch_udf_comb<MyDiv> div;
     div.io.lhs = io.a; 
@@ -875,9 +876,9 @@ The *'ch_udf_seq'* Cash interface is used in this case to tell the compiler that
 ```cash
 struct AES {
   __io (
-    __in(ch_int128) plaintext,
-    __in(ch_int128) key,
-   __out(ch_int128) ciphertext,
+    __in  (ch_int128) plaintext,
+    __in  (ch_int128) key,
+    __out (ch_int128) ciphertext,
   );
   
   void eval() {
@@ -892,10 +893,11 @@ struct AES {
 
 struct SoC {
   __io (
-    __in(ch_int128) a,
-    __in(ch_int128) b,
-   __out(ch_int128) c,
-  ); 
+    __in  (ch_int128) a,
+    __in  (ch_int128) b,
+    __out (ch_int128) c,
+  );
+  
   void describe() {
     ch_udf_seq<AES> aes;
     aes.io.plaintext = io.a; 
