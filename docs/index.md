@@ -143,11 +143,11 @@ struct MAC {
 template <unsigned I, unsigned O, unsigned N, unsigned P, unsigned M>
 struct MatMul {
   __io (
-    __in  (ch_bool) valid_in,
-    __in  (ch_vec<ch_int<I>, N>) a_in,
-    __in  (ch_vec<ch_int<I>, P>) b_in,
+    __in  (ch_bool)                         valid_in,
+    __in  (ch_vec<ch_int<I>, N>)            a_in,
+    __in  (ch_vec<ch_int<I>, P>)            b_in,
     __out (ch_vec<ch_vec<ch_int<O>, P>, N>) c_out,
-    __out (ch_bool) valid_out
+    __out (ch_bool)                         valid_out
   );
 
   void describe() {
@@ -1021,11 +1021,7 @@ public:
     (avalon_mm_io<avm_v0>)        avm_src
   );
 
-  __enum (ctrl_state, (
-    idle, 
-    running, 
-    done
-  ));
+  __enum (ctrl_state, (idle, running, done));
 
   sobel_ocl(uint32_t width, uint32_t height, uint32_t pipelen)
     : core_(width, height, pipelen)
