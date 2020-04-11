@@ -309,9 +309,9 @@ The following *ch_deq_io\<T\>* declararion defines its ’flipped’ interface w
 ```cash
 template <typename T>
 __interface (ch_enq_io, (
-  __in(T) data,
-  __in(ch_bool) valid,
-  __out(ch_bool) ready
+  __in  (T)       data,
+  __in  (ch_bool) valid,
+  __out (ch_bool) ready
 ));
 
 template <typename T> 
