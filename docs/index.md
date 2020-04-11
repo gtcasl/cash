@@ -133,9 +133,10 @@ struct MAC {
   );
 
   void describe() {
+    auto sum = ch_mul<O>(io.a_in, io.b_in) + io.c_out;
     io.a_out = ch_nextEn(io.a_in, io.enable, 0);
     io.b_out = ch_nextEn(io.b_in, io.enable, 0);
-    io.c_out = ch_nextEn(io.c_out + ch_mul<O>(io.a_in, io.b_in), io.enable, 0);
+    io.c_out = ch_nextEn(sum, io.enable, 0);
   }
 };
 
