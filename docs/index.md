@@ -892,7 +892,7 @@ int main() {
   return 0;
 }
 ```
-
+#### Generated Verilog
 ```verilog
 module MyModule(
   input wire io_clk1,
@@ -929,6 +929,7 @@ module MyModule(
 endmodule
 ```
 
+#### Generated VCD trace
 ![systolic matmul](/assets/img/clock_domains_vcd_trace.png)
 
 ### User-Defined Function
