@@ -322,8 +322,8 @@ using ch_deq_io = ch_flip_io<ch_enq_io<T>>;
 #### Sequential Types
 
 Sequential objects in Cash are defined using generic objects *ch_reg\<T\>* and *ch_mem\<T,N\>* to declare register and memory objects respectively. 
-By default, state elements are updated on the rising edgeof the clock, which is declared implicitly for simplicity.
-The DSL provides a stack-based interface for modifying the default clock domain. 
+The default clock and reset signals are declared implicitly by the compiler.
+By default, sequential objects are updated on the rising edge of the default clock and the reset is synchronous. 
 Cash uses the ’next-value’ semantic to specify the next state of a register object.
 The folowing listing shows a Cash implementation of a generic FIFO, configurable by providing the enclosed element data type *T* and depth *N*. 
 Register variables *'rp'* and *'wp'* are assigned their next value via *'rp->next'* or *'wp->next'* member, respectively.
@@ -809,6 +809,127 @@ void describe() {
   };
 }
 ```
+
+### Clock Domains
+
+The Cash DSL supports using defining custom clock and reset signals via clock domains.
+The DSL provides a stack-based interface for modifying the current clock domain.
+This is done using *ch_pushcd(clock, reset, posedge)* and *ch_popcd()* built-in functions.
+The following example illustrates the use of clock domains with two user-defined clocks and a user-defined reset signal. 
+The generated verilog program and VCD trace is also shown.
+
+```cash
+#include <cash/core.h>
+#include <assert.h>
+#include <iostream>
+
+using namespace ch::core;
+
+#define P_CLK1  1
+#define P_CLK2  2
+#define P_START (std::max(P_CLK1, P_CLK2) * 2)
+#define P_STOP  (P_START * 5)
+
+template <unsigned N>
+struct MyModule {
+  __io (
+    __in  (ch_bool)    clk1,
+    __in  (ch_bool)    clk2,
+    __in  (ch_bool)    reset,
+    __in  (ch_uint<N>) din,
+    __out (ch_uint<N>) dout
+  );
+
+  void describe() {
+    // posedge clk1, negedge reset
+    ch_pushcd(io.clk1, ~io.reset, true); 
+    ch_reg<ch_uint<N>> x(io.din);
+    ch_popcd();
+
+     // negedge clk2, negedge reset 
+    ch_pushcd(io.clk2, ~io.reset, false); 
+    ch_reg<ch_uint<N>> y(io.din);
+    ch_popcd();
+
+    // logic
+    x->next = x + 1;
+    y->next = y + 1;
+    io.dout = x + y;    
+
+    // add local variables to debug trace
+    __tap(x); 
+    __tap(y);
+  }
+};
+
+int main() {
+  ch_device<MyModule<8>> my_module;
+
+  ch_tracer tracer(my_module);
+
+  tracer.run([&](ch_tick t)->bool {
+    switch (t) {
+    case 0:
+      my_module.io.clk1  = 0;
+      my_module.io.clk2  = 1;
+      my_module.io.reset = 0;
+      my_module.io.din   = 7;
+      break;
+    default:      
+      if (0 == (t % P_CLK1)) my_module.io.clk1  = !my_module.io.clk1;
+      if (0 == (t % P_CLK2)) my_module.io.clk2  = !my_module.io.clk2;
+      if (t >= P_START)      my_module.io.reset = 1;
+      break;
+    }
+    return (t <= P_STOP);
+  });
+
+  std::cout << "result = " << my_module.io.dout << std::endl;
+
+  ch_toVerilog("my_module.v", my_module);
+  tracer.toVCD("my_module.vcd");
+
+  return 0;
+}
+```
+
+```verilog
+module MyModule(
+  input wire io_clk1,
+  input wire io_clk2,
+  input wire io_reset,
+  input wire[7:0] io_din,
+  output wire[7:0] io_dout
+);
+  reg[7:0] x_11, y_16;
+  wire _inv_7;
+  wire[7:0] _add_19, _add_21, _add_22, x, y;
+
+  always @ (posedge io_clk1) begin
+    if (_inv_7)
+      x_11 <= io_din;
+    else
+      x_11 <= _add_19;
+  end
+  always @ (negedge io_clk2) begin
+    if (_inv_7)
+      y_16 <= io_din;
+    else
+      y_16 <= _add_21;
+  end
+  assign _inv_7 = ~io_reset;
+  assign _add_19 = x_11 + 8'h1;
+  assign _add_21 = y_16 + 8'h1;
+  assign _add_22 = x_11 + y_16;
+  assign x = x_11;
+  assign y = y_16;
+
+  assign io_dout = _add_22;
+
+endmodule
+```
+
+![systolic matmul](/assets/img/clock_domains_vcd_trace.png)
 
 ### User-Defined Function
 
