@@ -30,7 +30,8 @@ Other dependencies include:
 Install Build Essentials:
 ```shell    
 $ sudo apt-get install build-essential git cmake zlib1g-dev
-```    
+```
+
 
 Install IVerilog:
 ```shell
