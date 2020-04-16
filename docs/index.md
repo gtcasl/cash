@@ -15,7 +15,7 @@ Cash enables developpers to describe and simulate their hardware designs in a si
 
 # Build Instructions
 
-## Dependencies
+#### Dependencies
 
 Cash requires a C++17 compiler to build and works best with clang 9 to leverage its custom plugin for code reflection.
 
@@ -26,7 +26,7 @@ Other dependencies include:
   - [iVerilog](http://iverilog.icarus.com)
   - [Catch](https://github.com/catchorg/Catch2)
 
-## System Setup
+#### System Setup
 
 **Minimal System Requirement: Ubuntu 18.04 (Bionic)**
 
@@ -44,7 +44,7 @@ $ sudo apt-get install clang-9 libclang-9-dev
 $ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
 $ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
 ```
-## Installation
+#### Installation
 
 To install Cash you must clone the repository and create a build directory:
 ```shell
@@ -1285,7 +1285,7 @@ You can execute the unit-test manually using he following command:
 
 # Contributions
 
-Contributions are welcome, just email me at blaise.tine@gmail.com.
+Contributions to this codebase are welcome, please email me at blaise.tine@gmail.com.
 
 # License
 
