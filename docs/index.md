@@ -20,7 +20,6 @@ Cash enables developpers to describe and simulate their hardware designs in a si
 Cash requires a C++17 compiler to build and works best with clang 9 to leverage its custom plugin for code reflection.
 
 Other dependencies include:
-
   - [LLVM](https://www.llvm.org)
   - [LIBJIT](https://www.gnu.org/software/libjit)
   - [iVerilog](http://iverilog.icarus.com)
@@ -28,22 +27,33 @@ Other dependencies include:
 
 #### System Setup
 
-**Minimal System Requirement: Ubuntu 18.04 (Bionic)**
-
 Install Build Essentials:
 ```shell    
 $ sudo apt-get install build-essential git cmake zlib1g-dev
 ```    
+
 Install IVerilog:
 ```shell
 $ sudo apt-get install iverilog
-```    
-Install LLVM 9:
+```   
+
+Install LLVM 9 (Ubuntu 16.04 (Xenial)):
+```shell
+$ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+$ add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+$ apt-get update
+$ apt-get install clang-9 libclang-9-dev
+$ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
+$ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
+```
+
+Install LLVM 9 (Ubuntu 18.04 (Bionic)):
 ```shell
 $ sudo apt-get install clang-9 libclang-9-dev
 $ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
 $ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
 ```
+
 #### Installation
 
 To install Cash you must clone the repository and create a build directory:
@@ -51,15 +61,18 @@ To install Cash you must clone the repository and create a build directory:
 $ git clone https://github.com/gtcasl/cash.git && cd cash
 $ mkdir build && cd build
 ```
+
 Then use run cmake to generate the makefile and export the package informations:
 ```shell
 $ cmake ..
 ```
+
 Build and install Cash on your system:
 ```shell
 $ make -j`nproc` all
 $ sudo make install
 ```
+
 Test your build
 ```shell
 $ make test
@@ -71,6 +84,7 @@ Install LIBJIT dependencies:
 ```shell  
 $ sudo apt-get install libtool autoconf flex bison texinfo
 ```  
+
 Build and install LIBJIT:
 ```shell  
 $ git clone https://git.savannah.gnu.org/git/libjit.git  
@@ -84,6 +98,7 @@ $ sudo make install
 $ popd
 $ popd
 ```  
+
 Build and install Cash using 'JIT=LIBJIT' configuration option:
 ```shell  
 $ mkdir build && cd build
