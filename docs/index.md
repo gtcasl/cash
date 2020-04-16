@@ -13,7 +13,9 @@ Cash enables developpers to describe and simulate their hardware designs in a si
   <figcaption style="text-align:center;font-weight:bold">The Cash Framework Overview.</figcaption>
 </figure>
 
-# Requirements
+# Build Instructions
+
+## Dependencies
 
 Cash requires a C++17 compiler to build and works best with clang 9 to leverage its custom plugin for code reflection.
 
@@ -24,12 +26,7 @@ Other dependencies include:
   - [iVerilog](http://iverilog.icarus.com)
   - [Catch](https://github.com/catchorg/Catch2)
 
-# Build Status
-
-[![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
-[![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
-
-# System Setup
+## System Setup
 
 **Minimal System Requirement: Ubuntu 18.04 (Bionic)**
 
@@ -47,7 +44,7 @@ $ sudo apt-get install clang-9 libclang-9-dev
 $ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
 $ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
 ```
-# Installation
+## Installation
 
 To install Cash you must clone the repository and create a build directory:
 ```shell
