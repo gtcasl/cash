@@ -32,7 +32,6 @@ Install Build Essentials:
 $ sudo apt-get install build-essential git cmake zlib1g-dev
 ```
 
-
 Install IVerilog:
 ```shell
 $ sudo apt-get install iverilog
