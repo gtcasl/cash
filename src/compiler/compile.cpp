@@ -159,6 +159,18 @@ void compiler::optimize() {
    && (platform::self().cflags() & ch_flags::merged_only_opt) != 0) {
     changed = false;
   }
+  ctx_->dump_cfg(std::cout);
+
+
+  /*for now, must be run before cfg optimizations since the opts change/create new nodes
+  which don't propogate their labels. Assuming the high level cfg functionality 
+  is the same as before the opts, the verification can safely be run here! */
+
+  /*for now just verifying outputs such as io.out = io.input1 + io.input2*/
+  bool secure = compiler::verifyOutputs();
+  std::cout <<"verification result: " << secure << std::endl;
+
+
 
   for (;changed;) {
     changed = this->prune_identity_proxies();
@@ -175,30 +187,9 @@ void compiler::optimize() {
     rpo_total += tracker.deleted();
   }
 
-
+  std::cout << "changed cfg --- " << std::endl;
   ctx_->dump_cfg(std::cout);
 
-  for (auto node : ctx_->outputs()) {
-    //hacky, but set output's label to be the first srcs label
-    //e.g. output4(io.out, #5) <-set output4 node's labelt o be io.out's label
-    node->set_label(node->srcs()[0].impl()->label());
-
-    //std::cout << "supposed output var: " << node->srcs()[0].impl()->type() << std::endl;
-    //std::cout << "output node: " << node->id() << " : " << node->label() << std::endl;
-
-    
-    std::cout << "secure? " << compiler::isNodeSecureFromSrcs(node) << std::endl;
-      /*node->print(std::cout);
-      for (auto n: node->srcs()) {
-
-        if (sec_api::isSecure(n.impl()->label(), node->label())) {
-          std::cout << "security mismatch?" << std::endl;
-        }
-      }
-      */
-  }
-
-  //how to iterate through the nodes?
 #ifndef NDEBUG
   // dump nodes
   if (platform::self().cflags() & ch_flags::dump_cfg) {
@@ -227,6 +218,19 @@ void compiler::optimize() {
   CH_DBG(2, "After optimization: %lu\n", tracker.current());
 }
 
+bool compiler::verifyOutputs() {
+  bool secure = true;
+  for (auto node : ctx_->outputs()) {
+    std::cout << "starting verification" << std::endl;
+    //std::cout << "supposed output var: " << node->srcs()[0].impl()->type() << std::endl;
+    //std::cout << "output node: " << node->id() << " : " << node->label() << std::endl;
+
+    
+    secure &= compiler::isNodeSecureFromSrcs(node);
+  }
+  return secure;
+}
+
 bool compiler::isNodeSecureFromSrcs(lnodeimpl *Node) {
 
   if (Node->label() == seclabel::UNSET && Node->num_srcs() == 0) {
@@ -245,10 +249,6 @@ bool compiler::isNodeSecureFromSrcs(lnodeimpl *Node) {
     if (Node->label() == seclabel::UNSET && n.impl()->label() > curlabel) {
       curlabel = n.impl()->label();
     }
-    /*if (!sec_api::isSecure(n.impl()->label(), Node->label())) {
-        std::cout << "insecure flow from: " << Node->id() << "to " << n.impl()->id() << std::endl;
-        return false;
-    }*/
   }
 
   //and then assign the lowest bounded of the srcs if there's no label
