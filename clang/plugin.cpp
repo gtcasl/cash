@@ -193,6 +193,19 @@ public:
   }
 
   bool VisitVarDecl(clang::VarDecl *VD) { 
+
+    //VD->dump();
+    /*clang::LangOptions langOpts;                                                                                                                                                                                   
+    if(VD->hasAttrs()){                                                                                                                                                                              
+      clang::AttrVec vec = VD->getAttrs();                                                                                                                                                     
+      llvm::outs() << vec[0]->getSpelling();                                                                                                                                                   
+      llvm::outs() << clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(                                                                                                                                 
+                                          vec[0]->getRange()),                                                                                                                                    
+                                          compiler_.getSourceManager(),                                                                                                                                    
+                                          langOpts).str().c_str();                                                                                                                                       
+          }      */           
+
+
     if (token_ == nullptr)
       return true;
 

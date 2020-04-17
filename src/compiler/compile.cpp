@@ -13,6 +13,7 @@
 #include "ordered_set.h"
 #include "interval.h"
 #include "mem.h"
+#include "sec.h"
 
 using namespace ch::internal;
 
@@ -174,6 +175,30 @@ void compiler::optimize() {
     rpo_total += tracker.deleted();
   }
 
+
+  ctx_->dump_cfg(std::cout);
+
+  for (auto node : ctx_->outputs()) {
+    //hacky, but set output's label to be the first srcs label
+    //e.g. output4(io.out, #5) <-set output4 node's labelt o be io.out's label
+    node->set_label(node->srcs()[0].impl()->label());
+
+    //std::cout << "supposed output var: " << node->srcs()[0].impl()->type() << std::endl;
+    //std::cout << "output node: " << node->id() << " : " << node->label() << std::endl;
+
+    
+    std::cout << "secure? " << compiler::isNodeSecureFromSrcs(node) << std::endl;
+      /*node->print(std::cout);
+      for (auto n: node->srcs()) {
+
+        if (sec_api::isSecure(n.impl()->label(), node->label())) {
+          std::cout << "security mismatch?" << std::endl;
+        }
+      }
+      */
+  }
+
+  //how to iterate through the nodes?
 #ifndef NDEBUG
   // dump nodes
   if (platform::self().cflags() & ch_flags::dump_cfg) {
@@ -200,6 +225,51 @@ void compiler::optimize() {
   CH_DBG(2, "*** deleted %lu RPO nodes\n", rpo_total);
   CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   CH_DBG(2, "After optimization: %lu\n", tracker.current());
+}
+
+bool compiler::isNodeSecureFromSrcs(lnodeimpl *Node) {
+
+  if (Node->label() == seclabel::UNSET && Node->num_srcs() == 0) {
+    Node->set_label(seclabel::L);
+  }
+
+  seclabel curlabel = seclabel::L;
+
+  for (auto n: Node->srcs()) {
+    std::cout << "visited " << n.impl()->id() << std::endl;
+    if (!compiler::isNodeSecureFromSrcs(n.impl())) {
+      return false;
+    }
+
+    //if the node doesn't have a label, find which src has the highest
+    if (Node->label() == seclabel::UNSET && n.impl()->label() > curlabel) {
+      curlabel = n.impl()->label();
+    }
+    /*if (!sec_api::isSecure(n.impl()->label(), Node->label())) {
+        std::cout << "insecure flow from: " << Node->id() << "to " << n.impl()->id() << std::endl;
+        return false;
+    }*/
+  }
+
+  //and then assign the lowest bounded of the srcs if there's no label
+  if (Node->label() == seclabel::UNSET) {
+    std::cout << "upgrading node: " << Node->id() << " to " << curlabel << std::endl;
+      Node->set_label(curlabel);
+  }
+
+  std::cout << Node->id() << ": " << Node->label() << std::endl;
+
+  for (auto n: Node->srcs()) {
+    if (!sec_api::isSecure(n.impl()->label(), Node->label())) {
+        std::cout << "insecure flow from: " << Node->id() << "to " << n.impl()->id() << std::endl;
+        return false;
+    }
+  }
+  
+  //if not specified, a node shall either have label=lowest order or highest order at that level.
+
+  
+  return true;
 }
 
 bool compiler::dead_code_elimination() {

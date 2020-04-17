@@ -3,6 +3,7 @@
 #include "logic.h"
 #include "system.h"
 #include "streams.h"
+#include "sec.h"
 
 namespace ch {
 namespace internal {
@@ -309,6 +310,14 @@ public:
     return this->at(index);
   }
 
+  void set_label(void) const {
+    auto lnode = logic_accessor::buffer(*this);
+
+
+  std::cout << lnode.name() << " " << lnode.id() << std::endl;
+  std::cout << lnode.impl()->name() << " " <<  lnode.impl()->id() << std::endl;
+  }
+
   CH_LOGIC_INTERFACE(T)
 
   CH_LOGIC_OPERATOR2B_IMPL(ch_bitbase, operator==, do_eq)
@@ -447,6 +456,7 @@ protected:
   }
 
   friend class logic_accessor;
+  friend class sec_api;
 };
 
 }

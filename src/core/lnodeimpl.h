@@ -1,6 +1,8 @@
 #pragma once
 
 #include "lnode.h"
+#include "sec.h"
+#include <iostream>
 
 #define CH_LNODE_TYPE(t) type_##t,
 #define CH_LNODE_NAME(n) #n,
@@ -37,6 +39,7 @@ namespace internal {
   
 class context;
 class cdimpl;
+//enum class seclabel;
 struct sloc_ctx_t;
 
 enum lnodetype {
@@ -117,6 +120,14 @@ public:
     return users_;
   }
 
+  auto label() const {
+    return label_;
+  }
+
+  void set_label(seclabel labelt) {
+    label_ = labelt; //should probably cause an update to all nodes stemming from this one
+  }
+
   bool has_user(lnode* user) const;
 
   void add_user(lnode* user);
@@ -163,6 +174,8 @@ private:
   lnodeimpl* prev_;
   lnodeimpl* next_;
   lnode* users_;
+
+  seclabel label_;
 
   friend class context;
   friend class node_list;

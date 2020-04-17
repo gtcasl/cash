@@ -56,6 +56,7 @@ set(SOURCE_FILES
   src/core/lnodeimpl.cpp
   src/core/logic.cpp
   src/core/system.cpp
+  src/core/sec.cpp
   src/core/deviceimpl.cpp
   src/ast/ioimpl.cpp
   src/ast/proxyimpl.cpp
