@@ -1167,7 +1167,7 @@ ch_device<MyModule<ch_bit2, 2>> my_device;
 ch_simulator simulator(my_device);
 my_device.io.din  = 1;  // assign all your input values
 my_device.io.push = 1;
-simulator.run(20);  // execute the whole simulation for 20 cycles
+simulator.run(20);  // run the simulation for 20 cycles
 assert(my_device.io.full == true);   // check your output values
 ```
 
