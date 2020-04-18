@@ -322,9 +322,9 @@ The *io* interface holds three inputs ports *cin*, *lhs*, and *rhs*, and two out
 template <unsigned N>
 struct Adder {
   __io (
-    __in (ch_uint1)    cin,
-    __in (ch_uint<N>)  lhs,
-    __in (ch_uint<N>)  rhs,
+    __in  (ch_uint1)   cin,
+    __in  (ch_uint<N>) lhs,
+    __in  (ch_uint<N>) rhs,
     __out (ch_uint<N>) out,
     __out (ch_uint1)   cout
   );
