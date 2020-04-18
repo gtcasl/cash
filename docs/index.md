@@ -1165,21 +1165,21 @@ There are three ways of invoking the Cash simulator:
 
 ```cash
 ch_device<MyModule<ch_bit2, 2>> my_device;
-ch_simulator sim(my_device);
+ch_simulator simulator(my_device);
 my_device.io.din  = 1;  // assign all your input values
 my_device.io.push = 1;
-sim.run(cycles);  // execute the whole simulation for N cycles
+simulator.run(cycles);  // execute the whole simulation for N cycles
 assert(my_device.io.full == true);   // check your output values
 ```
 
 2) Callback mode: when the input values have to change during the simulation or when you need to check your output at a specific time.
-    use use a lambda callback function to intercept the simulator after every simulation step.
+   You use a lambda callback function to intercept the simulator and apply your changes before every simulation step.
 
 ```cash
 int main() {
   ch_device<MyModule<ch_bit2, 2>> my_device;
-  ch_simulator sim(my_device);
-  sim.run([&](ch_tick t)->bool {
+  ch_simulator simulator(my_device);
+  simulator.run([&](ch_tick t)->bool {
     switch (t) {
     case 0:
       my_device.io.din  = 1;
@@ -1206,15 +1206,15 @@ int main() {
 ```cash
 int main() {
   ch_device<MyModule<ch_bit2, 2>> my_device;
-  ch_simulator sim(my_device);
+  ch_simulator simulator(my_device);
   ch_tick t = 0;
-  t = sim.reset(t);
+  t = simulator.reset(t);
   my_device.io.din  = 1;
   my_device.io.push = 1;
-  t = sim.step(t, 2);  // advance one cycle (2 ticks)
+  t = simulator.step(t, 2);  // advance one cycle (2 ticks)
   my_device.io.din  = 2;
   my_device.io.push = 1;
-  t = sim.step(t, 2);  // advance one cycle (2 ticks)
+  t = simulator.step(t, 2);  // advance one cycle (2 ticks)
   assert(my_device.io.full == true); // check the result
   return 0;
 }
