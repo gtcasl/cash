@@ -680,7 +680,7 @@ using Flits = ch_vec<Flit<N>, 16>;
       <td rowspan="4">Buffers</td>
     </tr>
     <tr>
-        <td>Single Latch w/en</td>
+        <td>Single Latch w/ enable</td>
         <td>ch_nextEn</td>
         <td>all types</td>
     </tr>
@@ -690,7 +690,7 @@ using Flits = ch_vec<Flit<N>, 16>;
         <td>all types</td>        
     </tr>
     <tr>
-        <td>Delay Buffer w/en</td>
+        <td>Delay Buffer w/ enable</td>
         <td>ch_delayEn</td>
         <td>all types</td>
     </tr>  
