@@ -37,21 +37,17 @@ Install IVerilog:
 $ sudo apt-get install iverilog
 ```   
 
-Install LLVM 9 (Ubuntu 16.04 (Xenial)):
+Install LLVM 9 (Ubuntu 18.04 and above):
+```shell
+$ sudo apt-get install clang-9 libclang-9-dev
+```
+
+Install LLVM 9 (Ubuntu 16.04):
 ```shell
 $ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
 $ add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
 $ apt-get update
 $ apt-get install clang-9 libclang-9-dev
-$ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
-$ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
-```
-
-Install LLVM 9 (Ubuntu 18.04 (Bionic)):
-```shell
-$ sudo apt-get install clang-9 libclang-9-dev
-$ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 100
-$ sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 100
 ```
 
 #### Installation
