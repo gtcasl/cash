@@ -73,7 +73,24 @@ public:
     auto lnode = internal::logic_accessor::buffer(Obj);
     set_label_int(lnode, labelt);
   }
+  template <class T, class Z, class K> //will have to later enforce K to be constrained on Z
+  static void set_label_dyn(T dst, Z src, std::function<seclabel(K)> typefunc) {
+    auto lnodedst = internal::logic_accessor::buffer(dst);
+    auto lnodesrc = internal::logic_accessor::buffer(src);
+    std::function<seclabel()> f = [=]() { //copy capture?
+      /* return typeFunc(src->impl()->value()); //how to get value from node?
+      //is this feasible here without using ctx?
+      */
+      //temporary
+      K obj;
+      return typefunc(obj);
+    };
+    set_dynlabel_int(lnodedst, lnodesrc, f);
+  }
   static void set_label_int(internal::logic_buffer &lnode, seclabel labelt);
+  static void set_dynlabel_int(internal::logic_buffer &lnodedst,
+                                std::function<seclabel()> typeFunc);
+
 protected:
 
   friend class internal::system_accessor;

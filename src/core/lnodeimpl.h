@@ -124,6 +124,14 @@ public:
     return label_;
   }
 
+  auto dynlabel() {
+    return typefunc_();
+  }
+
+  auto set_dynlabel(std::function<seclabel()> typefunc) {
+    typefunc_ = typefunc;
+  }
+
   void set_label(seclabel labelt) {
     label_ = labelt; //should probably cause an update to all nodes stemming from this one
   }
@@ -176,6 +184,7 @@ private:
   lnode* users_;
 
   seclabel label_;
+  std::function<seclabel()> typefunc_;
 
   friend class context;
   friend class node_list;
