@@ -1163,12 +1163,15 @@ There are three ways of invoking the Cash simulator:
 1) Single-run mode: when the input values do not need to change during the simulation.
 
 ```cash
-ch_device<MyModule<ch_bit2, 2>> my_device;
-ch_simulator simulator(my_device);
-my_device.io.din  = 1;  // assign inputs
-my_device.io.push = 1;
-simulator.run(20);  // run the simulation for 20 cycles
-assert(my_device.io.full == true);  // check outputs
+int main() {
+  ch_device<MyModule<ch_bit2, 2>> my_device;
+  ch_simulator simulator(my_device);
+  my_device.io.din  = 1;  // assign inputs
+  my_device.io.push = 1;
+  simulator.run(20);  // run the simulation for 20 cycles
+  assert(my_device.io.full == true);  // check outputs
+  return 0;
+}
 ```
 
 2) Callback mode: when the input values have to change during the simulation or when you need to check your output at a specific time.
