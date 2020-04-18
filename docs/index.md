@@ -840,7 +840,8 @@ It is also possible to implement inheritance with interfaces. You declare an int
 
 #### Binding interfaces
 
-One of the advantages of using interfaces is for automatic binding or bulk connection where to connect two interfaces you don't have to explicitly connect each port, but simply bind the interface directly and let the compiler infer the correct connection betwen the nested ports. To bind two interfaces, you use the C++ *call* operator().
+One of the advantages of using interfaces is for automatic binding or bulk connection where to connect two interfaces you don't have to explicitly connect each port, but simply bind the interface directly and let the compiler infer the correct connection betwen the nested ports. To bind two interfaces, you use the C++ *call* *operator()*.
+
 The following example defines three interfaces *link_io*, *plink_io* which derives from *link_io*, and *filter_io* which uses *plink_io* as nested member. The binding of these interfaces is illustrated inside module *FilterBlock* when connecting sub-module *Filter* instance *f1_*, and *f2_*. 
 
 ```cash
@@ -849,15 +850,18 @@ __interface (link_io, (
   __out (T) data,
   __out (ch_bool) valid
 ));
+
 template <typename T>
 __interface (plink_io, link_io<T>, (  // using inheritance
   __out (ch_bool) parity
 ));
+
 template <typename T>
 __interface (filter_io, (
   (plink_io<T>) x,              // nesting interfaces    
   (ch_flip_io<plink_io<T>>) y   // using flipped interfaces
 ));
+
 template <typename T>
 struct Filter {
   filter_io<T> io;
@@ -869,6 +873,7 @@ struct Filter {
     io.y.valid  = ch_delay(io.x.valid, 1, 0);
   }
 };
+
 template <typename T>
 struct FilterBlock {
   filter_io<T> io;
