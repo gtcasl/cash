@@ -380,6 +380,28 @@ class Fifo {
 };
 ```
 
+There are three preferred ways of using registers in Cash:
+1) ch_next(obj, init);
+   ch_nextEn(obj, enable, init);
+```cash
+ch_bool x;
+auto y = ch_next(x, false);
+```
+2) ch_delay(obj, delay, init);
+   ch_delayEn(obj, delay, enable, init);
+```cash
+ch_bool x;
+auto y = ch_delay(x, 4, 0);  // 4 cycles shift registers
+```
+3) ch_reg<T>;
+```cash
+ch_reg<ch_bool> x(0);
+x->next = x + 1;
+```
+use option 1) as much as possible for simplicity if you need a one-cycle latch
+use option 2) if you need to delay the signal by more than  1 cycle
+use option 3) if you need more complex logic for the register.
+
 #### User-Defined Types
 
 The Cash DSL supports aggregate types including *enums*, *structs*, and *unions*, defined using *__enum()*, *__struct()*, and *__union ()* declarations, respectively. 
