@@ -125,12 +125,10 @@ $ cp /path_to_project/scripts/Makefile .
 
 ```cash
 #include <cash/core.h>
-#include <cash/htl/counter.h>
 #include <assert.h>
 #include <iostream>
 
 using namespace ch::core;
-using namespace ch::htl;
 
 // Generic MAC module
 template <uint I, uint O>
@@ -167,8 +165,9 @@ struct MatMul {
     // systolic 2D array of MAC units
     ch_vec<ch_vec<ch_module<MAC<I, O>>, P>, N> macs;
 
-    // using counter object from HTL library
-    ch_counter<N+P+M> ctr(io.valid_in);
+    // a simple counter
+    ch_uint<log2up(N+P+M)> ctr;
+    ctr = ch_nextEn(ctr + 1, io.valid_in, 0);
 
     // MAC array connections
     for (unsigned r = 0; r < N; ++r) {
@@ -183,7 +182,7 @@ struct MatMul {
     }
 
     // output valid?
-    io.valid_out = ch_nextEn(ctr.value() == N+P+M-1, io.valid_in, false);
+    io.valid_out = ch_nextEn(ctr == N+P+M-1, io.valid_in, false);
   }
 };
 
