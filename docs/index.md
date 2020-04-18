@@ -398,9 +398,11 @@ auto y = ch_delay(x, 4, 0);  // 4 cycles shift registers
 ch_reg<ch_bool> x(0);
 x->next = x + 1;
 ```
-use option 1) as much as possible for simplicity if you need a one-cycle latch
-use option 2) if you need to delay the signal by more than  1 cycle
-use option 3) if you need more complex logic for the register.
+Use option 1) as much as possible for simplicity if you need a one-cycle latch.
+
+Use option 2) if you need to delay the signal for multiple cycles.
+
+Use option 3) if you need a more complex logic for the register.
 
 #### User-Defined Types
 
