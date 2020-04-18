@@ -313,21 +313,28 @@ auto c = 1080_h128;  // 128-bit hexadecimal
 Input/Output types in Cash are implemented using type specifiers to assign a direction of incoming and outgoing signals.
 *__in(T)* is used to define a input signal of data type *T*.
 *__out(T)* is used to define a output signal of data type *T*.
-Cash implements a generic utility function, *ch_flip_io\<T\>*, for inverting the direction of a given I/O type at compile time.
-This is particularly useful when connecting master-slave components.
-The following code snippet defines a generic I/O interface *ch_enq_io\<T\>*, encapsulating two input signals *'data'* and *'valid'*, and an output signal *'ready'*. 
-The following *ch_deq_io\<T\>* declararion defines its ’flipped’ interface where *'data'* and *'valid'* are now ouput signals, and *'ready'* is an input signal.
+The ports interface of a module is declared using *__io ()* construct where all the inputs and outputs are defined.
+Inside the module's *describe()* implementation, the ports interface is access via the *io* public class member.
+The following example illustrates the simple us of I/O types for a generic full adder.
+The *io* interface holds three inputs ports *cin*, *lhs*, and *rhs*, and two output ports *out*, and *cout*.
 
 ```cash
-template <typename T>
-__interface (ch_enq_io, (
-  __in  (T)       data,
-  __in  (ch_bool) valid,
-  __out (ch_bool) ready
-));
+template <unsigned N>
+struct Adder {
+  __io (
+    __in (ch_uint1)    cin,
+    __in (ch_uint<N>)  lhs,
+    __in (ch_uint<N>)  rhs,
+    __out (ch_uint<N>) out,
+    __out (ch_uint1)   cout
+  );
 
-template <typename T> 
-using ch_deq_io = ch_flip_io<ch_enq_io<T>>;
+  void describe() {
+    auto sum = ch_pad<1>(io.lhs) + io.rhs + io.cin;
+    io.out  = ch_slice<N>(sum);
+    io.cout = sum[N];
+  }
+};
 ```
 
 #### Sequential Types
