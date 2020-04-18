@@ -693,7 +693,6 @@ using Flits = ch_vec<Flit<N>, 16>;
         <td>Delay Buffer w/en</td>
         <td>ch_delayEn</td>
         <td>all types</td>
-        <td rowspan="4">Buffers</td>
     </tr>  
     <tr>
         <td>Current Clock</td>
