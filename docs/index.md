@@ -1159,7 +1159,66 @@ The *ch_tracer* object implements the following functions to generate various tr
 - *toVerilator(file)*: creates a [Verilator](https://www.veripool.org/wiki/verilator0) testbench that simulates the execution trace 
 - *toSystemC(file)*: creates a [SystemC](https://www.accellera.org/downloads/standards/systemc) testbench that simulates the execution trace
 
-Our *MatMul* QuickStart example illustrates the use of the *ch_tracer* object to capture VCD traces.
+There are three ways of invoking the Cash simulator:
+
+1) Single-run mode: when the input values do not need to change during the simulation
+
+```cash
+ch_device<MyModule<ch_bit2, 2>> my_device;
+ch_simulator sim(my_device);
+my_device.io.din  = 1;  // assign all your input values
+my_device.io.push = 1;
+sim.run(cycles);  // execute the whole simulation for N cycles
+assert(my_device.io.full == true);   // check your output values
+```
+
+2) Callback mode: when the input values have to change during the simulation or when you need to check your output at a specific time.
+    use use a lambda callback function to intercept the simulator after every simulation step.
+
+```cash
+int main() {
+  ch_device<MyModule<ch_bit2, 2>> my_device;
+  ch_simulator sim(my_device);
+  sim.run([&](ch_tick t)->bool {
+    switch (t) {
+    case 0:
+      my_device.io.din  = 1;
+      my_device.io.push = 1;
+      break;      
+    case 2:
+      assert(my_device.io.full == false);
+      my_device.io.din  = 2;
+      my_device.io.push = 1;
+      break;
+    case 4:
+      assert(my_device.io.full == true); // check the result at this time
+      break;
+    }
+    return (t <= 4);
+  });
+  return 0;
+}
+```
+
+3) Stepping mode: when the input values have to change during the simulation or when you need to check your output at a specific time.
+     you want to directly call the simulation and manually advance the steps.
+
+```cash
+int main() {
+  ch_device<MyModule<ch_bit2, 2>> my_device;
+  ch_simulator sim(my_device);
+  ch_tick t = 0;
+  t = sim.reset(t);
+  my_device.io.din  = 1;
+  my_device.io.push = 1;
+  t = sim.step(t, 2);  // advance one cycle (2 ticks)
+  my_device.io.din  = 2;
+  my_device.io.push = 1;
+  t = sim.step(t, 2);  // advance one cycle (2 ticks)
+  assert(my_device.io.full == true); // check the result
+  return 0;
+}
+```
 
 ### Hardware Diagnostics
 
