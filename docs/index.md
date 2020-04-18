@@ -672,28 +672,39 @@ using Flits = ch_vec<Flit<N>, 16>;
         <td>Scan</td>
         <td>ch_scan</td>
         <td>all types</td>
-    </tr>
+    </tr>  
     <tr>
-        <td>Shift Register</td>
-        <td>ch_delay</td>
-        <td>all types</td>
-        <td rowspan="3">Delay</td>
-    </tr>
-    <tr>
-        <td>Next Value</td>
+        <td>Single Latch</td>
         <td>ch_next</td>
         <td>all types</td>
+      <td rowspan="4">Buffers</td>
     </tr>
     <tr>
-        <td>Next-Enabled Value</td>
+        <td>Single Latch w/en</td>
         <td>ch_nextEn</td>
         <td>all types</td>
     </tr>
     <tr>
-        <td>Clock Domain</td>
-        <td>ch_cd</td>
+        <td>Delay Buffer</td>
+        <td>ch_delay</td>
+        <td>all types</td>        
+    </tr>
+    <tr>
+        <td>Delay Buffer w/en</td>
+        <td>ch_delayEn</td>
         <td>all types</td>
-        <td rowspan="5">System Clock</td>
+        <td rowspan="4">Buffers</td>
+    </tr>  
+    <tr>
+        <td>Current Clock</td>
+        <td>ch_clock</td>
+        <td>all types</td>      
+        <td rowspan="5">Clock Domain</td>
+    </tr>
+    <tr>
+        <td>Current Reset</td>
+        <td>ch_reset</td>
+        <td>all types</td>
     </tr>
     <tr>
         <td>Push Clock</td>
@@ -706,13 +717,8 @@ using Flits = ch_vec<Flit<N>, 16>;
         <td>all types</td>
     </tr>
     <tr>
-        <td>Current Clock</td>
-        <td>ch_clock</td>
-        <td>all types</td>
-    </tr>
-    <tr>
-        <td>Current Reset</td>
-        <td>ch_reset</td>
+        <td>Clock Region</td>
+        <td>ch_cd</td>
         <td>all types</td>
     </tr>
     <tr>
