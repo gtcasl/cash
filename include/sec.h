@@ -73,23 +73,28 @@ public:
     auto lnode = internal::logic_accessor::buffer(Obj);
     set_label_int(lnode, labelt);
   }
-  template <class T, class Z, class K> //will have to later enforce K to be constrained on Z
-  static void set_label_dyn(T dst, Z src, std::function<seclabel(K)> typefunc) {
-    auto lnodedst = internal::logic_accessor::buffer(dst);
-    auto lnodesrc = internal::logic_accessor::buffer(src);
-    std::function<seclabel()> f = [=]() { //copy capture?
+  template <class T, class Z/*, class K*/> //will have to later enforce K to be constrained on Z
+  static void set_label_dyn(T nodeValueSrc, Z nodeToSet, std::function<seclabel(uint8_t)> typefunc) {
+    auto lvalue = internal::logic_accessor::buffer(nodeValueSrc);
+    auto lset = internal::logic_accessor::buffer(nodeToSet);
+    //std::function<seclabel()> f = [=]() { //copy capture?
       /* return typeFunc(src->impl()->value()); //how to get value from node?
       //is this feasible here without using ctx?
       */
       //temporary
-      K obj;
-      return typefunc(obj);
-    };
-    set_dynlabel_int(lnodedst, lnodesrc, f);
+     // K obj;
+
+
+      //run the simulator to get all possible paths for dynlabels?
+    //  return typefunc(obj);
+    //};
+    set_dynlabel_int(lvalue, lset, typefunc);
   }
   static void set_label_int(internal::logic_buffer &lnode, seclabel labelt);
-  static void set_dynlabel_int(internal::logic_buffer &lnodedst,
-                                std::function<seclabel()> typeFunc);
+  //template<typename K>
+  static void set_dynlabel_int(internal::logic_buffer &nodeValueSrct,
+                                  internal::logic_buffer &nodeToSett,
+                                  std::function<seclabel(uint8_t)> typeFunc);
 
 protected:
 

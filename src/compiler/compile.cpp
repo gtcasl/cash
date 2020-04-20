@@ -187,8 +187,8 @@ void compiler::optimize() {
     rpo_total += tracker.deleted();
   }
 
-  std::cout << "changed cfg --- " << std::endl;
-  ctx_->dump_cfg(std::cout);
+  //std::cout << "changed cfg --- " << std::endl;
+  //ctx_->dump_cfg(std::cout);
 
 #ifndef NDEBUG
   // dump nodes
