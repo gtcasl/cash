@@ -20,6 +20,9 @@ namespace ch {
 
     auto nodeValueSrc = nodeValueSrct.impl();
     auto nodeToSet = nodeToSett.impl();
+
+
+
     switch (nodeValueSrc->type()) {
         default: {
 
@@ -27,12 +30,14 @@ namespace ch {
 
         case internal::type_input: {
             auto input = reinterpret_cast<internal::inputimpl*>(nodeValueSrc);
-            nodeToSet->set_dynlabel([=]()->seclabel{return typefunc(*(reinterpret_cast<uint8_t*>(input->value()->words())));});
+            std::ostringstream stream;
+            stream << input->value();
+            std::cout << "nodevaluesrc: " << input->value() << std::endl;
+            auto fakenum = std::stoi(stream.str());
+            nodeToSet->set_dynlabel([=]()->seclabel{return typefunc(fakenum);});
             
         } break;
     }
-   // lnodedst.impl()->set_dynlabel(typeFunc);
-    //std::cout << "set node: " << lnodedst.impl()->id() << " mutable label" << std::endl;
   }
   //could have library of functions for each case
 }

@@ -31,7 +31,8 @@ lnodeimpl::lnodeimpl(uint32_t id,
   , prev_(nullptr)
   , next_(nullptr)
   , users_(nullptr)
-  , label_(seclabel::UNSET) 
+  , label_(seclabel::UNSET)
+  , typefunc_(nullptr)
 {}
 
 lnodeimpl::~lnodeimpl() {

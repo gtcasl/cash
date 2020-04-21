@@ -125,7 +125,10 @@ public:
   }
 
   auto dynlabel() {
-    return typefunc_();
+    if (typefunc_ != nullptr) {
+      return typefunc_();
+    }
+    return seclabel::UNSET;
   }
 
   auto set_dynlabel(std::function<seclabel()> typefunc) {

@@ -240,7 +240,7 @@ bool compiler::isNodeSecureFromSrcs(lnodeimpl *Node) {
   seclabel curlabel = seclabel::L;
 
   for (auto n: Node->srcs()) {
-    std::cout << "visited " << n.impl()->id() << std::endl;
+    //std::cout << "visited " << n.impl()->id() << std::endl;
     if (!compiler::isNodeSecureFromSrcs(n.impl())) {
       return false;
     }
@@ -256,7 +256,11 @@ bool compiler::isNodeSecureFromSrcs(lnodeimpl *Node) {
     std::cout << "upgrading node: " << Node->id() << " to " << curlabel << std::endl;
       Node->set_label(curlabel);
   }
-
+  seclabel testdynlabel = Node->dynlabel();
+  if (testdynlabel != seclabel::UNSET) {
+    std::cout << "node with id: " << Node->id() << " has dynlabel func-> '" << testdynlabel  << "'" << std::endl;
+    Node->set_label(testdynlabel);
+  }
   std::cout << Node->id() << ": " << Node->label() << std::endl;
 
   for (auto n: Node->srcs()) {
