@@ -1627,7 +1627,7 @@ struct sim_ctx_t {
       free(constant.first);
     }
   }
-
+  data_map_t data_map;
   std::vector<std::pair<block_type*, uint32_t>> constants;
   std::vector<instr_base*> instrs;
 };
@@ -1640,32 +1640,33 @@ public:
 
   ~Compiler() {}
 
+  //data_map_t data_map;
+  
   void build(const std::vector<lnodeimpl*>& eval_list) {
-    data_map_t data_map;
+    //data_map_t data_map;
     instr_map_t instr_map;
     node_map_t node_map;
-
     instr_map.reserve(eval_list.size());
     sim_ctx_->instrs.reserve(eval_list.size());
 
     auto ctx = eval_list.back()->ctx();
 
     // setup constants
-    this->setup_constants(ctx, data_map);
+    this->setup_constants(ctx, sim_ctx_->data_map);
 
     auto sys_time = ctx->sys_time();
     if (sys_time) {
-      instr_map[sys_time->id()] = instr_time::create(reinterpret_cast<timeimpl*>(sys_time), data_map);
+      instr_map[sys_time->id()] = instr_time::create(reinterpret_cast<timeimpl*>(sys_time), sim_ctx_->data_map);
     }
 
     // lower synchronous nodes
     for (auto node : ctx->snodes()) {
       switch (node->type()) {
       case type_reg:
-        instr_map[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), data_map);
+        instr_map[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), sim_ctx_->data_map);
         break;
       case type_msrport:
-        instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
+        instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), sim_ctx_->data_map);
         break;
       case type_udfs:
         instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node));
@@ -1682,67 +1683,67 @@ public:
       default:
         assert(false);
       case type_proxy:
-        instr = instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), data_map);
+        instr = instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), sim_ctx_->data_map);
         break;
       case type_input: {
         auto input = reinterpret_cast<inputimpl*>(node);
-        data_map[node->id()] = input->value()->words();
+        sim_ctx_->data_map[node->id()] = input->value()->words();
       } break;
       case type_output: {
         auto output = reinterpret_cast<outputimpl*>(node);
-        data_map[node->id()] = data_map.at(output->src(0).id());
-        instr = instr_output_base::create(output, data_map);
+        sim_ctx_->data_map[node->id()] = sim_ctx_->data_map.at(output->src(0).id());
+        instr = instr_output_base::create(output, sim_ctx_->data_map);
       } break;
       case type_op:
-        instr = instr_op_base::create(reinterpret_cast<opimpl*>(node), data_map);
+        instr = instr_op_base::create(reinterpret_cast<opimpl*>(node), sim_ctx_->data_map);
         break;
       case type_sel:
-        instr = instr_select_base::create(reinterpret_cast<selectimpl*>(node), data_map);
+        instr = instr_select_base::create(reinterpret_cast<selectimpl*>(node), sim_ctx_->data_map);
         break;
       case type_cd:
-        instr = instr_cd::create(reinterpret_cast<cdimpl*>(node), data_map);
+        instr = instr_cd::create(reinterpret_cast<cdimpl*>(node), sim_ctx_->data_map);
         break;
       case type_reg:
         instr = instr_map.at(node->id());
-        reinterpret_cast<instr_reg_base*>(instr)->init(reinterpret_cast<regimpl*>(node), data_map);
+        reinterpret_cast<instr_reg_base*>(instr)->init(reinterpret_cast<regimpl*>(node), sim_ctx_->data_map);
         break;
       case type_marport:
-        instr = instr_marport_base::create(reinterpret_cast<marportimpl*>(node), data_map);
+        instr = instr_marport_base::create(reinterpret_cast<marportimpl*>(node), sim_ctx_->data_map);
         break;
       case type_msrport:
         instr = instr_map.at(node->id());
-        reinterpret_cast<instr_msrport_base*>(instr)->init(reinterpret_cast<msrportimpl*>(node), data_map);
+        reinterpret_cast<instr_msrport_base*>(instr)->init(reinterpret_cast<msrportimpl*>(node), sim_ctx_->data_map);
         break;        
       case type_mwport:
-        instr = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), data_map);
+        instr = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), sim_ctx_->data_map);
         break;
       case type_tap:
-        instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
+        instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), sim_ctx_->data_map);
         break;
       case type_time:
         instr = instr_map.at(node->id());
         break;
       case type_assert:
-        instr = instr_assert::create(reinterpret_cast<assertimpl*>(node), data_map);
+        instr = instr_assert::create(reinterpret_cast<assertimpl*>(node), sim_ctx_->data_map);
         break;
       case type_print:
-        instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
+        instr = instr_print::create(reinterpret_cast<printimpl*>(node), sim_ctx_->data_map);
         break;
       case type_udfc:
         instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node));
         break;
       case type_udfs:
         instr = instr_map.at(node->id());
-        reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
+        reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), sim_ctx_->data_map);
         break;
       case type_udfin: {
         auto udfin = reinterpret_cast<udfportimpl*>(node);
-        data_map[node->id()] = data_map.at(udfin->src(0).id());
-        instr = instr_udfin_base::create(udfin, data_map);
+        sim_ctx_->data_map[node->id()] = sim_ctx_->data_map.at(udfin->src(0).id());
+        instr = instr_udfin_base::create(udfin, sim_ctx_->data_map);
       } break;
       case type_udfout: {
         auto udfout = reinterpret_cast<udfportimpl*>(node);
-        data_map[node->id()] = udfout->value()->words();
+        sim_ctx_->data_map[node->id()] = udfout->value()->words();
       } break;
       case type_lit:
       case type_mem:
@@ -1805,6 +1806,7 @@ private:
 
 driver::driver() {
   sim_ctx_ = new sim_ctx_t();
+
 }
 
 driver::~driver() {
@@ -1815,6 +1817,11 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
   Compiler compiler(sim_ctx_);
   compiler.build(eval_list);
 }
+void driver::getDataMap(data_map_t **t) {
+  std::cout << "here!!" << std::endl;
+  *t = &sim_ctx_->data_map;
+}
+
 
 void driver::eval() {
   for (auto instr : sim_ctx_->instrs) {

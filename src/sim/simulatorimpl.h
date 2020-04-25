@@ -46,6 +46,8 @@ protected:
   uint64_t value_;
 };
 
+using data_map_t  = std::unordered_map<uint32_t, const block_type*>;
+
 class sim_driver : public refcounted {
 public:
 
@@ -56,6 +58,10 @@ public:
   virtual void initialize(const std::vector<lnodeimpl*>&) = 0;
 
   virtual void eval() = 0;
+
+  void getDataMap(data_map_t **t) {
+    t = nullptr;
+  }
 };
 
 class simulatorimpl : public refcounted {

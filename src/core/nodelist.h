@@ -66,7 +66,7 @@ public:
   public:
     using base = const_iterator;
 
-    iterator(const iterator& other) : base(other) {}
+    //iterator(const iterator& other) : base(other) {}
 
     iterator(const const_iterator& other) : base(other) {}
 

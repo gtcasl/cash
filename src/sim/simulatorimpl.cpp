@@ -109,10 +109,39 @@ void simulatorimpl::initialize() {
   if (reset) {
     reset_driver_.add_signal(reset);
   }
+
+  /*data_map_t* test;
+  sim_driver_->getDataMap(&test);
+  std::cout << test << std::endl;
+
+  std::cout << ((*test).size()) << std::endl;
+  */
 }
 
 void simulatorimpl::eval() {
+   //eval_ctx_ = contexts_[0];
+   //eval_ctx_->acquire();
+  /*
+
+  src/compiler/simref.cpp
+  the data_map just has ptrs to blocks for each id, the instructions then just get the ptr locations and update the value at the ptrs.
+  worth a try to make data_map public
+
+  ideas for dynlabel verification:
+
+  - could essentially call compile.cpp::build to get a new unoptimized eval context 
+  every step from the simref, pass in a newly constructed data map (created in simref by calling simref::compiler::build again?)
+  and then pass the value to the dynlabel function at each node and verify the tree???
+
+  --turns out it's not even using the simref driver, but simjit :/
+
+
+
+  */
+
   sim_driver_->eval();
+  //sim_driver has lnodeimpl* eval list which i think is the eval tree?
+  //call compiler function
 }
 
 ch_tick simulatorimpl::reset(ch_tick t) {
