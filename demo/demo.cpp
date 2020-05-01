@@ -5,8 +5,8 @@ using namespace ch::core;
 
 
 ch::seclabel simpleLabel(uint8_t input) {
-   std::cout << "label func executed with input:  " << unsigned(input) << std::endl;
-   return ch::seclabel::L;
+  std::cout << "label func executed with input:  " << unsigned(input) << std::endl;
+  return input ? ch::seclabel::H : ch::seclabel::L;
 }
 
 // hardware description
@@ -20,18 +20,21 @@ struct Adder {
 
   void describe() {
     //io.out = io.lhs + io.rhs;
-    ch_reg<ch_bit<4>> reg(0);
+    // ch_reg<ch_bit<4>> reg(0);
     //reg->next = io.lhs + io.rhs;
     io.out = io.lhs + io.rhs;
 
-    //reg.set_label(); //what is impl on next iteration when reg value updated
-    //ch::sec_api::set_label(reg, ch::seclabel::H);
+    ch::sec_api::set_policy(2); // Simple L/H lattice
+    //dst=L dst=H
+    // 1     1 src=L
+    // 0     0 src=H
+    // valid = lattice[srcLabel][dstLabel] == 1
+
     ch::sec_api::set_label(io.lhs, ch::seclabel::L);
-    //ch::sec_api::set_label(io.rhs, ch::seclabel::L);
     ch::sec_api::set_label(io.out, ch::seclabel::L);
-    ch::sec_api::set_policy(2);
-    std::function<ch::seclabel(uint8_t)> test = simpleLabel;
-    ch::sec_api::set_label_dyn(io.lhs, io.rhs, test);//set_label(io.rhs, simpleLabel(io.lhs)
+    // ch::sec_api::set_label(io.rhs, ch::seclabel::H); // this would fail verification
+    std::function<ch::seclabel(uint8_t)> typefunc = simpleLabel;
+    ch::sec_api::set_label_dyn(io.rhs, io.rhs, typefunc);
   }
 };
 
@@ -41,7 +44,7 @@ int main() {
 
   // assign input values
   my_adder.io.lhs = 1;
-  my_adder.io.rhs = 3;
+  my_adder.io.rhs = 2;
 
   // run simulation
   ch_simulator sim(my_adder);
