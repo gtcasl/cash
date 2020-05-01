@@ -265,7 +265,7 @@ bool compiler::isNodeSecureFromSrcs(lnodeimpl *Node) {
 
   for (auto n: Node->srcs()) {
     if (!sec_api::isSecure(n.impl()->label(), Node->label())) {
-        std::cout << "insecure flow from: " << Node->id() << "to " << n.impl()->id() << std::endl;
+        std::cout << "insecure flow from: " << n.impl()->id() << " to " << Node->id() << std::endl;
         return false;
     }
   }

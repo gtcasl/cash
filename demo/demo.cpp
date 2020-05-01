@@ -19,9 +19,6 @@ struct Adder {
   );
 
   void describe() {
-    //io.out = io.lhs + io.rhs;
-    // ch_reg<ch_bit<4>> reg(0);
-    //reg->next = io.lhs + io.rhs;
     io.out = io.lhs + io.rhs;
 
     ch::sec_api::set_policy(2); // Simple L/H lattice
@@ -32,9 +29,7 @@ struct Adder {
 
     ch::sec_api::set_label(io.lhs, ch::seclabel::L);
     ch::sec_api::set_label(io.out, ch::seclabel::L);
-    // ch::sec_api::set_label(io.rhs, ch::seclabel::H); // this would fail verification
-    std::function<ch::seclabel(uint8_t)> typefunc = simpleLabel;
-    ch::sec_api::set_label_dyn(io.rhs, io.rhs, typefunc);
+    ch::sec_api::set_label(io.rhs, ch::seclabel::H); // this will fail verification.
   }
 };
 

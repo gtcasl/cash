@@ -186,8 +186,8 @@ private:
   lnodeimpl* next_;
   lnode* users_;
 
-  seclabel label_;
-  std::function<seclabel()> typefunc_;
+  seclabel label_; // static label
+  std::function<seclabel()> typefunc_; // dynamic label
 
   friend class context;
   friend class node_list;
