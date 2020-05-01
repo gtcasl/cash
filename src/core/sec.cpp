@@ -18,8 +18,8 @@ namespace ch {
 
     //src/compiler/simref.cpp:1681
 
-    auto nodeValueSrc = nodeValueSrct.impl();
     auto nodeToSet = nodeToSett.impl();
+    auto nodeValueSrc = nodeValueSrct.impl();
 
 
 
@@ -29,12 +29,14 @@ namespace ch {
         } break;
 
         case internal::type_input: {
-            auto input = reinterpret_cast<internal::inputimpl*>(nodeValueSrc);
-            std::ostringstream stream;
-            stream << input->value();
-            std::cout << "nodevaluesrc: " << input->value() << std::endl;
-            auto fakenum = std::stoi(stream.str());
-            nodeToSet->set_dynlabel([=]()->seclabel{return typefunc(fakenum);});
+            nodeToSet->set_dynlabel([=]()->seclabel{
+              auto input = reinterpret_cast<internal::inputimpl*>(nodeValueSrc);
+              std::ostringstream stream;
+              stream << input->value();
+              std::cout << "nodevaluesrc: " << input->value() << std::endl;
+              auto fakenum = std::stoi(stream.str());
+              return typefunc(fakenum);
+            });
             
         } break;
     }
