@@ -1209,7 +1209,7 @@ int main() {
 int main() {
   ch_device<MyModule<ch_bit2, 2>> my_device;
   ch_simulator simulator(my_device);
-  simulator.reset();
+  simulator.reset();                  // invoke clock reset sequence
   my_device.io.din  = 1;              // assign inputs
   my_device.io.push = 1;
   simulator.step(2);                  // advance one cycle (2 ticks)
