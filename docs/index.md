@@ -1209,14 +1209,13 @@ int main() {
 int main() {
   ch_device<MyModule<ch_bit2, 2>> my_device;
   ch_simulator simulator(my_device);
-  ch_tick t = 0;
-  t = simulator.reset(t);
-  my_device.io.din  = 1;  // assign inputs
+  simulator.reset();
+  my_device.io.din  = 1;              // assign inputs
   my_device.io.push = 1;
-  t = simulator.step(t, 2);  // advance one cycle (2 ticks)
+  simulator.step(2);                  // advance one cycle (2 ticks)
   my_device.io.din  = 2;
   my_device.io.push = 1;
-  t = simulator.step(t, 2);  // advance one cycle (2 ticks)
+  simulator.step(2);                  // advance one cycle (2 ticks)
   assert(my_device.io.full == true);  // check outputs
   return 0;
 }

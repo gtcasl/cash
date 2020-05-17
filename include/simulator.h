@@ -31,11 +31,11 @@ public:
   
   void run(ch_tick ticks = 1);
 
-  ch_tick run(const std::function<bool(ch_tick t)>& callback, uint32_t steps = 1);
+  ch_tick run(const std::function<bool(ch_tick)>& callback, ch_tick ticks = 1);
 
-  ch_tick reset(ch_tick t);
+  void reset();
 
-  ch_tick step(ch_tick t, uint32_t count = 1);
+  void step(ch_tick ticks = 1);
 
   void eval();
 

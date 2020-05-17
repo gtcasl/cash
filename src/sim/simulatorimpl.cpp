@@ -29,6 +29,7 @@ simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   , clk_driver_(false)
   , reset_driver_(false)
   , sim_driver_(nullptr)
+  , ticks_(0)
   , verbose_tracing_(false) {
   // enqueue all contexts
   for (auto dev : devices) {
@@ -113,45 +114,44 @@ void simulatorimpl::initialize() {
 
 void simulatorimpl::eval() {
   sim_driver_->eval();
+  ++ticks_;
 }
 
-ch_tick simulatorimpl::reset(ch_tick t) {
+void simulatorimpl::reset() {
   if (!reset_driver_.empty()) {
     reset_driver_.eval();
-    t = this->step(t, 2);
+    this->step(2);
     reset_driver_.eval();
   }
-  return t;
 }
 
-ch_tick simulatorimpl::step(ch_tick t, uint32_t count) {
-  auto ret = t + count;
+void simulatorimpl::step(ch_tick ticks) {  
   if (clk_driver_.empty()) {
-    while (count--) {
+    while (ticks--) {
       this->eval();
     }
   } else {
-    while (count--) {      
+    while (ticks--) {      
       this->eval();
       clk_driver_.eval();
     }
   }   
-  return ret;
 }
 
-ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback,
-                           uint32_t steps) {
-  auto t = this->reset(0);
-  for (auto start = t; callback(t - start);) {
-    t = this->step(t, steps);
+ch_tick simulatorimpl::run(const std::function<bool(ch_tick)>& callback,
+                           ch_tick steps) {
+  this->reset();
+  auto start = ticks_;
+  for (; callback(ticks_ - start); ) {
+    this->step(steps);
   }
-  return t;
+  return ticks_;
 }
 
-void simulatorimpl::run(ch_tick num_ticks) {
-  auto start = this->reset(0);
-  if (num_ticks > start) {
-    this->step(start, num_ticks - start);
+void simulatorimpl::run(ch_tick ticks) {
+  this->reset();
+  if (ticks > ticks_) {
+    this->step(ticks - ticks_);
   }
 }
 
@@ -211,20 +211,20 @@ ch_simulator& ch_simulator::operator=(ch_simulator&& other) {
   return *this;
 }
 
-ch_tick ch_simulator::run(const std::function<bool(ch_tick t)>& callback, uint32_t steps) {
+ch_tick ch_simulator::run(const std::function<bool(ch_tick)>& callback, ch_tick steps) {
   return impl_->run(callback, steps);
 }
 
-void ch_simulator::run(ch_tick num_ticks) {
-  impl_->run(num_ticks);
+void ch_simulator::run(ch_tick ticks) {
+  impl_->run(ticks);
 }
 
-ch_tick ch_simulator::reset(ch_tick t) {
-  return impl_->reset(t);
+void ch_simulator::reset() {
+  return impl_->reset();
 }
 
-ch_tick ch_simulator::step(ch_tick t, uint32_t count) {
-  return impl_->step(t, count);
+void ch_simulator::step(ch_tick ticks) {
+  return impl_->step(ticks);
 }
 
 void ch_simulator::eval() {

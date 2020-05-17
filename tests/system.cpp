@@ -62,6 +62,7 @@ TEST_CASE("system", "[system]") {
   SECTION("basics", "[basics]") {
     TESTX([]()->bool {
       ch_sbit<1> a(1), b(0);
+      ch_sbool c(true);
       bool ret = false;
       if (a) {
         if (b) {
@@ -69,6 +70,9 @@ TEST_CASE("system", "[system]") {
         } else {
           ret = true;
         }
+      }
+      if (c) {
+        a = 0;  
       }
       return ret;
     });

@@ -9,7 +9,7 @@ using namespace ch::logic;
 
 template <typename T>
 __interface (ch_valid_in, (
-  __in (T) data,
+  __in (T)       data,
   __in (ch_bool) valid
 ));
 

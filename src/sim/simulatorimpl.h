@@ -67,23 +67,24 @@ public:
 
   virtual void initialize();
 
-  ch_tick run(const std::function<bool(ch_tick t)>& callback, uint32_t steps);
+  ch_tick run(const std::function<bool(ch_tick)>& callback, ch_tick steps);
 
-  ch_tick reset(ch_tick t);
+  void reset();
 
-  ch_tick step(ch_tick t, uint32_t count);
+  void step(ch_tick ticks);
 
-  void run(ch_tick num_ticks);
+  void run(ch_tick ticks);
 
   virtual void eval();
 
 protected:  
 
   std::vector<context*> contexts_;
-  context* eval_ctx_;
+  context*  eval_ctx_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
   sim_driver* sim_driver_;
+  ch_tick ticks_;
   bool verbose_tracing_;
 };
 

@@ -295,12 +295,12 @@ int main() {
   /*{
     ch_device<FilterBlock<ch_uint16>> device;
     ch_simulator sim(device);
-    ch_tick t = sim.reset(0);
+    sim.reset();
 
     device.io.x.data   = 3;
     device.io.x.valid  = 1;
     device.io.x.parity = 0;
-    t = sim.step(t, 4);
+    sim.step(4);
 
     RetCheck ret;
     ret &= !!device.io.y.valid;
@@ -313,12 +313,12 @@ int main() {
   /*{
     ch_device<FilterBlock<ch_uint16>> device;
     ch_simulator sim(device);
-    ch_tick t = sim.reset(0);
+    sim.reset();
 
     device.io.x.data   = 3;
     device.io.x.valid  = 1;
     device.io.x.parity = 0;
-    t = sim.step(t, 6);
+    sim.step(6);
 
     RetCheck ret;
     ret &= !!device.io.y.valid;
@@ -331,7 +331,7 @@ int main() {
   /*{
     ch_device<QueueWrapper<ch_bit4, 2>> queue;
     ch_simulator sim(queue);
-    ch_tick t = sim.reset(0);
+    sim.reset();
 
     RetCheck ret;
     ret &= !!queue.io.enq.ready;  // !full
@@ -339,23 +339,23 @@ int main() {
     queue.io.deq.ready = 0;
     queue.io.enq.data = 0xA;
     queue.io.enq.valid = 1; // push
-    t = sim.step(t, 2);
+    sim.step(2);
 
     ret &= !!queue.io.deq.valid;  // !empty
     queue.io.enq.data = 0xB;
-    t = sim.step(t, 2);
+    sim.step(2);
 
     ret &= !queue.io.enq.ready; // full
     ret &= !!queue.io.deq.valid;
     ret &= (0xA == queue.io.deq.data);
     queue.io.enq.valid = 0; // !push
     queue.io.deq.ready = 1; // pop
-    t = sim.step(t, 2);
+    sim.step(2);
 
     ret &= !!queue.io.enq.ready;  // !full
     ret &= (0xB == queue.io.deq.data);
     queue.io.deq.ready = 1; // pop
-    t = sim.step(t, 8);
+    sim.step(8);
 
     ret &= !queue.io.deq.valid; // empty
     ch_toVerilog("queue.v", queue);
@@ -533,7 +533,7 @@ int main() {
     RetCheck ret;
 
     ch_tracer trace(queue);
-    ch_tick t = trace.reset(0);
+    trace.reset();
 
     // fill the queue
     for (int i = 0; i < N; ++i) {
@@ -546,7 +546,7 @@ int main() {
       queue.io.enq.data = (0xA + i);
       queue.io.enq.valid = true;      // push
       queue.io.deq.ready = false;
-      t = trace.step(t, 2);
+      trace.step(2);
     }
 
     // empty the queue
@@ -557,7 +557,7 @@ int main() {
       ret &= (N-i) == queue.io.size;  // N-i
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;      // pop
-      t = trace.step(t, 2);
+      trace.step(2);
     }
 
     // fill the queue again
@@ -571,7 +571,7 @@ int main() {
       queue.io.enq.data = (0xA + i);
       queue.io.enq.valid = true;      // push
       queue.io.deq.ready = false;
-      t = trace.step(t, 2);
+      trace.step(2);
     }
 
     // empty queue leaving one entry
@@ -582,7 +582,7 @@ int main() {
       ret &= (N-i) == queue.io.size;  // N-i
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;      // pop
-      t = trace.step(t, 2);
+      trace.step(2);
     }
 
     if (N == 1) {
@@ -592,7 +592,7 @@ int main() {
       ret &= 1 == queue.io.size;      // 1
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;      // pop
-      t = trace.step(t, 2);
+      trace.step(2);
     } else {
       ret &= ((0xA + N-1) == queue.io.deq.data);
       ret &= !!queue.io.deq.valid; // !empty
@@ -601,7 +601,7 @@ int main() {
       queue.io.enq.data = (0xA + N);
       queue.io.enq.valid = true;   // push
       queue.io.deq.ready = true;   // pop
-      t = trace.step(t, 2);
+      trace.step(2);
 
       ret &= ((0xA + N) == queue.io.deq.data);
       ret &= !!queue.io.deq.valid; // !empty
@@ -609,7 +609,7 @@ int main() {
       ret &= 1 == queue.io.size;   // 1
       queue.io.enq.valid = false;
       queue.io.deq.ready = true;   // pop
-      t = trace.step(t, 2);
+      trace.step(2);
     }
 
     ret &= !queue.io.deq.valid;  // empty

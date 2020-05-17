@@ -69,7 +69,6 @@ protected:
   std::vector<std::pair<block_t*, uint32_t>> prev_values_;
   bv_t valid_mask_;
   uint32_t trace_width_;
-  uint32_t ticks_;
   trace_block_t* trace_head_;
   trace_block_t* trace_tail_;
   uint32_t num_traces_;

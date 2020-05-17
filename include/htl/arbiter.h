@@ -90,12 +90,12 @@ template <typename T, unsigned I, typename Arbiter = ch_matArbiter<I>>
 struct ch_xbar_switch {
   using value_type   = T;
   using arbiter_type = Arbiter;
-  using in_io  = ch_vec<ch_enq_io<T>, I>;
-  using out_io = ch_deq_io<T>;
+  using in_io        = ch_vec<ch_enq_io<T>, I>;
+  using out_io       = ch_deq_io<T>;
     
   __io (
-    (in_io)  in,
-    (out_io) out,
+    (in_io)           in,
+    (out_io)          out,
     __out (ch_bit<I>) grant
   );
 

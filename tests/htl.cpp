@@ -55,35 +55,35 @@ TEST_CASE("htl", "[htl]") {
       RetCheck ret;
       ch_device<PipeTest<ch_bit32, 4>> device;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.enq.data  = 0x3e4ccccd; // 0.2f
       device.io.enq.valid = true;
       device.io.deq.ready = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !device.io.deq.valid;
       device.io.enq.data  = 0x3dcccccd; // 0.1f
       device.io.enq.valid = true;
       device.io.deq.ready = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !device.io.deq.valid;
       device.io.enq.valid = false;
       device.io.deq.ready = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !device.io.deq.valid;
       device.io.deq.ready = false;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !!device.io.deq.valid;
       ret &= 0x3e4ccccd == device.io.deq.data;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !!device.io.deq.valid;
       ret &= 0x3e4ccccd == device.io.deq.data;
       device.io.deq.ready = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !!device.io.deq.valid;
       ret &= 0x3dcccccd == device.io.deq.data;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !device.io.deq.valid;
-      t = sim.step(t, 2);
+      sim.step(2);
       return !!ret;
     });
   }
@@ -276,22 +276,22 @@ TEST_CASE("htl", "[htl]") {
       device.io.in[1] = 7;
       device.io.in[2] = 9;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.sel = (0x4 << 3) | (0x2 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       RetCheck ret;
       ret &= (7 == device.io.out[0]);
       ret &= (9 == device.io.out[1]);
       device.io.sel = (0x1 << 3) | (0x1 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= (5 == device.io.out[0]);
       ret &= (5 == device.io.out[1]);
       device.io.sel = (0x2 << 3) | (0x1 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= (5 == device.io.out[0]);
       ret &= (7 == device.io.out[1]);
       device.io.sel = (0x1 << 3) | (0x4 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= (9 == device.io.out[0]);
       ret &= (5 == device.io.out[1]);
       return !!ret;
@@ -304,22 +304,22 @@ TEST_CASE("htl", "[htl]") {
       device.io.in[1] = 7;
       device.io.in[2] = 9;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.sel = (2 << 2) | (1 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       RetCheck ret;
       ret &= (7 == device.io.out[0]);
       ret &= (9 == device.io.out[1]);
       device.io.sel = (0 << 2) | (0 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= (5 == device.io.out[0]);
       ret &= (5 == device.io.out[1]);
       device.io.sel = (1 << 2) | (0 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= (5 == device.io.out[0]);
       ret &= (7 == device.io.out[1]);
       device.io.sel = (0 << 2) | (2 << 0);
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= (9 == device.io.out[0]);
       ret &= (5 == device.io.out[1]);
       return !!ret;
@@ -329,32 +329,32 @@ TEST_CASE("htl", "[htl]") {
     TESTX([]()->bool {
       ch_device<ch_matArbiter<4>> device;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.in[0] = false;
       device.io.in[1] = false;
       device.io.in[2] = false;
       device.io.in[3] = false;
-      t = sim.step(t, 2);
+      sim.step(2);
       RetCheck ret;
       ret &= 0 == device.io.grant;
       device.io.in[1] = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 2 == device.io.grant;
       device.io.in[2] = true;
-      t = sim.step(t, 4);
+      sim.step(4);
       ret &= 4 == device.io.grant;
       device.io.in[3] = true;
-      t = sim.step(t, 6);
+      sim.step(6);
       ret &= 8 == device.io.grant;
       device.io.in[1] = false;
       device.io.in[2] = false;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 8 == device.io.grant;
       device.io.in[3] = false;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0 == device.io.grant;
       device.io.in[0] = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 1 == device.io.grant;
       return !!ret;
     });
@@ -362,18 +362,18 @@ TEST_CASE("htl", "[htl]") {
       RetCheck ret;
       ch_device<ch_matArbiter<5>> device;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.in = 0x1f;  
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x8 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       device.io.in = 0xf;
       ret &= 0x4 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x2 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x1 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x8 == device.io.grant;
       return !!ret;
     });
@@ -384,17 +384,17 @@ TEST_CASE("htl", "[htl]") {
       RetCheck ret;
       ch_device<ch_ctrArbiter<5>> device;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.in = 0x1f;  
       ret &= 0x1 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       device.io.in = 0xf;
       ret &= 0x2 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x4 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x8 == device.io.grant;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= 0x0 == device.io.grant;
       return !!ret;
     });
@@ -404,30 +404,30 @@ TEST_CASE("htl", "[htl]") {
     TESTX([]()->bool {
       ch_device<ch_xbar_switch<ch_bit4, 2>> device;
       ch_simulator sim(device);
-      ch_tick t = sim.reset(0);
+      sim.reset();
       device.io.in[0].data  = 0xA;
       device.io.in[0].valid = false;
       device.io.in[1].data  = 0xB;
       device.io.in[1].valid = false;
       device.io.out.ready   = false;
-      t = sim.step(t, 2);
+      sim.step(2);
       RetCheck ret;
       ret &= !device.io.out.valid;
       ret &= !device.io.in[0].ready;
       ret &= !device.io.in[1].ready;
       device.io.out.ready = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !device.io.out.valid;
       ret &= !device.io.in[0].ready;
       ret &= !device.io.in[1].ready;
       device.io.in[0].valid = true;
-      t = sim.step(t, 2);
+      sim.step(2);
       ret &= !!device.io.out.valid;
       ret &= !!device.io.in[0].ready;
       ret &= !device.io.in[1].ready;
       ret &= 0xA == device.io.out.data;
       device.io.in[1].valid = true;
-      t = sim.step(t, 4);
+      sim.step(4);
       ret &= !!device.io.out.valid;
       ret &= !device.io.in[0].ready;
       ret &= !!device.io.in[1].ready;
@@ -452,7 +452,7 @@ TEST_CASE("htl", "[htl]") {
         ch_toFIRRTL(f_file, queue);
 
         ch_tracer trace(queue);
-        ch_tick t = trace.reset(0);
+        trace.reset();
 
         // enq N
         for (int i = 0; i < N; ++i) {
@@ -465,7 +465,7 @@ TEST_CASE("htl", "[htl]") {
           queue.io.enq.data = (0xA + i);
           queue.io.enq.valid = true;      // push
           queue.io.deq.ready = false;
-          t = trace.step(t, 2);
+          trace.step(2);
         }
 
         // deq N
@@ -476,7 +476,7 @@ TEST_CASE("htl", "[htl]") {
           ret &= (N-i) == queue.io.size;  // N-i
           queue.io.enq.valid = false;
           queue.io.deq.ready = true;      // pop
-          t = trace.step(t, 2);
+          trace.step(2);
         }
 
         // enq 1
@@ -490,7 +490,7 @@ TEST_CASE("htl", "[htl]") {
           queue.io.enq.data = (0xA + i);
           queue.io.enq.valid = true;      // push
           queue.io.deq.ready = false;
-          t = trace.step(t, 2);
+          trace.step(2);
         }
 
         // deq+enq
@@ -502,7 +502,7 @@ TEST_CASE("htl", "[htl]") {
           queue.io.enq.data  = (0xA + 1);
           queue.io.enq.valid = true;   // push
           queue.io.deq.ready = true;   // pop
-          t = trace.step(t, 2);
+          trace.step(2);
         }
 
         // deq
@@ -513,7 +513,7 @@ TEST_CASE("htl", "[htl]") {
           ret &= 1 == queue.io.size;   // 1
           queue.io.enq.valid = false;
           queue.io.deq.ready = true;   // pop
-          t = trace.step(t, 2);
+          trace.step(2);
         }
 
         // ensure empty

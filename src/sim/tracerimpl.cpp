@@ -33,7 +33,6 @@ auto remove_path = [](const std::string& path) {
 tracerimpl::tracerimpl(const std::vector<device_base>& devices)
   : simulatorimpl(devices)
   , trace_width_(0)
-  , ticks_(0)
   , trace_head_(nullptr)
   , trace_tail_(nullptr)
   , num_traces_(0)
@@ -134,8 +133,6 @@ void tracerimpl::eval() {
 
   // updsate offset
   trace_tail_->size = dst_offset;
-
-  ++ticks_;
 }
 
 void tracerimpl::allocate_trace(uint32_t block_width) {

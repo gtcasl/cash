@@ -336,12 +336,12 @@ TEST_CASE("module", "[module]") {
     TESTX([]()->bool {
       ch_device<FilterBlockX<ch_uint16>> device;
       ch_tracer trace(device);
-      ch_tick t = trace.reset(0);
+      trace.reset();
 
       device.io.x.data   = 3;
       device.io.x.valid  = 1;
       device.io.x.parity = 0;
-      t = trace.step(t, 4);
+      trace.step(4);
 
       RetCheck ret;
       ret &= !!device.io.y.valid;
@@ -360,12 +360,12 @@ TEST_CASE("module", "[module]") {
     TESTX([]()->bool {
       ch_device<FilterBlockV<ch_uint16>> device;
       ch_tracer trace(device);
-      ch_tick t = trace.reset(0);
+      trace.reset();
 
       device.io.x.data   = 3;
       device.io.x.valid  = 1;
       device.io.x.parity = 0;
-      t = trace.step(t, 4);
+      trace.step(4);
 
       RetCheck ret;
       ret &= !!device.io.y.valid;
